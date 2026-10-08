@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { FLASH, Flip, gsap, reducedMotion } from '../motion'
+import { flashAlert, Flip, gsap, reducedMotion } from '../motion'
 import { elderStatus, TIER_LABEL, whyLine } from '../status'
 import type { ElderListItem } from '../types'
 import { SimTag, StatusPill } from './StatusPill'
@@ -88,7 +88,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
         const was = prevTone.current.get(id)
         if (tone !== 'alert' || was === undefined || was === 'alert') continue
         const el = list.querySelector(`[data-flip-id="${id}"] > button`)
-        if (el) gsap.fromTo(el, { backgroundColor: FLASH.alert }, { backgroundColor: 'rgba(251,233,229,0)', duration: 1.6, delay: 0.2, clearProps: 'backgroundColor' })
+        if (el) gsap.fromTo(el, { backgroundColor: flashAlert() }, { backgroundColor: 'rgba(0,0,0,0)', duration: 1.6, delay: 0.2, clearProps: 'backgroundColor' })
       }
     }
     prevTone.current = tones

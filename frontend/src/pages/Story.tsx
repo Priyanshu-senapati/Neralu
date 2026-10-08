@@ -4,8 +4,10 @@ import { Wordmark } from '../components/Brand'
 import { gsap, reducedMotion } from '../motion'
 import { api } from '../api'
 import { HeatExplorer } from '../components/HeatExplorer'
+import { Reveal, RevealLines } from '../components/Reveal'
 import { Spotlight } from '@/components/ui/spotlight'
 import { EXAMPLE_HEAT, personalThreshold } from '@/heat'
+import { useTheme } from '@/theme'
 import type { ElderListItem } from '@/types'
 import { useRuleBook } from '../rules'
 
@@ -20,29 +22,31 @@ const ShaderAnimation = lazy(() => import('@/components/ui/shader-animation').th
 const WardDiorama = lazy(() => import('@/components/WardDiorama'))
 
 // Hero backdrop: deep shade, rings in heat, sun and a little shade green.
-const HERO_BG = '#0d1915'
+
 const HEAT_RINGS: [string, string, string] = ['#e8743b', '#f2b84b', '#5fa38a']
 const RING_CENTER: [number, number] = [0.85, 0.05] // behind the call card
 
 export default function Story() {
+  const theme = useTheme()
+  const heroBg = theme === 'light' ? '#f7f6f1' : '#000000' // matches --paper; the shader needs a concrete colour
   return (
     <div className="min-h-dvh bg-paper text-ink">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink">
         Skip to content
       </a>
       {/* Heat radiating behind the opening: the shader is the hero's backdrop and nothing else. */}
-      <div className="relative isolate overflow-hidden bg-[#0d1915] text-brand-ink">
+      <div className="relative isolate overflow-hidden bg-paper text-ink">
         <Suspense fallback={null}>
-          <ShaderAnimation className="absolute inset-0 -z-10" background={HERO_BG} colors={HEAT_RINGS} intensity={0.32} speed={0.4} center={RING_CENTER} quietSide={1} />
+          <ShaderAnimation className="absolute inset-0 -z-10" background={heroBg} colors={HEAT_RINGS} intensity={0.32} speed={0.4} center={RING_CENTER} quietSide={1} />
         </Suspense>
         <Spotlight className="-z-[5]" />
         <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
-          <Wordmark onDark />
-          <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-brand-ink/85">
-            <a href="#call" className="hover:text-brand-ink hover:underline">The call</a>
-            <a href="#rules" className="hover:text-brand-ink hover:underline">The rules</a>
-            <Link to="/register" className="hover:text-brand-ink hover:underline">Register someone</Link>
-            <Link to="/ward" className="press rounded-[4px] bg-paper px-3.5 py-2 font-semibold text-brand hover:bg-white">
+          <Wordmark />
+          <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted">
+            <a href="#call" className="hover:text-ink hover:underline">The call</a>
+            <a href="#rules" className="hover:text-ink hover:underline">The rules</a>
+            <Link to="/register" className="hover:text-ink hover:underline">Register someone</Link>
+            <Link to="/ward" className="press rounded-[4px] bg-brand px-3.5 py-2 font-semibold text-brand-ink hover:bg-brand/90">
               Open the ward console
             </Link>
           </nav>
@@ -75,32 +79,34 @@ function Hero() {
   return (
     <section className="mx-auto grid max-w-6xl items-center gap-x-10 gap-y-8 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:pb-20 lg:pt-10">
       <div>
-        <h1 className="display text-[2.4rem] font-medium leading-[1.05] text-brand-ink sm:text-[3rem] xl:text-[3.4rem]">
-          <span className="block lg:whitespace-nowrap">Heat warnings tell a city</span>
-          <span className="block">what's coming.</span>
-          <span className="mt-1 block italic text-sun lg:whitespace-nowrap">Neralu checks who's safe.</span>
+        <h1 className="display text-[2.4rem] font-medium leading-[1.05] text-ink sm:text-[3rem] xl:text-[3.4rem]">
+          <RevealLines delay={0.15}>
+            <span className="block lg:whitespace-nowrap">Heat warnings tell a city</span>
+            <span className="block">what's coming.</span>
+            <span className="oled mt-1 block italic text-sun lg:whitespace-nowrap">Neralu checks who's safe.</span>
+          </RevealLines>
         </h1>
-        <p className="mt-7 max-w-[34rem] text-[1.125rem] leading-[1.65] text-brand-ink/85">
+        <p className="mt-7 max-w-[34rem] text-[1.125rem] leading-[1.65] text-ink/85">
           When the heat crosses a person's own threshold, Neralu calls them on whatever phone they have, in their
           language. If an answer is worrying, or nobody picks up, a person nearby is asked to go to the door.
         </p>
         {elders && elders.length > 0 && (
-          <p className="mt-6 max-w-[34rem] text-[1.0625rem] leading-relaxed text-brand-ink/90">
+          <p className="mt-6 max-w-[34rem] text-[1.0625rem] leading-relaxed text-ink/90">
             On a <span className="num">{EXAMPLE_HEAT}</span>°C afternoon,{' '}
-            <span className="num font-semibold text-sun">{called}</span> of <span className="num">{elders.length}</span> households in
+            <span className="num oled font-semibold text-sun">{called}</span> of <span className="num">{elders.length}</span> households in
             Ward 47 get a call. The rest are below their own threshold.
           </p>
         )}
         <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4">
-          <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-paper px-5 py-3 font-semibold text-brand shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)] hover:bg-white">
+          <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-brand px-5 py-3 font-semibold text-brand-ink shadow-[0_8px_24px_-12px_rgba(116,211,164,0.45)] hover:bg-brand/90">
             Open the ward console
             <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
-          <a href="#call" className="font-semibold text-brand-ink underline decoration-brand-ink/40 decoration-2 underline-offset-[6px] hover:decoration-sun">
+          <a href="#call" className="font-semibold text-ink underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-sun">
             How a call works
           </a>
         </div>
-        <p className="mt-10 max-w-[34rem] border-t border-brand-ink/15 pt-4 text-sm leading-relaxed text-brand-ink/70">
+        <p className="mt-10 max-w-[34rem] border-t border-line pt-4 text-sm leading-relaxed text-muted">
           Ward 47 is a demo ward: its residents, weather and most call outcomes are simulated and labelled.
           The rules, the escalation and the live call are real.
         </p>
@@ -114,15 +120,15 @@ function Hero() {
             </Suspense>
           )}
           {elders && elders.length === 0 && (
-            <p className="flex h-full items-center justify-center text-sm text-brand-ink/70">Start the Neralu backend to see Ward 47 in 3D.</p>
+            <p className="flex h-full items-center justify-center text-sm text-muted">Start the Neralu backend to see Ward 47 in 3D.</p>
           )}
         </div>
-        <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-ink/75">
+        <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
           <span>Ward 47, every house a resident · height is heat risk</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#e8622e]" />Called, high risk</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#ee9a45]" />Called</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#61716a]" />Below threshold</span>
-          <span className="rounded-[3px] border border-brand-ink/25 px-1.5 font-mono text-[0.625rem] uppercase tracking-[0.08em]">demo data</span>
+          <span className="rounded-[3px] border border-line-strong px-1.5 font-mono text-[0.625rem] uppercase tracking-[0.08em]">demo data</span>
         </figcaption>
       </figure>
     </section>
@@ -269,11 +275,11 @@ function Statement() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
       <p className="display max-w-4xl text-[2.4rem] font-medium leading-[1.12] sm:text-[3.4rem]">
-        A broadcast tells.
-        <br />
-        A call checks.
-        <br />
-        <span className="italic text-brand">A person goes.</span>
+        <RevealLines stagger={0.35}>
+          <span>A broadcast tells.</span>
+          <span>A call checks.</span>
+          <span className="oled italic text-brand">A person goes.</span>
+        </RevealLines>
       </p>
       <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-ink/80">
         Heat alerts already reach phones across the city. What nobody does is check that Kamala, 74, alone under a
@@ -297,9 +303,11 @@ function TheCall() {
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <div className="grid gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div className="lg:sticky lg:top-8 lg:self-start">
-            <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
-              One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
-            </h2>
+            <Reveal>
+              <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
+                One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
+              </h2>
+            </Reveal>
             <div className="mt-8">
               <CallReplay />
             </div>
@@ -344,9 +352,11 @@ function Rules() {
     <section id="rules" className="scroll-mt-6 border-y border-line bg-surface">
       <div className="mx-auto grid max-w-6xl gap-x-14 gap-y-10 px-5 py-20 sm:px-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div className="lg:sticky lg:top-8 lg:self-start">
-          <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
-            Rules decide. <span className="italic text-brand">AI only listens.</span>
-          </h2>
+          <Reveal>
+            <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
+              Rules decide. <span className="italic text-brand">AI only listens.</span>
+            </h2>
+          </Reveal>
           <p className="mt-5 leading-relaxed text-ink/80">
             Where the day is spoken rather than pressed, speech-to-text turns it into a word. That is all the AI does. Whether someone is safe is decided
             by these rules, in this order; the first one that matches wins.
@@ -398,9 +408,11 @@ function WhoGoes() {
   ]
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
-        Escalation goes to people, <span className="italic text-brand">one step at a time.</span>
-      </h2>
+      <Reveal>
+        <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
+          Escalation goes to people, <span className="italic text-brand">one step at a time.</span>
+        </h2>
+      </Reveal>
       <ol className="mt-12 grid gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
         {tiers.map(([who, what], i) => (
           <li key={who} className="relative pr-6">
@@ -463,20 +475,22 @@ function Phones() {
     ['Registered by family', 'A son or daughter registers a parent from any phone, with the parent’s permission. The address is shown only to the volunteer who accepts a case.'],
   ]
   return (
-    <section className="bg-brand text-brand-ink">
+    <section className="border-y border-line bg-brand-tint text-ink">
       <div className="mx-auto grid max-w-6xl items-center gap-x-14 gap-y-12 px-5 py-20 sm:px-8 lg:grid-cols-[auto_minmax(0,1fr)]">
         <div className="flex justify-center lg:justify-start">
           <KeypadPhone />
         </div>
         <div>
-          <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
-            Built for the phones <span className="italic">people actually have.</span>
-          </h2>
+          <Reveal>
+            <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
+              Built for the phones <span className="italic">people actually have.</span>
+            </h2>
+          </Reveal>
           <dl className="mt-10 grid gap-x-12 gap-y-7 sm:grid-cols-2">
             {facts.map(([t, d]) => (
-              <div key={t} className="border-t border-brand-ink/20 pt-4">
+              <div key={t} className="border-t border-line pt-4">
                 <dt className="font-semibold">{t}</dt>
-                <dd className="mt-1.5 leading-relaxed text-brand-ink/75">{d}</dd>
+                <dd className="mt-1.5 leading-relaxed text-muted">{d}</dd>
               </div>
             ))}
           </dl>
@@ -489,9 +503,11 @@ function Phones() {
 function Honesty() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
-        What you are looking at <span className="italic text-brand">is a working prototype.</span>
-      </h2>
+      <Reveal>
+        <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
+          What you are looking at <span className="italic text-brand">is a working prototype.</span>
+        </h2>
+      </Reveal>
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
         <div className="border-t border-ink pt-5">
           <h3 className="font-semibold">Real in this demo</h3>

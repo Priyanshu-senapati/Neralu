@@ -120,19 +120,18 @@ function ThresholdChart({ elders, heatIndex, due, total }: { elders: ElderListIt
               width={bw - 3}
               height={Math.max(h, counts[i] ? 1.5 : 0)}
               rx={1.5}
-              className="transition-[fill,y,height] duration-500"
-              fill={crossed ? '#B63D0B' : '#D3CEC1'}
+              className={`transition-[fill,y,height] duration-500 ${crossed ? 'fill-heat' : 'fill-line-strong'}`}
             />
           )
         })}
-        <line x1={0} x2={W} y1={H + 0.5} y2={H + 0.5} stroke="#C9C5B9" />
+        <line x1={0} x2={W} y1={H + 0.5} y2={H + 0.5} className="stroke-line-strong" />
         {[T_MIN + 1, 33, 36, T_MAX - 1].map((t) => (
           <text key={t} x={(t - T_MIN + 0.5) * bw} y={H + 13} textAnchor="middle" className="fill-muted font-mono text-[0.5938rem]">
             {t}°
           </text>
         ))}
         <g className="transition-transform duration-500" style={{ transform: `translateX(${x}px)` }}>
-          <line x1={0} x2={0} y1={-4} y2={H + 4} stroke="#1B1D1A" strokeWidth={1.5} />
+          <line x1={0} x2={0} y1={-4} y2={H + 4} className="stroke-ink" strokeWidth={1.5} />
           <text x={over ? -4 : 4} y={-5} textAnchor={over ? 'end' : 'start'} className="fill-ink font-mono text-xs font-medium">
             today
           </text>

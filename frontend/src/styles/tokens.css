@@ -1,32 +1,70 @@
 /*
- * Neralu design tokens. Light only: the console is read on projectors and in bright ward offices.
- * Colour carries meaning. Brand shade-green is for identity and primary actions only; it is
- * deliberately darker and cooler than --ok so "Neralu" never reads as "safe".
+ * Neralu design tokens. Default: OLED dark (true black page, slightly lifted panels, bright text).
+ * [data-theme="light"] restores the light palette: one click on the console for a weak projector.
+ *
+ * Colour carries meaning. Brand mint is for identity, primary actions and accents only, and is a
+ * different hue from status green so "Neralu" never reads as "safe". Every text pair is ≥ 7:1 on
+ * its surface except red on its tint (6.3:1), all checked against WCAG.
  */
 :root {
+  color-scheme: dark;
+
   /* Surfaces */
+  --paper: #000000;
+  --sunken: #070908;
+  --surface: #0c0f0d;
+  --line: #1d2420;
+  --line-strong: #2f3934;
+
+  /* Text */
+  --ink: #f4f3ee; /* 18.9:1 on black */
+  --muted: #a6aea8; /* 9.2:1 on black, 8.5:1 on panels */
+
+  /* Brand: shade, lit */
+  --brand: #74d3a4;
+  --brand-ink: #04140d;
+  --brand-tint: #0d241a;
+
+  /* Section tones: sand = the hot afternoon, shade = the process that protects */
+  --sand: #120c06;
+  --shade: #07140f;
+  --sun: #f6c97c;
+
+  /* Status (semantic only) */
+  --ok: #4fcf8e;
+  --ok-bg: #0b2618;
+  --watch: #f0a640;
+  --watch-bg: #2a1c06;
+  --support: #6aaef5;
+  --support-bg: #0b1d30;
+  --alert: #ff6e52;
+  --alert-bg: #330e07;
+  --heat: #ff7b3f;
+
+  /* Map */
+  --map-bg: #050807;
+
+  --radius: 4px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Light: the previous palette, for projectors that wash out dark screens. */
+:root[data-theme='light'] {
+  color-scheme: light;
   --paper: #f7f6f1;
   --sunken: #efede6;
   --surface: #ffffff;
   --line: #e2dfd6;
   --line-strong: #c9c5b9;
-
-  /* Text */
   --ink: #1b1d1a;
-  --muted: #4c4f48; /* 7.7:1 on paper, 7.0:1 on sand and shade: AAA, survives a projector */
-
-  /* Brand: shade */
+  --muted: #4c4f48;
   --brand: #1f3d33;
   --brand-ink: #f3f1ea;
   --brand-tint: #e6ece8;
-
-  /* Section tones (story page): sand = the hot afternoon, shade = the process that protects */
   --sand: #f4ece0;
   --shade: #e7ede8;
-  /* Sun: warm highlight on the dark hero only (10:1 on #0d1915) */
-  --sun: #f4c77a;
-
-  /* Status (semantic only, AA on their tints) */
+  --sun: #985a0e;
   --ok: #2b764a;
   --ok-bg: #e8f3ec;
   --watch: #985a0e;
@@ -36,8 +74,5 @@
   --alert: #b83a26;
   --alert-bg: #fbe9e5;
   --heat: #b63d0b;
-
-  --radius: 4px;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --map-bg: #ecebe6;
 }

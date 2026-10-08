@@ -20,7 +20,7 @@ export const reducedMotion = () =>
   typeof window !== 'undefined' &&
   (window.matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(window.location.search).has('still'))
 
-/** Hex values GSAP can interpolate (it cannot tween CSS custom properties directly). */
-export const FLASH = { alert: '#FBE9E5', ok: '#E8F3EC' }
+/** The RED flash colour in the current theme (GSAP needs a concrete colour, not a CSS variable). */
+export const flashAlert = () => getComputedStyle(document.documentElement).getPropertyValue('--alert-bg').trim()
 
 export { Flip, gsap }

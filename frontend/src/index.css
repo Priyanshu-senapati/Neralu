@@ -87,15 +87,21 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-.neralu-tiles {
+:root:not([data-theme='light']) .neralu-tiles {
+  /* Dark map: the light-grey basemap inverted into near-black streets. */
+  filter: invert(1) grayscale(1) brightness(0.62) contrast(1.15);
+  opacity: 0.7;
+}
+:root[data-theme='light'] .neralu-tiles {
   filter: grayscale(1) sepia(0.12) contrast(0.85) brightness(1.04);
   opacity: 0.62;
 }
 .leaflet-container {
-  background: #ecebe6;
+  background: var(--map-bg);
   font-family: var(--font-sans);
 }
 .leaflet-tooltip {
+  background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(27, 29, 26, 0.08);
@@ -104,7 +110,8 @@ a {
   padding: 3px 7px;
 }
 .leaflet-control-attribution {
-  background: rgba(247, 246, 241, 0.85) !important;
+  background: color-mix(in srgb, var(--paper) 80%, transparent) !important;
+  color: var(--muted);
   font-size: 0.625rem;
 }
 
@@ -248,4 +255,11 @@ textarea {
   border-radius: 50%;
   background: var(--surface);
   border: 2px solid var(--heat);
+}
+
+/* OLED glow: key words and numbers emit a little light on black. Dark theme only. */
+:root:not([data-theme='light']) .oled {
+  text-shadow:
+    0 0 1px color-mix(in srgb, currentColor 35%, transparent),
+    0 0 22px color-mix(in srgb, currentColor 38%, transparent);
 }

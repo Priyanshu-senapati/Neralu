@@ -1,10 +1,10 @@
 import 'leaflet/dist/leaflet.css'
 import { memo, useEffect, useState } from 'react'
 import { AttributionControl, CircleMarker, MapContainer, Polygon, TileLayer, Tooltip } from 'react-leaflet'
-import { elderStatus, TONE_HEX } from '../status'
+import { elderStatus, toneHex } from '../status'
+import { token, useTheme } from '../theme'
 import type { ElderListItem } from '../types'
 
-const INK = '#1B1D1A'
 
 // Ward 47's demo boundary: the seeded residents' box (seed.py) with a small margin.
 const WARD: [number, number][] = [
@@ -21,7 +21,7 @@ type View = 'risk' | 'status'
 const RISK = [
   { min: 60, label: 'High risk', fill: '#B63D0B' },
   { min: 35, label: 'Medium risk', fill: '#E08A4F' },
-  { min: 0, label: 'Lower risk', fill: '#B9B4A6' },
+  { min: 0, label: 'Lower risk', fill: '#8a8f86' },
 ]
 const riskOf = (score: number) => RISK.find((r) => score >= r.min)!
 
@@ -36,6 +36,11 @@ interface Props {
 // Memoised: the dashboard re-renders every 500 ms for the scenario clock; the map only needs to
 // redraw its ~400 markers when residents, the selection or the view change.
 export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, calling }: Props) {
+  // Re-read colours when the theme changes (Leaflet needs concrete colour strings).
+  const theme = useTheme()
+  const INK = token('--ink')
+  const RING = token('--paper')
+  const TONE_HEX = { ok: toneHex('ok'), watch: toneHex('watch'), support: toneHex('support'), alert: toneHex('alert'), neutral: toneHex('neutral') }
   const [view, setView] = useState<View>(calling ? 'status' : 'risk')
   const [touched, setTouched] = useState(false)
   // Follow the round (risk before calls, checks during them) until the officer picks a view.
@@ -45,7 +50,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
 
   const ordered = [...elders].sort((a, b) => rank(a, view) - rank(b, view))
   return (
-    <section aria-label="Ward map" className="relative isolate min-h-0 flex-1 overflow-hidden bg-[#ecebe6]">
+    <section aria-label="Ward map" className="relative isolate min-h-0 flex-1 overflow-hidden bg-[var(--map-bg)]" data-theme-key={theme}>
       <MapContainer bounds={WARD} boundsOptions={{ padding: [6, 6] }} zoomSnap={0.25} zoomControl={false} className="h-full w-full" attributionControl={false}>
         <AttributionControl position="bottomleft" prefix={false} />
         {/* Esri Light Gray Canvas: no POI icons, faint labels. Muted further in CSS. */}
@@ -56,8 +61,8 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
           maxZoom={16}
         />
         {/* Everything outside the ward recedes; the ward boundary is drawn once, quietly. */}
-        <Polygon positions={[WORLD, WARD]} interactive={false} pathOptions={{ stroke: false, fillColor: '#F7F6F1', fillOpacity: 0.62 }} />
-        <Polygon positions={WARD} interactive={false} pathOptions={{ color: '#1F3D33', weight: 1.5, dashArray: '5 4', fill: false }} />
+        <Polygon positions={[WORLD, WARD]} interactive={false} pathOptions={{ stroke: false, fillColor: token('--paper'), fillOpacity: theme === 'dark' ? 0.55 : 0.62 }} />
+        <Polygon positions={WARD} interactive={false} pathOptions={{ color: token('--brand'), weight: 1.5, dashArray: '5 4', fill: false }} />
         {ordered.map((e) => {
           const selected = e.id === selectedId
           const real = !e.is_simulated
@@ -69,7 +74,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
                 center={[e.lat, e.lng]}
                 radius={selected ? 9 : real ? 7.5 : 2.5 + e.risk_score / 22}
                 pathOptions={{
-                  color: selected || real ? INK : '#ffffff',
+                  color: selected || real ? INK : RING,
                   weight: selected || real ? 2 : 0.8,
                   fillColor: r.fill,
                   fillOpacity: r.min === 0 ? 0.7 : 0.9,
@@ -89,7 +94,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
               center={[e.lat, e.lng]}
               radius={selected ? 9 : real ? 8 : s.tone === 'neutral' || s.tone === 'ok' ? 4 : 6.5}
               pathOptions={{
-                color: selected || real ? INK : '#ffffff',
+                color: selected || real ? INK : RING,
                 weight: selected || real ? 2 : 0.8,
                 fillColor: TONE_HEX[s.tone],
                 fillOpacity: s.tone === 'neutral' ? 0.55 : 0.92,
@@ -139,7 +144,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
             </button>
           ))}
         </div>
-        <Legend view={view} />
+        <Legend view={view} tones={TONE_HEX} />
       </div>
     </section>
   )
@@ -152,7 +157,7 @@ function rank(e: ElderListItem, view: View) {
   return t === 'neutral' ? 0 : t === 'ok' ? 1 : t === 'support' ? 2 : t === 'watch' ? 3 : 4
 }
 
-function Legend({ view }: { view: View }) {
+function Legend({ view, tones: TONE_HEX }: { view: View; tones: Record<string, string> }) {
   const items: [string, string][] =
     view === 'risk'
       ? RISK.map((r) => [r.fill, r.label])
