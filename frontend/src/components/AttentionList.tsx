@@ -131,11 +131,11 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
               >
                 <span className="min-w-0">
                   <span className="flex items-baseline gap-2">
-                    <span className="truncate text-sm font-semibold">{e.name}</span>
+                    <span className="truncate text-sm font-semibold" title={e.name}>{e.name}</span>
                     <span className="num text-xs text-muted">{e.age}</span>
                     {e.is_simulated && <SimTag />}
                   </span>
-                  <span className="block truncate text-xs text-muted">{whyLine(e)}</span>
+                  <span className="block truncate text-xs text-muted" title={whyLine(e)}>{whyLine(e)}</span>
                 </span>
                 <span className="flex flex-col items-end gap-0.5">
                   <StatusPill tone={s.tone} label={s.label} />
@@ -184,11 +184,11 @@ function Watchlist({ elders, onSelect }: { elders: ElderListItem[]; onSelect: (i
             <span className={`num text-base ${e.risk_score >= 60 ? 'font-semibold text-heat' : 'text-muted'}`}>{e.risk_score}</span>
             <span className="min-w-0">
               <span className="flex items-baseline gap-2">
-                <span className="truncate text-sm font-semibold">{e.name}</span>
+                <span className="truncate text-sm font-semibold" title={e.name}>{e.name}</span>
                 <span className="num text-xs text-muted">{e.age}</span>
                 {e.is_simulated && <SimTag />}
               </span>
-              <span className="block truncate text-xs text-muted">{e.risk_factors.slice(0, 3).join(', ')}</span>
+              <span className="block truncate text-xs text-muted" title={e.risk_factors.join(', ')}>{e.risk_factors.slice(0, 3).join(', ')}</span>
             </span>
             <span className={`text-xs ${e.due_calls ? 'font-semibold text-heat' : 'text-muted'}`}>
               {e.due_calls ? (e.due_calls > 1 ? 'Due today · 2 calls' : 'Due today') : 'Not due'}

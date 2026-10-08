@@ -81,6 +81,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
+      <h1 className="sr-only">Ward 47 heat welfare console</h1>
       <TopBar summary={summary} now={now} stream={stream} />
       {stream !== 'live' && (
         <div role="status" className="bg-watch-bg px-5 py-1 text-xs text-watch">

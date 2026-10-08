@@ -31,7 +31,6 @@ export function TopBar({ summary, now, stream }: { summary: Summary; now: Date |
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs" role="status">
           <span className="relative flex h-2 w-2" aria-hidden="true">
-            {live && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7fd1a0] opacity-50 motion-reduce:hidden" />}
             <span className={`relative inline-flex h-2 w-2 rounded-full ${live ? 'bg-[#7fd1a0]' : 'bg-[#f0b45c]'}`} />
           </span>
           {live ? 'Live' : 'Reconnecting'}

@@ -35,7 +35,7 @@ export function HeatExplorer() {
   const kamalaCalled = kamala ? kamala.t <= heat : false
 
   return (
-    <section aria-labelledby="explore-title" className="border-y border-line bg-surface">
+    <section aria-labelledby="explore-title" className="border-y border-[#e6dccb] bg-sand">
       <div className="mx-auto grid max-w-6xl gap-x-14 gap-y-10 px-5 py-20 sm:px-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div>
           <h2 id="explore-title" className="display text-[2.4rem] font-medium leading-[1.05]">

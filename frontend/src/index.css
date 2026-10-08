@@ -8,6 +8,8 @@
   --color-brand: var(--brand);
   --color-brand-ink: var(--brand-ink);
   --color-brand-tint: var(--brand-tint);
+  --color-sand: var(--sand);
+  --color-shade: var(--shade);
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-ink: var(--ink);
@@ -37,6 +39,14 @@ body {
   font-feature-settings: "tnum" 0;
   -webkit-font-smoothing: antialiased;
   caret-color: var(--brand);
+}
+
+/* Tailwind v4 resets buttons to the default cursor; anything clickable should say so. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label:has(> input) {
+  cursor: pointer;
 }
 
 ::selection {

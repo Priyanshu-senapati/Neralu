@@ -14,6 +14,9 @@ import { useRuleBook } from '../rules'
 export default function Story() {
   return (
     <div className="min-h-dvh bg-paper text-ink">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink">
+        Skip to content
+      </a>
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
         <Wordmark />
         <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
@@ -26,7 +29,7 @@ export default function Story() {
         </nav>
       </header>
 
-      <main>
+      <main id="main">
         <Hero />
         <HeatExplorer />
         <Statement />
@@ -224,7 +227,7 @@ function TheCall() {
     ['A person responds', 'Her family is told. If the check is RED, or she does not answer twice, someone nearby is asked to go to her door.'],
   ]
   return (
-    <section id="call" className="scroll-mt-6 border-t border-line">
+    <section id="call" className="scroll-mt-6 border-y border-[#d5e0d8] bg-shade">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <div className="grid gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <h2 className="display text-[2.4rem] font-medium leading-[1.05] lg:sticky lg:top-8 lg:self-start">

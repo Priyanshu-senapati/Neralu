@@ -72,7 +72,7 @@ function HeatVsPeople({ summary, elders }: { summary: Summary; elders: ElderList
     <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-x-6 px-5 py-3.5">
       <div>
         <div className="text-[0.8125rem] text-muted">
-          Heat index <span className="text-[0.6875rem]">· simulated</span>
+          Heat index <span className="text-xs">· simulated</span>
         </div>
         <div className="mt-1 flex items-baseline gap-1">
           <span className={`num text-[2.9rem] font-medium leading-none tracking-[-0.04em] transition-colors duration-500 ${hot ? 'text-heat' : ''}`}>
@@ -81,7 +81,7 @@ function HeatVsPeople({ summary, elders }: { summary: Summary; elders: ElderList
           <span className={`num text-lg ${hot ? 'text-heat' : 'text-muted'}`}>°C</span>
         </div>
         <div className={`mt-1.5 text-xs ${level.cls}`}>{level.label}</div>
-        <div className="num text-[0.6875rem] text-muted">
+        <div className="num text-xs text-muted">
           {w.temp_c.toFixed(0)}°C · {w.humidity_pct.toFixed(0)}% RH · night {w.night_min_c.toFixed(0)}°C
         </div>
       </div>
@@ -133,7 +133,7 @@ function ThresholdChart({ elders, heatIndex, due, total }: { elders: ElderListIt
         ))}
         <g className="transition-transform duration-500" style={{ transform: `translateX(${x}px)` }}>
           <line x1={0} x2={0} y1={-4} y2={H + 4} stroke="#1B1D1A" strokeWidth={1.5} />
-          <text x={over ? -4 : 4} y={-5} textAnchor={over ? 'end' : 'start'} className="fill-ink font-mono text-[0.625rem] font-medium">
+          <text x={over ? -4 : 4} y={-5} textAnchor={over ? 'end' : 'start'} className="fill-ink font-mono text-xs font-medium">
             today
           </text>
         </g>
@@ -196,7 +196,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
       <dl className="mt-2.5 grid grid-cols-5 gap-x-3">
         {SEGMENTS.map((s) => (
           <div key={s.key}>
-            <dt className="flex items-center gap-1.5 text-[0.6875rem] text-muted">
+            <dt className="flex items-center gap-1.5 text-xs text-muted">
               <span className={`h-2 w-2 shrink-0 rounded-[2px] ${s.fill}`} aria-hidden="true" />
               {s.label}
             </dt>
@@ -207,7 +207,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
         ))}
       </dl>
       {round.caregiver_route > 0 && (
-        <p className="mt-1 text-[0.6875rem] text-muted">
+        <p className="mt-1 text-xs text-muted">
           +<span className="num">{round.caregiver_route}</span> on the caregiver route, not called directly
         </p>
       )}
