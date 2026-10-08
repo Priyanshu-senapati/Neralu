@@ -146,8 +146,11 @@ export default function WardDiorama({ elders, heat, className = '' }: Props) {
     const size = () => {
       const w = el.clientWidth
       const h = el.clientHeight
-      const view = 1.18
       const a = w / h
+      // Fit the plate's diagonal (it swings wider when the cursor tilts it) inside the frame, with
+      // a margin, whatever the panel's shape: never crop the corners.
+      const halfDiagonal = (PLATE / 2) * Math.SQRT2 + 0.12
+      const view = Math.max(1.12, halfDiagonal / a)
       Object.assign(camera, { left: -view * a, right: view * a, top: view, bottom: -view })
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -162,7 +165,7 @@ export default function WardDiorama({ elders, heat, className = '' }: Props) {
     const target = { x: 0, y: 0 }
     const onMove = (e: PointerEvent) => {
       const r = el.getBoundingClientRect()
-      target.y = ((e.clientX - r.left) / r.width - 0.5) * 0.35
+      target.y = ((e.clientX - r.left) / r.width - 0.5) * 0.28
       target.x = ((e.clientY - r.top) / r.height - 0.5) * 0.12
     }
     const onLeave = () => Object.assign(target, { x: 0, y: 0 })

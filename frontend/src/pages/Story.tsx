@@ -21,6 +21,7 @@ import { useRuleBook } from '../rules'
 // three.js is heavy: load the shader only on this page, after first paint.
 const ShaderAnimation = lazy(() => import('@/components/ui/shader-animation').then((m) => ({ default: m.ShaderAnimation })))
 const WardDiorama = lazy(() => import('@/components/WardDiorama'))
+const HeatGlobe = lazy(() => import('@/components/HeatGlobe'))
 
 // Hero backdrop: deep shade, rings in heat, sun and a little shade green.
 
@@ -29,6 +30,10 @@ const RING_CENTER: [number, number] = [0.85, 0.05] // behind the call card
 
 export default function Story() {
   const theme = useTheme()
+  const [elders, setElders] = useState<ElderListItem[] | null>(null)
+  useEffect(() => {
+    api.elders().then(setElders).catch(() => setElders([]))
+  }, [])
   const heroBg = theme === 'light' ? '#f7f6f1' : '#000000' // matches --paper; the shader needs a concrete colour
   return (
     <div className="min-h-dvh bg-paper text-ink">
@@ -52,12 +57,12 @@ export default function Story() {
             </FlowButton>
           </nav>
         </header>
-        <Hero />
+        <Hero elders={elders} />
       </div>
 
       <main id="main">
         <HeatExplorer />
-        <Statement />
+        <Statement elders={elders} />
         <TheCall />
         <Rules />
         <WhoGoes />
@@ -70,11 +75,7 @@ export default function Story() {
   )
 }
 
-function Hero() {
-  const [elders, setElders] = useState<ElderListItem[] | null>(null)
-  useEffect(() => {
-    api.elders().then(setElders).catch(() => setElders([]))
-  }, [])
+function Hero({ elders }: { elders: ElderListItem[] | null }) {
   const called = elders?.filter((e) => personalThreshold(e.risk_score) <= EXAMPLE_HEAT).length ?? 0
 
   return (
@@ -111,22 +112,13 @@ function Hero() {
       </div>
 
       <figure className="relative">
-        <div className="relative h-[360px] sm:h-[440px] lg:h-[500px]">
-          {elders && elders.length > 0 && (
-            <Suspense fallback={null}>
-              <WardDiorama elders={elders} heat={EXAMPLE_HEAT} className="h-full w-full" />
-            </Suspense>
-          )}
-          {elders && elders.length === 0 && (
-            <p className="flex h-full items-center justify-center text-sm text-muted">Start the Neralu backend to see Ward 47 in 3D.</p>
-          )}
+        <div className="relative h-[380px] sm:h-[460px] lg:h-[540px]">
+          <Suspense fallback={null}>
+            <HeatGlobe className="h-full w-full" />
+          </Suspense>
         </div>
-        <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-          <span>Ward 47, every house a resident · height is heat risk</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#e8622e]" />Called, high risk</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#ee9a45]" />Called</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#61716a]" />Below threshold</span>
-          <span className="rounded-[3px] border border-line-strong px-1.5 font-mono text-[0.625rem] uppercase tracking-[0.08em]">demo data</span>
+        <figcaption className="mt-1 text-center text-xs text-muted">
+          Dot colour shows broad climate zones, hot to cool. Illustrative, not live temperatures.
         </figcaption>
       </figure>
     </section>
@@ -269,20 +261,38 @@ function CallReplay() {
   )
 }
 
-function Statement() {
+function Statement({ elders }: { elders: ElderListItem[] | null }) {
+  const called = elders?.filter((e) => personalThreshold(e.risk_score) <= EXAMPLE_HEAT).length ?? 0
   return (
-    <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
-      <p className="display max-w-4xl text-[2.4rem] font-medium leading-[1.12] sm:text-[3.4rem]">
-        <RevealLines stagger={0.35}>
-          <span>A broadcast tells.</span>
-          <span>A call checks.</span>
-          <span className="oled italic text-brand">A person goes.</span>
-        </RevealLines>
-      </p>
-      <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-ink/80">
-        Heat alerts already reach phones across the city. What nobody does is check that Kamala, 74, alone under a
-        sheet roof, is actually all right. That is the gap Neralu fills.
-      </p>
+    <section className="mx-auto grid max-w-6xl items-center gap-x-12 gap-y-10 px-5 py-24 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div>
+        <p className="display max-w-4xl text-[2.4rem] font-medium leading-[1.12] sm:text-[3.4rem]">
+          <RevealLines stagger={0.35}>
+            <span>A broadcast tells.</span>
+            <span>A call checks.</span>
+            <span className="oled italic text-brand">A person goes.</span>
+          </RevealLines>
+        </p>
+        <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-ink/80">
+          Heat alerts already reach phones across the city. What nobody does is check that Kamala, 74, alone under a
+          sheet roof, is actually all right. That is the gap Neralu fills.
+        </p>
+      </div>
+      <figure>
+        <div className="relative h-[340px] sm:h-[420px]">
+          {elders && elders.length > 0 && (
+            <Suspense fallback={null}>
+              <WardDiorama elders={elders} heat={EXAMPLE_HEAT} className="h-full w-full" />
+            </Suspense>
+          )}
+        </div>
+        <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+          <span>Ward 47 at {EXAMPLE_HEAT}°C: <span className="num font-semibold text-heat">{called}</span> of {elders?.length ?? '—'} homes get a call · height is heat risk</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#e8622e]" />Called, high risk</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#ee9a45]" />Called</span>
+          <span className="rounded-[3px] border border-line-strong px-1.5 font-mono text-[0.625rem] uppercase tracking-[0.08em]">demo data</span>
+        </figcaption>
+      </figure>
     </section>
   )
 }
