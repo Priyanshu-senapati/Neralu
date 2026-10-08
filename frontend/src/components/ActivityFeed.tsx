@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { fmtTime } from '../time'
 import type { NeraluEvent } from '../types'
 
@@ -10,16 +11,34 @@ const ACTOR: Record<string, string> = {
   officer: 'Officer', sim: 'Simulation',
 }
 
-/** What happened in the ward, newest first: real calls, cases, escalations, officer actions. */
+/** Worth a judge's attention even when it comes from a simulated resident. */
+function escalation(e: NeraluEvent) {
+  return (e.kind === 'case_opened' && e.data.level === 'red') || e.kind === 'tier_overdue'
+}
+
+/** What happened in the ward, newest first. Real residents and escalations by default. */
 export function ActivityFeed({ events, onSelect }: { events: NeraluEvent[]; onSelect: (elderId: number) => void }) {
+  const [all, setAll] = useState(false)
+  const shown = (all ? events : events.filter((e) => !e.simulated || escalation(e))).slice(0, 40)
+  const hidden = events.length - events.filter((e) => !e.simulated || escalation(e)).length
   return (
     <section aria-label="Ward activity" className="flex min-h-0 flex-col border-t border-line bg-surface">
-      <h2 className="flex items-baseline justify-between border-b border-line px-5 py-2 text-sm font-semibold">Ward activity<span className="text-xs font-normal text-muted">Real calls, cases and officer actions</span></h2>
-      {events.length === 0 ? (
-        <p className="px-5 py-4 text-sm text-muted">Nothing yet. Set the weather and start a call round from the demo controls.</p>
+      <div className="flex items-baseline justify-between gap-3 border-b border-line px-5 py-2">
+        <h2 className="text-sm font-semibold">Ward activity</h2>
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted">
+          <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} className="accent-[var(--brand)]" />
+          Include simulated residents{!all && hidden > 0 && <span className="num"> ({hidden} hidden)</span>}
+        </label>
+      </div>
+      {shown.length === 0 ? (
+        <p className="px-5 py-4 text-sm text-muted">
+          {events.length === 0
+            ? 'Nothing yet. Set the weather and start a call round from the demo controls.'
+            : 'No real-resident activity yet. Simulated residents are being called in the background.'}
+        </p>
       ) : (
         <ol className="min-h-0 flex-1 overflow-y-auto">
-          {events.map((e) => (
+          {shown.map((e) => (
             <li key={e.id} className="border-b border-line/70 last:border-0">
               <button
                 onClick={() => e.elder_id !== null && onSelect(e.elder_id)}

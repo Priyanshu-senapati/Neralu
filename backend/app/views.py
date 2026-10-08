@@ -239,4 +239,5 @@ def summary(session: Session) -> dict[str, Any]:
         "scenario_now": scenario_iso(state.clock.scenario_now()),
         "demo_speed": s.demo_speed, "max_attempts": s.max_attempts,
         "weather": state.weather.as_dict(), "round_no": state.round_no, "counts": counts,
+        "telephony_mode": s.telephony_mode,
     }

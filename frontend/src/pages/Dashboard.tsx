@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { AttentionList } from '../components/AttentionList'
+import { CallSpotlight } from '../components/CallSpotlight'
 import { CaseDrawer } from '../components/CaseDrawer'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { LiveCall } from '../components/LiveCall'
@@ -30,7 +31,7 @@ export default function Dashboard() {
   const fetchAll = useCallback(async () => {
     lastFetch.current = Date.now()
     try {
-      const [s, e, ev] = await Promise.all([api.summary(), api.elders(), api.events(40)])
+      const [s, e, ev] = await Promise.all([api.summary(), api.elders(), api.events(200)])
       setSummary(s)
       setElders(e)
       setEvents(ev)
@@ -99,6 +100,7 @@ export default function Dashboard() {
           <ActivityFeed events={events} onSelect={setSelected} />
         </div>
       </main>
+      <CallSpotlight elders={elders} mode={summary.telephony_mode ?? 'twilio'} speed={summary.demo_speed} now={now} refreshKey={drawerKey} onOpenProfile={setSelected} />
       {selected !== null && <CaseDrawer elderId={selected} refreshKey={drawerKey} now={now} onClose={closeDrawer} />}
       <DemoControls onChanged={scheduleFetch} />
     </div>

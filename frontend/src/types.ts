@@ -19,6 +19,7 @@ export interface Summary {
   max_attempts: number
   weather: Weather
   round_no: number | null
+  telephony_mode?: 'twilio' | 'browser'
   counts: {
     registered: number
     due_today: number
