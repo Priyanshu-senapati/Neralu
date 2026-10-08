@@ -34,6 +34,7 @@ export const api = {
   caseDetail: (id: number) => request<CaseDetail>(`/api/cases/${id}`),
   setHeat: (w: { temp_c: number; humidity_pct: number; night_min_c: number }) =>
     post<Summary>('/api/sim/heat', w),
+  setLiveHeat: () => post<Summary>('/api/sim/heat/live', {}),
   startRound: (round_no: number) => post<{ created: number }>('/api/sim/round', { round_no }),
   reset: () => post<{ run_id: string }>('/api/sim/reset', {}),
   volunteerMe: (token: string) => request<VolunteerMe>(`/api/volunteer/me?token=${encodeURIComponent(token)}`),

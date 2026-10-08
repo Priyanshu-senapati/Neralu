@@ -1,6 +1,6 @@
 import { FlowButton } from '@/components/ui/flow-button'
 import { useState } from 'react'
-import { api } from '../api'
+import { api, ApiError } from '../api'
 
 const PRESETS = [
   { label: 'Normal day 31 °C / 45 %', w: { temp_c: 31, humidity_pct: 45, night_min_c: 23 } },
@@ -21,8 +21,8 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
       const msg = await fn()
       setNote(msg ?? null)
       onChanged()
-    } catch {
-      setNote('Request failed · is the backend running?')
+    } catch (err) {
+      setNote(err instanceof ApiError && err.status === 503 ? 'Forecast unavailable (offline?) · use a preset' : 'Request failed · is the backend running?')
     } finally {
       setBusy(null)
     }
@@ -36,7 +36,14 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
       </button>
       {open && (
         <div className="space-y-1.5 border-t border-line p-3">
-          <div className="text-[0.6875rem] text-muted">Simulated weather</div>
+          <div className="text-[0.6875rem] text-muted">Weather</div>
+          <Btn busy={busy === 'live'} onClick={() => run('live', async () => {
+            const { weather: w } = await api.setLiveHeat()
+            return `Live forecast: heat index ${w.heat_index_c.toFixed(1)} °C at ${w.observed_at?.slice(-5)}`
+          })}>
+            Today's real forecast, Bengaluru
+          </Btn>
+          <div className="pt-1 text-[0.6875rem] text-muted">Simulated presets</div>
           {PRESETS.map((p) => (
             <Btn key={p.label} busy={busy === p.label} onClick={() => run(p.label, async () => void (await api.setHeat(p.w)))}>
               {p.label}

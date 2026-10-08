@@ -1,4 +1,4 @@
-"""Run-level state: the demo clock, the simulated weather and the current round."""
+"""Run-level state: the demo clock, the weather (simulated preset or live forecast) and the current round."""
 from dataclasses import dataclass, field
 
 from app.clock import DemoClock
@@ -14,6 +14,8 @@ class Weather:
     temp_c: float
     humidity_pct: float
     night_min_c: float
+    source: str = "simulated"  # "simulated" (a preset) or "open-meteo" (today's real forecast)
+    observed_at: str | None = None  # forecast hour used, for "open-meteo"
 
     @property
     def heat_index_c(self) -> float:
@@ -22,7 +24,8 @@ class Weather:
     def as_dict(self) -> dict:
         hi = self.heat_index_c
         return {"temp_c": self.temp_c, "humidity_pct": self.humidity_pct, "heat_index_c": hi,
-                "night_min_c": self.night_min_c, "level": weather_level(hi), "simulated": True}
+                "night_min_c": self.night_min_c, "level": weather_level(hi),
+                "simulated": self.source == "simulated", "source": self.source, "observed_at": self.observed_at}
 
 
 @dataclass

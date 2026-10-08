@@ -72,7 +72,10 @@ function HeatVsPeople({ summary, elders }: { summary: Summary; elders: ElderList
     <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-x-6 px-5 py-3.5">
       <div>
         <div className="text-[0.8125rem] text-muted">
-          Heat index <span className="text-xs">· simulated</span>
+          Heat index{' '}
+          <span className="text-xs">
+            {w.source === 'open-meteo' ? `· live forecast, Bengaluru ${w.observed_at?.slice(-5) ?? ''}` : '· simulated'}
+          </span>
         </div>
         <div className="mt-1 flex items-baseline gap-1">
           <span className={`num text-[2.9rem] font-medium leading-none tracking-[-0.04em] transition-colors duration-500 ${hot ? 'oled text-heat' : ''}`}>

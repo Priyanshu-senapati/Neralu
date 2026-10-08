@@ -9,7 +9,11 @@ export interface Weather {
   heat_index_c: number
   night_min_c: number
   level: WeatherLevel
-  simulated: true
+  /** false only when set from today's real forecast */
+  simulated: boolean
+  source: 'simulated' | 'open-meteo'
+  /** forecast hour used, for 'open-meteo' */
+  observed_at: string | null
 }
 
 export interface Summary {

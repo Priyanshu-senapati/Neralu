@@ -1,5 +1,5 @@
 """Demo controls. Everything here is simulated and labelled as such."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
@@ -8,6 +8,7 @@ from app.db import get_session
 from app.events import log_event
 from app.runs import start_new_run
 from app.state import Weather, state
+from app.weather import ForecastUnavailable, bengaluru_today
 from app.views import summary
 
 router = APIRouter(prefix="/api/sim")
@@ -27,6 +28,22 @@ def set_heat(body: HeatIn, session: Session = Depends(get_session)) -> dict:
               f"Simulated weather set: {body.temp_c:g} °C, {body.humidity_pct:g} % humidity, "
               f"heat index {w['heat_index_c']:g} °C, night min {body.night_min_c:g} °C",
               actor="officer", data=w, simulated=True)
+    session.commit()
+    return summary(session)
+
+
+@router.post("/heat/live")
+def set_live_heat(session: Session = Depends(get_session)) -> dict:
+    """Today's real Bengaluru forecast becomes the run's weather (not simulated)."""
+    try:
+        state.weather = bengaluru_today()
+    except ForecastUnavailable as exc:
+        raise HTTPException(503, f"{exc}. Use a simulated preset instead.") from exc
+    w = state.weather.as_dict()
+    log_event(session, "sim_weather_set",
+              f"Live forecast set (Open-Meteo, Bengaluru, {w['observed_at'][-5:]}): {w['temp_c']:g} °C, "
+              f"{w['humidity_pct']:g} % humidity, heat index {w['heat_index_c']:g} °C, night min {w['night_min_c']:g} °C",
+              actor="officer", data=w, simulated=False)
     session.commit()
     return summary(session)
 
