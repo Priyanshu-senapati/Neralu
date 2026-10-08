@@ -177,3 +177,22 @@ def test_resolution_supersedes_unreached_call(client):
     assert item["last_resolution"]["resolution"] == "safe_in_person"
     counts = client.get("/api/summary").json()["counts"]
     assert counts["unreached_now"] == 0 and counts["escalated"] == 0 and counts["fine"] == 1
+
+
+def test_summary_counts_people_helped_after_resolution(client):
+    before = client.get("/api/summary").json()["impact"]
+    assert before == {"checks_completed": 0, "people_checked": 0, "people_helped": 0}
+    cid = red_case_for_kamala()
+    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
+    client.post(f"/api/cases/{cid}/resolve",
+                json={"volunteer_token": "priya-demo", "resolution": "safe_in_person"})
+    assert client.get("/api/summary").json()["impact"]["people_helped"] == 1
+
+
+def test_case_detail_and_rule_book_explain_the_rule(client):
+    cid = red_case_for_kamala()
+    d = client.get(f"/api/cases/{cid}").json()
+    assert d["rule_id"] == "E1" and "could not reach" in d["rule_explanation"]
+    assert "not by AI" in d["decided_by"]
+    book = client.get("/api/rules").json()
+    assert {r["id"] for r in book["rules"]} >= {"R0", "R3", "R9", "S1", "E1", "E3"}
