@@ -72,7 +72,7 @@ export function FlowButton(props: FlowButtonProps) {
       {/* Arrow that arrives from the left */}
       <ArrowRight
         aria-hidden="true"
-        className={cn('absolute left-[-25%] z-[2] fill-none', s.arrow, s.left, v.arrow, MOVE, 'ease-[cubic-bezier(0.34,1.56,0.64,1)]')}
+        className={cn('absolute left-[-25%] z-[2] fill-none', s.arrow, s.left, v.arrow, MOVE, 'ease-[cubic-bezier(0.23,1,0.32,1)]')}
       />
       <span className={cn('relative z-[1]', s.shift, MOVE, 'ease-out motion-reduce:translate-x-0')}>{children}</span>
       {/* The fill: a small circle scaled up (transform only), big enough for any label */}
@@ -94,7 +94,7 @@ export function FlowButton(props: FlowButtonProps) {
           s.right,
           v.arrow,
           MOVE,
-          'ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+          'ease-[cubic-bezier(0.23,1,0.32,1)]',
         )}
       />
     </>
