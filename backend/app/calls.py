@@ -99,6 +99,28 @@ def cancel_unanswered_calls(session: Session) -> None:
             session.commit()
 
 
+LOST_CALLBACK_AFTER = timedelta(seconds=60)    # after we hung up an unanswered call
+LOST_COMPLETION_AFTER = timedelta(minutes=10)  # after the call was answered
+
+
+def close_lost_calls(session: Session) -> None:
+    """Safety net when Twilio's final status callback never arrives (e.g. the tunnel dropped):
+    classify instead of leaving the person stuck, so retries and escalation still happen."""
+    now = state.clock.real_now()
+    open_calls = session.exec(select(CheckIn).where(
+        CheckIn.run_id == current_run_id(), CheckIn.is_simulated == False,  # noqa: E712
+        CheckIn.processed == False, CheckIn.placed_real != None))  # noqa: E711, E712
+    for c in open_calls:
+        age = now - c.placed_real
+        if c.ring_timed_out and age >= timedelta(seconds=get_settings().ring_timeout_s) + LOST_CALLBACK_AFTER:
+            handle_call_ended(session, c.id, "no-answer")
+        elif c.call_status == "in-progress" and age >= LOST_COMPLETION_AFTER:
+            handle_call_ended(session, c.id, "completed")
+        else:
+            continue
+        session.commit()
+
+
 def schedule_retry(session: Session, checkin: CheckIn) -> CheckIn | None:
     s = get_settings()
     if checkin.attempt >= s.max_attempts:

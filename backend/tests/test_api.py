@@ -177,3 +177,48 @@ def test_resolution_supersedes_unreached_call(client):
     assert item["last_resolution"]["resolution"] == "safe_in_person"
     counts = client.get("/api/summary").json()["counts"]
     assert counts["unreached_now"] == 0 and counts["escalated"] == 0 and counts["fine"] == 1
+
+
+def _run_sim(minutes, monkeypatch, t=None):
+    from app.state import state
+    t = t or [state.clock.real_now()]
+    monkeypatch.setattr(state.clock, "_now", lambda: t[0])
+    for _ in range(minutes):
+        t[0] += state.clock.real_delta(1)
+        with Session(engine) as s:
+            sync_tick(s)
+    return t
+
+
+def test_rounds_summary_counts_outcomes_and_escalations(client, monkeypatch):
+    assert client.get("/api/rounds").json() == []
+    client.post("/api/sim/heat", json=HEATWAVE)
+    created = client.post("/api/sim/round", json={"round_no": 1}).json()["created"]
+    t = _run_sim(5, monkeypatch)
+    early = client.get("/api/rounds").json()[0]
+    assert early["round_no"] == 1 and early["called"] == created
+    assert early["called_real"] == 1 and early["called_simulated"] == created - 1
+    assert early["in_progress"] > 0
+    _run_sim(240, monkeypatch, t)  # lost Twilio callbacks take ~75 s real per attempt to close
+    r = client.get("/api/rounds").json()[0]
+    o = r["outcomes"]
+    # Kamala's call is never answered here (place_call is faked), so she ends UNREACHED.
+    assert r["in_progress"] == 0
+    assert sum(o.values()) == created
+    assert o["GREEN"] > 300 and o["UNREACHED"] >= 1
+    assert r["red_cases"] >= 1 and r["accepted"] >= 1
+    assert r["accept_wait_median_min"] is not None and 0 < r["accept_wait_median_min"] <= r["accept_wait_max_min"]
+    assert r["overdue"] >= 1  # Kamala's case: nobody real accepted it
+
+
+def test_rounds_are_separate_and_reset_clears_them(client, monkeypatch):
+    client.post("/api/sim/heat", json=HEATWAVE)
+    client.post("/api/sim/round", json={"round_no": 1})
+    t = _run_sim(60, monkeypatch)
+    client.post("/api/sim/round", json={"round_no": 2})
+    _run_sim(60, monkeypatch, t)
+    rounds = client.get("/api/rounds").json()
+    assert [r["round_no"] for r in rounds] == [1, 2]
+    assert all(r["called"] > 0 for r in rounds)
+    client.post("/api/sim/reset")
+    assert client.get("/api/rounds").json() == []

@@ -50,6 +50,23 @@ cd backend
 pytest
 ```
 
+## Past rounds API
+
+`GET /api/rounds` returns one entry per round in the current run (a reset clears them):
+
+| Field | Meaning |
+|---|---|
+| `called`, `called_real`, `called_simulated` | people with a check-in this round |
+| `caregiver_route` | due, but not called directly (memory difficulty) |
+| `outcomes` | each person's final outcome this round: `GREEN` / `AMBER` / `RED` / `UNREACHED` |
+| `in_progress` | people whose call, retry or recall is still pending |
+| `red_cases`, `support_cases` | cases opened during the round (includes E1 "no answer" and E3 escalations) |
+| `accepted`, `accept_wait_median_min`, `accept_wait_max_min` | volunteer acceptance, in scenario minutes |
+| `overdue` | cases that reached the ward officer |
+| `resolutions` | e.g. `{"safe_in_person": 3, "called_108": 1}` |
+
+Counts mix real and simulated residents; `called_real` says how many were real phones.
+
 ## Real phone calls
 
 Without Twilio settings everything works except the real call (it is logged as a failed attempt).

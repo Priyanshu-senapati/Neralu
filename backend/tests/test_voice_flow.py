@@ -343,3 +343,34 @@ def test_call_plays_prompts_in_the_elders_language(client, stt):
     twiml = post(client, f"/voice/answer?checkin_id={cid}")
     assert "/audio/hi/greet.mp3" in twiml and "/audio/hi/q_water.mp3" in twiml
     assert "/audio/kn/" not in twiml
+
+
+def test_lost_final_callback_does_not_leave_person_stuck(client, no_real_twilio, monkeypatch):
+    from datetime import timedelta
+    from app.escalation import sync_tick
+    from app.state import state
+    cid = start_kamala_call(client)
+    post(client, f"/voice/status?checkin_id={cid}", CallStatus="ringing")
+    t = [state.clock.real_now()]
+    monkeypatch.setattr(state.clock, "_now", lambda: t[0])
+    for step in (16, 30, 31):  # hung up at 16 s; the "canceled" callback never arrives
+        t[0] += timedelta(seconds=step)
+        with Session(engine) as s:
+            sync_tick(s)
+    c = checkin(cid)
+    assert (c.processed, c.call_status, c.outcome) == (True, "no-answer", "UNREACHED")
+
+
+def test_answered_call_without_completion_callback_is_classified(client, monkeypatch):
+    from datetime import timedelta
+    from app.escalation import sync_tick
+    from app.state import state
+    cid = start_kamala_call(client)
+    post(client, f"/voice/status?checkin_id={cid}", CallStatus="in-progress")
+    post(client, f"/voice/gather/water?checkin_id={cid}", Digits="2")
+    t = [state.clock.real_now() + timedelta(minutes=11)]
+    monkeypatch.setattr(state.clock, "_now", lambda: t[0])
+    with Session(engine) as s:
+        sync_tick(s)
+    c = checkin(cid)
+    assert c.processed and c.answers["water"] == "no" and c.outcome == "AMBER"

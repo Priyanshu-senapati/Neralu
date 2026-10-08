@@ -162,11 +162,12 @@ def check_ack_timeouts(session: Session) -> None:
 
 def sync_tick(session: Session) -> None:
     """One scheduler step: due calls and retries/recalls, simulated residents, ack timeouts."""
-    from app.calls import cancel_unanswered_calls, dispatch_due_calls
+    from app.calls import cancel_unanswered_calls, close_lost_calls, dispatch_due_calls
     from app.sim_caller import step_simulation
 
     dispatch_due_calls(session)
     cancel_unanswered_calls(session)
+    close_lost_calls(session)
     step_simulation(session)
     check_ack_timeouts(session)
     session.commit()

@@ -60,7 +60,8 @@ def log_event(session: Session, kind: str, message: str, *, actor: str, elder_id
     if kind not in EVENT_KINDS:
         raise ValueError(f"Unknown event kind {kind}")
     ev = Event(
-        run_id=run_id or current_run_id(), ts_scenario=scenario_iso(state.clock.scenario_now()),
+        run_id=run_id or current_run_id(), ts_real=state.clock.real_now(),
+        ts_scenario=scenario_iso(state.clock.scenario_now()),
         kind=kind, actor=actor, message=message, elder_id=elder_id, case_id=case_id,
         checkin_id=checkin_id, data=data or {}, simulated=simulated,
     )
