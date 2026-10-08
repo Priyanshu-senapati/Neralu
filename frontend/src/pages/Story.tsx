@@ -1,8 +1,12 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Wordmark } from '../components/Brand'
 import { gsap, reducedMotion } from '../motion'
+import { api } from '../api'
 import { HeatExplorer } from '../components/HeatExplorer'
+import { Spotlight } from '@/components/ui/spotlight'
+import { EXAMPLE_HEAT, personalThreshold } from '@/heat'
+import type { ElderListItem } from '@/types'
 import { useRuleBook } from '../rules'
 
 /*
@@ -11,23 +15,42 @@ import { useRuleBook } from '../rules'
  * or quotes are invented: there is no deployment yet, and the page says so.
  */
 
+// three.js is heavy: load the shader only on this page, after first paint.
+const ShaderAnimation = lazy(() => import('@/components/ui/shader-animation').then((m) => ({ default: m.ShaderAnimation })))
+const WardDiorama = lazy(() => import('@/components/WardDiorama'))
+
+// Hero backdrop: deep shade, rings in heat, sun and a little shade green.
+const HERO_BG = '#0d1915'
+const HEAT_RINGS: [string, string, string] = ['#e8743b', '#f2b84b', '#5fa38a']
+const RING_CENTER: [number, number] = [0.85, 0.05] // behind the call card
+
 export default function Story() {
   return (
     <div className="min-h-dvh bg-paper text-ink">
-      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
-        <Wordmark />
-        <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <a href="#call" className="hover:underline">The call</a>
-          <a href="#rules" className="hover:underline">The rules</a>
-          <Link to="/register" className="hover:underline">Register someone</Link>
-          <Link to="/ward" className="press rounded-[4px] bg-brand px-3.5 py-2 font-semibold text-brand-ink hover:bg-brand/90">
-            Open the ward console
-          </Link>
-        </nav>
-      </header>
-
-      <main>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink">
+        Skip to content
+      </a>
+      {/* Heat radiating behind the opening: the shader is the hero's backdrop and nothing else. */}
+      <div className="relative isolate overflow-hidden bg-[#0d1915] text-brand-ink">
+        <Suspense fallback={null}>
+          <ShaderAnimation className="absolute inset-0 -z-10" background={HERO_BG} colors={HEAT_RINGS} intensity={0.32} speed={0.4} center={RING_CENTER} quietSide={1} />
+        </Suspense>
+        <Spotlight className="-z-[5]" />
+        <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
+          <Wordmark onDark />
+          <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-brand-ink/85">
+            <a href="#call" className="hover:text-brand-ink hover:underline">The call</a>
+            <a href="#rules" className="hover:text-brand-ink hover:underline">The rules</a>
+            <Link to="/register" className="hover:text-brand-ink hover:underline">Register someone</Link>
+            <Link to="/ward" className="press rounded-[4px] bg-paper px-3.5 py-2 font-semibold text-brand hover:bg-white">
+              Open the ward console
+            </Link>
+          </nav>
+        </header>
         <Hero />
+      </div>
+
+      <main id="main">
         <HeatExplorer />
         <Statement />
         <TheCall />
@@ -43,33 +66,65 @@ export default function Story() {
 }
 
 function Hero() {
+  const [elders, setElders] = useState<ElderListItem[] | null>(null)
+  useEffect(() => {
+    api.elders().then(setElders).catch(() => setElders([]))
+  }, [])
+  const called = elders?.filter((e) => personalThreshold(e.risk_score) <= EXAMPLE_HEAT).length ?? 0
+
   return (
-    <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-10 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-14 lg:pt-16">
+    <section className="mx-auto grid max-w-6xl items-center gap-x-10 gap-y-8 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:pb-20 lg:pt-10">
       <div>
-        <h1 className="display text-[2.4rem] font-medium leading-[1.05] text-ink sm:text-[3rem] xl:text-[3.55rem]">
+        <h1 className="display text-[2.4rem] font-medium leading-[1.05] text-brand-ink sm:text-[3rem] xl:text-[3.4rem]">
           <span className="block lg:whitespace-nowrap">Heat warnings tell a city</span>
           <span className="block">what's coming.</span>
-          <span className="mt-1 block italic text-brand lg:whitespace-nowrap">Neralu checks who's safe.</span>
+          <span className="mt-1 block italic text-sun lg:whitespace-nowrap">Neralu checks who's safe.</span>
         </h1>
-        <p className="mt-7 max-w-[34rem] text-[1.125rem] leading-[1.65] text-ink/80">
+        <p className="mt-7 max-w-[34rem] text-[1.125rem] leading-[1.65] text-brand-ink/85">
           When the heat crosses a person's own threshold, Neralu calls them on whatever phone they have, in their
           language. If an answer is worrying, or nobody picks up, a person nearby is asked to go to the door.
         </p>
+        {elders && elders.length > 0 && (
+          <p className="mt-6 max-w-[34rem] text-[1.0625rem] leading-relaxed text-brand-ink/90">
+            On a <span className="num">{EXAMPLE_HEAT}</span>°C afternoon,{' '}
+            <span className="num font-semibold text-sun">{called}</span> of <span className="num">{elders.length}</span> households in
+            Ward 47 get a call. The rest are below their own threshold.
+          </p>
+        )}
         <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4">
-          <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-brand px-5 py-3 font-semibold text-brand-ink shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_6px_16px_-8px_rgba(31,61,51,0.6)] hover:bg-brand/92">
+          <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-paper px-5 py-3 font-semibold text-brand shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)] hover:bg-white">
             Open the ward console
             <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
-          <a href="#call" className="font-semibold text-ink underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-brand">
+          <a href="#call" className="font-semibold text-brand-ink underline decoration-brand-ink/40 decoration-2 underline-offset-[6px] hover:decoration-sun">
             How a call works
           </a>
         </div>
-        <p className="mt-10 max-w-[34rem] border-t border-line pt-4 text-sm leading-relaxed text-muted">
+        <p className="mt-10 max-w-[34rem] border-t border-brand-ink/15 pt-4 text-sm leading-relaxed text-brand-ink/70">
           Ward 47 is a demo ward: its residents, weather and most call outcomes are simulated and labelled.
           The rules, the escalation and the live call are real.
         </p>
       </div>
-      <CallReplay />
+
+      <figure className="relative">
+        <div className="relative h-[360px] sm:h-[440px] lg:h-[500px]">
+          {elders && elders.length > 0 && (
+            <Suspense fallback={null}>
+              <WardDiorama elders={elders} heat={EXAMPLE_HEAT} className="h-full w-full" />
+            </Suspense>
+          )}
+          {elders && elders.length === 0 && (
+            <p className="flex h-full items-center justify-center text-sm text-brand-ink/70">Start the Neralu backend to see Ward 47 in 3D.</p>
+          )}
+        </div>
+        <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-ink/75">
+          <span>Ward 47, every house a resident · height is heat risk</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#e8622e]" />Called, high risk</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#ee9a45]" />Called</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#61716a]" />Below threshold</span>
+          <span className="rounded-[3px] border border-brand-ink/25 px-1.5 font-mono text-[0.625rem] uppercase tracking-[0.08em]">demo data</span>
+        </figcaption>
+      </figure>
     </section>
   )
 }
@@ -93,7 +148,7 @@ function CallReplay() {
   const [done, setDone] = useState(false)
   const tl = useRef<gsap.core.Timeline | null>(null)
 
-  const play = useCallback(() => {
+  const play = useCallback((autoplay = true) => {
     const el = root.current
     if (!el) return
     tl.current?.kill()
@@ -101,12 +156,13 @@ function CallReplay() {
     const say = (t: string) => () => status.current && (status.current.textContent = t)
     const rows = el.querySelectorAll('[data-row]')
     const answers = el.querySelectorAll('[data-answer]')
-    const t = gsap.timeline({ delay: 0.4, onComplete: () => setDone(true) })
     // Pending parts stay visible but quiet, so the card never shows an empty block.
-    t.set(rows, { opacity: 0.35 })
-      .set(answers, { opacity: 0, x: 6 })
-      .set('[data-verdict]', { opacity: 0.18 })
-      .call(say('Ringing'))
+    gsap.set(rows, { opacity: 0.35 })
+    gsap.set(answers, { opacity: 0, x: 6 })
+    gsap.set(el.querySelector('[data-verdict]'), { opacity: 0.18 })
+    if (status.current) status.current.textContent = 'Ringing'
+    const t = gsap.timeline({ delay: 0.4, paused: !autoplay, onComplete: () => setDone(true) })
+    t.call(say('Ringing'))
       .call(say('Connected · code word Mallige played'), [], '+=0.7')
     rows.forEach((row, i) => {
       t.call(say(`Question ${i + 1} of ${rows.length}`), [], '+=0.25')
@@ -125,14 +181,27 @@ function CallReplay() {
       if (status.current) status.current.textContent = 'Call ended · 1 min 12 s'
       return
     }
-    const ctx = gsap.context(play, root)
-    return () => ctx.revert()
+    // Set the call up as pending, and play it the first time the card scrolls into view.
+    const ctx = gsap.context(() => play(false), root)
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        tl.current?.play()
+        io.disconnect()
+      },
+      { threshold: 0.4 },
+    )
+    if (root.current) io.observe(root.current)
+    return () => {
+      io.disconnect()
+      ctx.revert()
+    }
   }, [play])
 
   return (
     <figure
       ref={root}
-      className="relative rounded-[8px] border border-line bg-surface shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(27,29,26,0.28)]"
+      className="relative rounded-[8px] border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(0,0,0,0.55)]"
     >
       <figcaption className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 text-xs">
         <span className="inline-flex items-center gap-2 text-ink">
@@ -186,7 +255,7 @@ function CallReplay() {
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
           <span>Decided by a fixed rule, not by AI</span>
           {done && !reducedMotion() && (
-            <button onClick={play} className="font-semibold text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
+            <button onClick={() => play()} className="font-semibold text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
               Replay
             </button>
           )}
@@ -224,12 +293,17 @@ function TheCall() {
     ['A person responds', 'Her family is told. If the check is RED, or she does not answer twice, someone nearby is asked to go to her door.'],
   ]
   return (
-    <section id="call" className="scroll-mt-6 border-t border-line">
+    <section id="call" className="scroll-mt-6 border-y border-[#d5e0d8] bg-shade">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <div className="grid gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <h2 className="display text-[2.4rem] font-medium leading-[1.05] lg:sticky lg:top-8 lg:self-start">
-            One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
-          </h2>
+          <div className="lg:sticky lg:top-8 lg:self-start">
+            <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
+              One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
+            </h2>
+            <div className="mt-8">
+              <CallReplay />
+            </div>
+          </div>
           <ol className="relative">
             {steps.map(([title, body], i) => (
               <li key={title} className="relative grid grid-cols-[3.25rem_minmax(0,1fr)] gap-x-4 pb-9 last:pb-0">

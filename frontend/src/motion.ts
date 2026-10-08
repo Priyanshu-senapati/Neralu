@@ -15,8 +15,10 @@ export const EASE = CustomEase.create('neralu', '0.23, 1, 0.32, 1')
 
 gsap.defaults({ ease: EASE, duration: 0.5 })
 
+/** Reduced motion, or '?still' in the URL: every animation shows its finished state (for slides and screenshots). */
 export const reducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  typeof window !== 'undefined' &&
+  (window.matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(window.location.search).has('still'))
 
 /** Hex values GSAP can interpolate (it cannot tween CSS custom properties directly). */
 export const FLASH = { alert: '#FBE9E5', ok: '#E8F3EC' }

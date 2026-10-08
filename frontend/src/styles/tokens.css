@@ -13,12 +13,18 @@
 
   /* Text */
   --ink: #1b1d1a;
-  --muted: #5f625b; /* 5.9:1 on paper */
+  --muted: #4c4f48; /* 7.7:1 on paper, 7.0:1 on sand and shade: AAA, survives a projector */
 
   /* Brand: shade */
   --brand: #1f3d33;
   --brand-ink: #f3f1ea;
   --brand-tint: #e6ece8;
+
+  /* Section tones (story page): sand = the hot afternoon, shade = the process that protects */
+  --sand: #f4ece0;
+  --shade: #e7ede8;
+  /* Sun: warm highlight on the dark hero only (10:1 on #0d1915) */
+  --sun: #f4c77a;
 
   /* Status (semantic only, AA on their tints) */
   --ok: #2b764a;

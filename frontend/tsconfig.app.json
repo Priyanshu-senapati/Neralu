@@ -20,7 +20,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* shadcn-style imports: @/components/ui/... */
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"]
 }
