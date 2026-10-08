@@ -12,6 +12,7 @@ os.environ.update({
     "TWILIO_FROM_NUMBER": "+15550000000",
     "STT_TIMEOUT_S": "0.3",
     "SCHEDULER_ENABLED": "false",
+    "ORIENTATION_MODE": "voice",
     "MAX_ATTEMPTS": "2",
 })
 

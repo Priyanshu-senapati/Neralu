@@ -60,7 +60,7 @@ def simulated_elder(rng: random.Random, run_id: str) -> Elder:
         hearing_difficulty=rng.random() < 0.08, cognitive_flag=rng.random() < 0.04,
         neighbour_phone=FICTIONAL_PHONE if rng.random() < 0.40 else None,
         family_phone=FICTIONAL_PHONE if has_family else None,
-        family_name="Family" if has_family else None,
+        family_name=None,
         code_word=rng.choice(CODE_WORDS), address=_address(rng), lat=lat, lng=lng,
         is_simulated=True,
     )
