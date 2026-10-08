@@ -1,6 +1,7 @@
 """Proxy Twilio recordings so the browser never needs Twilio credentials."""
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.responses import FileResponse
 from sqlmodel import Session
 
 from app.config import get_settings
@@ -15,6 +16,12 @@ async def recording(checkin_id: int, session: Session = Depends(get_session)) ->
     c = session.get(CheckIn, checkin_id)
     if c is None or c.run_id != current_run_id() or not c.recording_url:
         raise HTTPException(404, "No recording")
+    if c.recording_url.startswith("local:"):  # recorded by the browser phone
+        from app.routes.phone import RECORDINGS_DIR
+        path = RECORDINGS_DIR / c.recording_url.removeprefix("local:")
+        if not path.is_file():
+            raise HTTPException(404, "No recording")
+        return FileResponse(path, headers={"Cache-Control": "private, max-age=3600"})
     s = get_settings()
     async with httpx.AsyncClient(auth=(s.twilio_account_sid, s.twilio_auth_token)) as client:
         r = await client.get(f"{c.recording_url}.mp3")

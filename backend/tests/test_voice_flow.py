@@ -22,7 +22,7 @@ def stt(monkeypatch):
     async def fake_fetch(url):
         return b"RIFF-fake-wav"
 
-    async def fake_transcribe(audio, lang):
+    async def fake_transcribe(audio, lang, *_):
         await asyncio.sleep(Stt.delay)
         return Stt.text
 

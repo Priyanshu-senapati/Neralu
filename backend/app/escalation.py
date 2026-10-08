@@ -165,7 +165,10 @@ def sync_tick(session: Session) -> None:
     from app.calls import dispatch_due_calls
     from app.sim_caller import step_simulation
 
+    from app import browser_phone
+
     dispatch_due_calls(session)
+    browser_phone.tick(session)
     step_simulation(session)
     check_ack_timeouts(session)
     session.commit()

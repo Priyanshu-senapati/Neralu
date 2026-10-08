@@ -11,3 +11,6 @@ dist/
 *.egg-info/
 *.db-wal
 *.db-shm
+
+# Browser-phone recordings (demo fallback)
+backend/recordings/

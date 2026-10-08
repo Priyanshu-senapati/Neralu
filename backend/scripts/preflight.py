@@ -40,6 +40,9 @@ def warn(label: str) -> None:
 def env(s) -> None:
     print("Config (.env)")
     placeholder = lambda v: not v or "X" in v or "<" in v  # noqa: E731
+    if s.telephony_mode == "browser":
+        print("  ok    TELEPHONY_MODE=browser: Kamala's call rings the /phone page, Twilio not needed")
+        return
     check(not placeholder(s.twilio_account_sid), "TWILIO_ACCOUNT_SID set")
     check(not placeholder(s.twilio_auth_token), "TWILIO_AUTH_TOKEN set")
     check(s.twilio_from_number.startswith("+") and not placeholder(s.twilio_from_number),
@@ -139,9 +142,10 @@ def stt(s) -> None:
 def main() -> int:
     s = get_settings()
     env(s)
-    twilio(s)
     audio_files()
-    public_url(s)
+    if s.telephony_mode != "browser":
+        twilio(s)
+        public_url(s)
     if "--skip-stt" not in sys.argv:
         stt(s)
     print()
