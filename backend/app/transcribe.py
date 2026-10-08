@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 SARVAM_URL = "https://api.sarvam.ai/speech-to-text"
 SARVAM_MODEL = "saaras:v4"
-SARVAM_LANGS = {"kn": "kn-IN", "hi": "hi-IN", "ta": "ta-IN", "te": "te-IN", "ur": "unknown"}
+SARVAM_LANGS = {"kn": "kn-IN", "hi": "hi-IN", "ta": "ta-IN", "te": "te-IN", "ur": "ur-IN"}
 
 
 async def _sarvam(audio: bytes, lang: str) -> str | None:
@@ -49,12 +49,20 @@ async def transcribe(audio: bytes, lang: str) -> str | None:
 
 
 async def fetch_recording(recording_url: str) -> bytes | None:
-    """Download a Twilio recording as WAV (needs account basic auth; may lag a moment)."""
+    """Download a Twilio recording as WAV (needs account basic auth).
+
+    Twilio often returns 404 for a few seconds after <Record> finishes, so keep trying for ~8 s.
+    The caller is still hearing the help question meanwhile, so this rarely delays classification.
+    """
     s = get_settings()
-    async with httpx.AsyncClient(auth=(s.twilio_account_sid, s.twilio_auth_token)) as client:
-        for _ in range(3):
-            r = await client.get(f"{recording_url}.wav")
-            if r.status_code == 200:
-                return r.content
+    async with httpx.AsyncClient(auth=(s.twilio_account_sid, s.twilio_auth_token),
+                                 timeout=5) as client:
+        for _ in range(16):
+            try:
+                r = await client.get(f"{recording_url}.wav")
+                if r.status_code == 200:
+                    return r.content
+            except httpx.HTTPError as exc:
+                log.warning("Recording fetch failed: %r", exc)
             await asyncio.sleep(0.5)
     return None
