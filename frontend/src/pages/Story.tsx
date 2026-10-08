@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Wordmark } from '../components/Brand'
+import { FlowButton } from '@/components/ui/flow-button'
 import { gsap, reducedMotion } from '../motion'
 import { api } from '../api'
 import { HeatExplorer } from '../components/HeatExplorer'
@@ -46,9 +47,9 @@ export default function Story() {
             <a href="#call" className="hover:text-ink hover:underline">The call</a>
             <a href="#rules" className="hover:text-ink hover:underline">The rules</a>
             <Link to="/register" className="hover:text-ink hover:underline">Register someone</Link>
-            <Link to="/ward" className="press rounded-[4px] bg-brand px-3.5 py-2 font-semibold text-brand-ink hover:bg-brand/90">
+            <FlowButton to="/ward" size="sm">
               Open the ward console
-            </Link>
+            </FlowButton>
           </nav>
         </header>
         <Hero />
@@ -98,10 +99,7 @@ function Hero() {
           </p>
         )}
         <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4">
-          <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-brand px-5 py-3 font-semibold text-brand-ink shadow-[0_8px_24px_-12px_rgba(116,211,164,0.45)] hover:bg-brand/90">
-            Open the ward console
-            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </Link>
+          <FlowButton to="/ward">Open the ward console</FlowButton>
           <a href="#call" className="font-semibold text-ink underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-sun">
             How a call works
           </a>
@@ -528,13 +526,10 @@ function Honesty() {
         </div>
       </div>
       <div className="mt-14 flex flex-wrap items-center gap-x-7 gap-y-4 border-t border-line pt-8">
-        <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-brand px-5 py-3 font-semibold text-brand-ink hover:bg-brand/92">
-          Open the ward console
-          <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </Link>
-        <Link to="/register" className="font-semibold underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-brand">
+        <FlowButton to="/ward">Open the ward console</FlowButton>
+        <FlowButton to="/register" variant="secondary">
           Register someone for heat checks
-        </Link>
+        </FlowButton>
       </div>
     </section>
   )

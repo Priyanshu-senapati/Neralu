@@ -1,3 +1,4 @@
+import { FlowButton } from '@/components/ui/flow-button'
 import { useState } from 'react'
 import { api } from '../api'
 
@@ -42,15 +43,15 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
             </Btn>
           ))}
           <div className="pt-1 text-[0.6875rem] text-muted">Calls</div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid gap-1.5">
             {[1, 2].map((n) => (
-              <Btn key={n} busy={busy === `r${n}`} onClick={() => run(`r${n}`, async () => {
+              <FlowButton key={n} size="sm" className="w-full justify-center" disabled={busy === `r${n}`} onClick={() => run(`r${n}`, async () => {
                 const { created } = await api.startRound(n)
                 setOpen(false) // get out of the way: the live call spotlight is about to open
                 return `Round ${n}: ${created} calls`
               })}>
-                Start round {n}
-              </Btn>
+                {busy === `r${n}` ? 'Starting…' : `Start round ${n}`}
+              </FlowButton>
             ))}
           </div>
           {confirmReset ? (

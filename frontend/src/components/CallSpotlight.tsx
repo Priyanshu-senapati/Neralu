@@ -1,3 +1,4 @@
+import { FlowButton } from '@/components/ui/flow-button'
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import { closedLoop, episode } from '../loop'
@@ -218,9 +219,9 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
               <div className="mt-3">
                 <ClosedLoop steps={closedLoop(detail.events)} />
               </div>
-              <button onClick={() => { onOpenProfile(resident.id); close() }} className="press mt-5 rounded-ui border border-line-strong px-3 py-2 text-sm font-semibold hover:bg-paper">
+              <FlowButton variant="secondary" size="sm" className="mt-5" onClick={() => { onOpenProfile(resident.id); close() }}>
                 Open {first}'s full profile
-              </button>
+              </FlowButton>
             </>
           ) : (
             <>
