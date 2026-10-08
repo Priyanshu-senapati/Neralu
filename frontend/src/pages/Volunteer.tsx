@@ -147,12 +147,12 @@ export default function Volunteer() {
 function Shell({ children, name }: { children: React.ReactNode; name?: string }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-paper">
-      <header className="flex items-center justify-between bg-brand px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-brand-ink">
-        <Wordmark size="sm" onDark />
-        <span className="text-sm text-brand-ink/75">
+      <header className="flex items-center justify-between border-b border-line bg-surface px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-ink">
+        <Wordmark size="sm" />
+        <span className="text-sm text-muted">
           {name ? (
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#7fd1a0]" aria-hidden="true" />
+              <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden="true" />
               {name} · on duty
             </span>
           ) : (

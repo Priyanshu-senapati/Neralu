@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
+import { Reveal } from './Reveal'
 import { EXAMPLE_HEAT, personalThreshold } from '../heat'
 import type { ElderListItem } from '../types'
 
@@ -34,12 +35,14 @@ export function HeatExplorer() {
   const kamalaCalled = kamala ? kamala.t <= heat : false
 
   return (
-    <section aria-labelledby="explore-title" className="border-y border-[#e6dccb] bg-sand">
+    <section aria-labelledby="explore-title" className="border-y border-line bg-sand">
       <div className="mx-auto grid max-w-6xl gap-x-14 gap-y-10 px-5 py-20 sm:px-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div>
+          <Reveal>
           <h2 id="explore-title" className="display text-[2.4rem] font-medium leading-[1.05]">
             Heat warnings are city&#8209;wide. <span className="italic text-brand">Risk is personal.</span>
           </h2>
+          </Reveal>
           <p className="mt-5 text-[1.0625rem] leading-relaxed text-ink/80">
             Every square is one resident of the demo ward, ordered by their own heat threshold, worked out from what
             their family told us: age, living alone, the roof, a fan, medicines that make heat harder. Move the
@@ -49,7 +52,7 @@ export function HeatExplorer() {
           <div className="mt-8">
             <label htmlFor="heat" className="flex items-baseline justify-between">
               <span className="text-sm text-muted">Afternoon heat index</span>
-              <span className="num text-[2.75rem] font-medium leading-none tracking-[-0.04em] text-heat">
+              <span className="num oled text-[2.75rem] font-medium leading-none tracking-[-0.04em] text-heat">
                 {heat.toFixed(1)}
                 <span className="text-lg">°C</span>
               </span>
@@ -79,7 +82,7 @@ export function HeatExplorer() {
 
           <div className="mt-8 border-t border-line pt-5">
             <p className="text-[1.0625rem]">
-              <span className="num text-[1.75rem] font-medium text-heat">{elders ? called : '—'}</span>{' '}
+              <span className="num oled text-[1.75rem] font-medium text-heat">{elders ? called : '—'}</span>{' '}
               <span className="text-ink/80">of {elders?.length ?? '—'} residents would get a call today.</span>
             </p>
             {kamala && (
@@ -114,7 +117,7 @@ export function HeatExplorer() {
                     key={p ? p.e.id : i}
                     title={p ? `${p.e.name}, ${p.e.age} · threshold ${p.t}°C` : undefined}
                     className={`aspect-square rounded-[2px] transition-colors duration-300 ${
-                      !p ? 'animate-pulse bg-line' : on ? (p.e.risk_score >= 60 ? 'bg-heat' : 'bg-[#E08A4F]') : 'bg-[#E4E0D5]'
+                      !p ? 'animate-pulse bg-line' : on ? (p.e.risk_score >= 60 ? 'bg-heat' : 'bg-[#E08A4F]') : 'bg-line-strong'
                     } ${isKamala ? 'outline outline-2 outline-offset-1 outline-ink' : ''}`}
                     style={{ transitionDelay: p ? `${Math.min(i, 400) * 0.6}ms` : undefined }}
                   />
@@ -125,7 +128,7 @@ export function HeatExplorer() {
           <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-heat" />Called, high risk</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#E08A4F]" />Called</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#E4E0D5]" />Below their threshold</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-line-strong" />Below their threshold</span>
           </figcaption>
         </figure>
       </div>

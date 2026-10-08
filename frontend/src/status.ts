@@ -1,3 +1,4 @@
+import { token } from './theme'
 import type { ElderListItem, Tier } from './types'
 
 export type Tone = 'ok' | 'watch' | 'support' | 'alert' | 'neutral'
@@ -15,13 +16,10 @@ export const TIER_LABEL: Record<Tier, string> = {
   asha: 'ASHA worker',
 }
 
-export const TONE_HEX: Record<Tone, string> = {
-  ok: '#2B764A', // keep in sync with styles/tokens.css
-  watch: '#985A0E',
-  support: '#2B6CB0',
-  alert: '#B83A26',
-  neutral: '#9A988F',
-}
+const TONE_TOKEN: Record<Tone, string> = { ok: '--ok', watch: '--watch', support: '--support', alert: '--alert', neutral: '--line-strong' }
+
+/** A tone's colour in the current theme, for canvas/SVG drawing (map dots, legends). */
+export const toneHex = (t: Tone) => token(TONE_TOKEN[t])
 
 export function elderStatus(e: ElderListItem): ElderStatus {
   const c = e.open_case

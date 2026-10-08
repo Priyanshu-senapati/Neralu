@@ -259,16 +259,16 @@ export default function Phone() {
   }
 
   return (
-    <div className="flex min-h-dvh justify-center bg-ink text-paper">
+    <div className="flex min-h-dvh justify-center bg-paper text-ink">
       <div className="flex w-full max-w-[430px] flex-col px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-        <div className="flex items-center justify-between text-xs text-paper/60">
+        <div className="flex items-center justify-between text-xs text-ink/60">
           <span>Simulated phone · demo fallback</span>
           {phase !== 'off' && <span>{hasMic ? 'Mic on' : 'Mic off · tap the day'}</span>}
         </div>
 
         {phase === 'off' && (
           <Center>
-            <p className="mb-6 text-center text-sm text-paper/70">
+            <p className="mb-6 text-center text-sm text-ink/70">
               This page stands in for Kamala's phone when a real call cannot be placed. Turn it on to let it ring and play sound.
             </p>
             <BigButton tone="light" onClick={turnOn}>Turn on phone</BigButton>
@@ -277,16 +277,16 @@ export default function Phone() {
 
         {phase === 'idle' && (
           <Center>
-            <p className="text-sm text-paper/60">Waiting for a call</p>
+            <p className="text-sm text-ink/60">Waiting for a call</p>
           </Center>
         )}
 
         {(phase === 'ringing' || phase === 'talking') && call && (
           <div className="mt-14 text-center">
-            <div className="text-sm text-paper/60">{phase === 'ringing' ? 'Incoming call' : 'On call'}</div>
+            <div className="text-sm text-ink/60">{phase === 'ringing' ? 'Incoming call' : 'On call'}</div>
             <div className="mt-2 text-3xl font-semibold">Neralu</div>
-            <div className="mt-1 text-sm text-paper/60">Heat care service · Ward 47</div>
-            <div className="mt-1 text-xs text-paper/40">
+            <div className="mt-1 text-sm text-ink/60">Heat care service · Ward 47</div>
+            <div className="mt-1 text-xs text-ink/40">
               to {call.elder_name} · {call.is_recall ? 'recall' : `attempt ${call.attempt}`}
             </div>
           </div>
@@ -302,19 +302,19 @@ export default function Phone() {
         {phase === 'talking' && (
           <>
             {codeWord && (
-              <div className="mt-6 text-center text-sm text-paper/70">
-                Code word <span className="font-semibold text-paper">{codeWord}</span>
+              <div className="mt-6 text-center text-sm text-ink/70">
+                Code word <span className="font-semibold text-ink">{codeWord}</span>
               </div>
             )}
             <p aria-live="polite" className="mt-5 min-h-[3.5rem] text-center text-base leading-snug">{caption}</p>
             {listening > 0 && (
-              <p className="mt-2 text-center font-mono text-sm text-paper/70">Listening · {listening}</p>
+              <p className="mt-2 text-center font-mono text-sm text-ink/70">Listening · {listening}</p>
             )}
             {dayPicker && (
               <div className="mt-4 grid grid-cols-4 gap-2" role="group" aria-label="Today is">
                 {DAYS.map((d, i) => (
                   <button key={d} onClick={() => dayWaiter.current?.(i + 1)}
-                    className="press min-h-12 rounded-ui border border-paper/20 text-base">{d}</button>
+                    className="press min-h-12 rounded-ui border border-ink/20 text-base">{d}</button>
                 ))}
               </div>
             )}
@@ -322,12 +322,12 @@ export default function Phone() {
               <div className="grid grid-cols-3 gap-3" aria-label="Keypad">
                 {KEYS.map((k) => (
                   <button key={k} onClick={() => press(k)} disabled={!keypad}
-                    className="press h-16 rounded-full bg-paper/10 font-mono text-2xl disabled:opacity-30">{k}</button>
+                    className="press h-16 rounded-full bg-ink/10 font-mono text-2xl disabled:opacity-30">{k}</button>
                 ))}
               </div>
               <div className="mt-5 flex justify-center">
                 <button onClick={() => hangUp('You hung up')}
-                  className="press h-16 w-40 rounded-full bg-alert text-base font-semibold text-paper">Hang up</button>
+                  className="press h-16 w-40 rounded-full bg-alert text-base font-semibold text-ink">Hang up</button>
               </div>
             </div>
           </>
@@ -337,7 +337,7 @@ export default function Phone() {
           <Center>
             <p className="text-lg font-semibold">{endNote}</p>
             <button onClick={() => { setCall(null); setCodeWord(null); setCaption(''); setPhase('idle') }}
-              className="press mt-6 rounded-ui border border-paper/30 px-5 py-3 text-sm">Wait for the next call</button>
+              className="press mt-6 rounded-ui border border-ink/30 px-5 py-3 text-sm">Wait for the next call</button>
           </Center>
         )}
 
@@ -354,7 +354,7 @@ function Center({ children }: { children: React.ReactNode }) {
 }
 
 function BigButton({ children, onClick, tone }: { children: React.ReactNode; onClick: () => void; tone: 'ok' | 'alert' | 'light' }) {
-  const cls = tone === 'ok' ? 'bg-ok text-paper' : tone === 'alert' ? 'bg-alert text-paper' : 'bg-paper text-ink'
+  const cls = tone === 'ok' ? 'bg-ok text-ink' : tone === 'alert' ? 'bg-alert text-ink' : 'bg-ink text-paper'
   return (
     <button onClick={onClick} className={`press min-h-14 w-full rounded-full px-6 text-base font-semibold ${cls}`}>
       {children}
