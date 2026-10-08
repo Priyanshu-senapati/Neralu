@@ -1,7 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mark, Wordmark } from '../components/Brand'
+import { Wordmark } from '../components/Brand'
 import { gsap, reducedMotion } from '../motion'
+import { HeatExplorer } from '../components/HeatExplorer'
 import { useRuleBook } from '../rules'
 
 /*
@@ -10,44 +11,10 @@ import { useRuleBook } from '../rules'
  * or quotes are invented: there is no deployment yet, and the page says so.
  */
 
-// Risk is personal: computed with risk.py for a 35 °C / 35 % day with a 25 °C night (heat index 35.8 °C).
-const HEAT_INDEX = 35.8
-const SCALE = { min: 30, max: 41 }
-const PEOPLE = [
-  {
-    name: 'Kamala R., 74',
-    factors: ['Age 74 (+20)', 'Lives alone (+20)', 'Sheet roof (+15)', 'Heat-sensitive medicines (+15)'],
-    score: 70,
-    threshold: 33.0,
-  },
-  {
-    name: 'A 63-year-old living with family',
-    factors: ['Age 63 (+10)', 'Concrete roof, working fan'],
-    score: 10,
-    threshold: 39.0,
-  },
-]
-
-const RULE_OUTCOME: Record<string, { label: string; cls: string }> = {
-  R0: { label: 'Not reached', cls: 'text-ink' },
-  R1: { label: 'RED', cls: 'text-alert' },
-  R2: { label: 'RED', cls: 'text-alert' },
-  R3: { label: 'RED', cls: 'text-alert' },
-  R4: { label: 'AMBER', cls: 'text-watch' },
-  R5: { label: 'AMBER', cls: 'text-watch' },
-  R6: { label: 'AMBER', cls: 'text-watch' },
-  R7: { label: 'AMBER', cls: 'text-watch' },
-  R8: { label: 'AMBER', cls: 'text-watch' },
-  R9: { label: 'GREEN', cls: 'text-ok' },
-  S1: { label: 'Support', cls: 'text-support' },
-  E1: { label: 'RED', cls: 'text-alert' },
-  E3: { label: 'RED', cls: 'text-alert' },
-}
-
 export default function Story() {
   return (
     <div className="min-h-dvh bg-paper text-ink">
-      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
+      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
         <Wordmark />
         <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
           <a href="#call" className="hover:underline">The call</a>
@@ -61,7 +28,8 @@ export default function Story() {
 
       <main>
         <Hero />
-        <RiskIsPersonal />
+        <HeatExplorer />
+        <Statement />
         <TheCall />
         <Rules />
         <WhoGoes />
@@ -69,17 +37,7 @@ export default function Story() {
         <Honesty />
       </main>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-6 text-sm text-muted sm:px-8">
-          <span className="inline-flex items-center gap-2">
-            <Mark className="h-5 w-5 text-brand" />
-            <span>
-              <span className="kn" lang="kn">ನೆರಳು</span> (neralu) means shade in Kannada.
-            </span>
-          </span>
-          <span>Hack4SDG prototype · SDG targets 11.5, 3.d and 13.1</span>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
@@ -184,7 +142,7 @@ function CallReplay() {
           </span>
           <span ref={status} aria-live="polite">Call ended · 1 min 12 s</span>
         </span>
-        <span className="rounded-[3px] border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+        <span className="rounded-[3px] border border-line px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.08em] text-muted">
           Example · demo data
         </span>
       </figcaption>
@@ -202,7 +160,7 @@ function CallReplay() {
 
       <ol className="mx-5 mt-4 border-t border-line">
         {REPLAY.map((r, i) => (
-          <li key={r.q} data-row className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-baseline gap-x-2 border-b border-line py-2 text-[15px]">
+          <li key={r.q} data-row className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-baseline gap-x-2 border-b border-line py-2 text-[0.9375rem]">
             <span className="num text-xs text-muted">{i + 1}</span>
             <span>{r.q}</span>
             <span data-answer className={`text-right ${r.concern ? 'font-semibold text-alert' : ''}`}>
@@ -218,10 +176,10 @@ function CallReplay() {
           <span className="rounded-[4px] bg-watch-bg px-2 py-1 text-sm font-semibold leading-none text-watch">AMBER · Follow-up</span>
           <span className="num text-xs leading-none text-muted">Rule R6</span>
         </div>
-        <p className="mt-2.5 text-[15px] leading-relaxed">
+        <p className="mt-2.5 text-[0.9375rem] leading-relaxed">
           No water in the last hour, so the call ended with advice to drink a glass of water now.
         </p>
-        <p className="mt-1.5 text-[15px] leading-relaxed">
+        <p className="mt-1.5 text-[0.9375rem] leading-relaxed">
           <span className="font-semibold">Next:</span> her son is told, and Neralu calls again in 30 minutes. A second
           worrying call sends a person.
         </p>
@@ -238,62 +196,20 @@ function CallReplay() {
   )
 }
 
-function pos(c: number) {
-  return `${((c - SCALE.min) / (SCALE.max - SCALE.min)) * 100}%`
-}
-
-function RiskIsPersonal() {
+function Statement() {
   return (
-    <section className="border-y border-line bg-surface">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <div>
-          <h2 className="display text-[1.9rem] font-medium leading-tight">Heat warnings are city‑wide. Risk is personal.</h2>
-          <p className="mt-3 text-ink/85">
-            The same afternoon is ordinary for one person and dangerous for another. Neralu gives everyone a threshold
-            from things a family already knows: age, living alone, the roof, a fan, medicines that make heat harder.
-          </p>
-          <p className="mt-3 text-sm text-muted">
-            Computed with Neralu's risk rules for a 35°C afternoon at 35% humidity. Thresholds are starting values,
-            to be calibrated in a pilot.
-          </p>
-        </div>
-        <div>
-          <div className="relative h-14" aria-hidden="true">
-            <div className="absolute inset-x-0 top-7 h-px bg-line-strong" />
-            {Array.from({ length: SCALE.max - SCALE.min + 1 }, (_, i) => SCALE.min + i).map((t) => (
-              <div key={t} className="absolute top-[1.55rem] -translate-x-1/2 text-center" style={{ left: pos(t) }}>
-                <div className="mx-auto h-2 w-px bg-line-strong" />
-                {t % 2 === 1 && <div className="num mt-1 text-[11px] text-muted">{t}</div>}
-              </div>
-            ))}
-            <div className="absolute top-0 -translate-x-1/2 text-center" style={{ left: pos(HEAT_INDEX) }}>
-              <div className="num whitespace-nowrap text-xs font-semibold text-heat">Today {HEAT_INDEX}°C</div>
-              <div className="mx-auto h-9 w-0.5 bg-heat" />
-            </div>
-          </div>
-          <ul className="mt-8 divide-y divide-line border-y border-line">
-            {PEOPLE.map((p) => {
-              const called = HEAT_INDEX >= p.threshold
-              return (
-                <li key={p.name} className="grid gap-x-6 gap-y-1 py-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-                  <div>
-                    <div className="font-semibold">{p.name}</div>
-                    <div className="text-sm text-muted">{p.factors.join(' · ')}</div>
-                  </div>
-                  <div className="sm:text-right">
-                    <div className="num text-sm">
-                      Score {p.score} · threshold {p.threshold.toFixed(1)}°C
-                    </div>
-                    <div className={`text-sm font-semibold ${called ? 'text-heat' : 'text-muted'}`}>
-                      {called ? `${(HEAT_INDEX - p.threshold).toFixed(1)}°C over: Neralu calls today` : 'Below threshold: no call'}
-                    </div>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      </div>
+    <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
+      <p className="display max-w-4xl text-[2.4rem] font-medium leading-[1.12] sm:text-[3.4rem]">
+        A broadcast tells.
+        <br />
+        A call checks.
+        <br />
+        <span className="italic text-brand">A person goes.</span>
+      </p>
+      <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-ink/80">
+        Heat alerts already reach phones across the city. What nobody does is check that Kamala, 74, alone under a
+        sheet roof, is actually all right. That is the gap Neralu fills.
+      </p>
     </section>
   )
 }
@@ -308,62 +224,88 @@ function TheCall() {
     ['A person responds', 'Her family is told. If the check is RED, or she does not answer twice, someone nearby is asked to go to her door.'],
   ]
   return (
-    <section id="call" className="mx-auto max-w-6xl scroll-mt-6 px-5 py-16 sm:px-8">
-      <h2 className="display max-w-2xl text-[1.9rem] font-medium leading-tight">
-        One unanswered call is enough to send someone to the door.
-      </h2>
-      <ol className="mt-8 grid gap-x-12 lg:grid-cols-2">
-        {steps.map(([title, body], i) => (
-          <li key={title} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 border-t border-line py-4">
-            <span className="num pt-0.5 text-sm text-muted">{i + 1}</span>
-            <div>
-              <h3 className="font-semibold">{title}</h3>
-              <p className="mt-1 text-ink/85">{body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+    <section id="call" className="scroll-mt-6 border-t border-line">
+      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+        <div className="grid gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          <h2 className="display text-[2.4rem] font-medium leading-[1.05] lg:sticky lg:top-8 lg:self-start">
+            One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
+          </h2>
+          <ol className="relative">
+            {steps.map(([title, body], i) => (
+              <li key={title} className="relative grid grid-cols-[3.25rem_minmax(0,1fr)] gap-x-4 pb-9 last:pb-0">
+                {i < steps.length - 1 && <span className="absolute left-[1.05rem] top-11 bottom-1 w-px bg-line-strong" aria-hidden="true" />}
+                <span className="display text-[2.1rem] font-medium leading-none text-brand">{i + 1}</span>
+                <div className="pt-1">
+                  <h3 className="text-[1.0625rem] font-semibold">{title}</h3>
+                  <p className="mt-1.5 leading-relaxed text-ink/80">{body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
     </section>
   )
+}
+
+const RULE_OUTCOME: Record<string, { label: string; dot: string; text: string }> = {
+  R0: { label: 'Not reached', dot: 'bg-ink/60', text: 'text-ink' },
+  R1: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  R2: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  R3: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  R4: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  R5: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  R6: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  R7: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  R8: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  R9: { label: 'GREEN', dot: 'bg-ok', text: 'text-ok' },
+  S1: { label: 'Support', dot: 'bg-support', text: 'text-support' },
+  E1: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  E3: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
 }
 
 function Rules() {
   const book = useRuleBook()
   return (
     <section id="rules" className="scroll-mt-6 border-y border-line bg-surface">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="display text-[1.9rem] font-medium leading-tight">Rules decide. AI only listens.</h2>
-          <p className="mt-3 text-ink/85">
-            Speech-to-text turns the spoken day into a word. That is all the AI does. Whether someone is safe is
-            decided by these rules, in this order, and the first one that matches wins.
+      <div className="mx-auto grid max-w-6xl gap-x-14 gap-y-10 px-5 py-20 sm:px-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+        <div className="lg:sticky lg:top-8 lg:self-start">
+          <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
+            Rules decide. <span className="italic text-brand">AI only listens.</span>
+          </h2>
+          <p className="mt-5 leading-relaxed text-ink/80">
+            Speech-to-text turns the spoken day into a word. That is all the AI does. Whether someone is safe is decided
+            by these rules, in this order; the first one that matches wins.
           </p>
-          <p className="mt-3 text-ink/85">
-            "I'm okay" never overrides another warning sign. Anything unclear is followed up, not assumed fine.
-          </p>
+          <p className="mt-3 leading-relaxed text-ink/80">"I'm okay" never overrides another warning sign. Anything unclear is followed up, not assumed fine.</p>
+          <p className="mt-6 text-xs text-muted">Loaded live from the Neralu server: the same rules the console uses.</p>
         </div>
         <div>
-          {!book && <p className="text-sm text-muted">Loading the rule book from the Neralu server…</p>}
+          {!book && <p className="text-sm text-muted">Loading the rule book…</p>}
           {book && (
-            <table className="w-full border-y border-line text-sm">
+            <table className="w-full text-[0.875rem]">
               <caption className="sr-only">Neralu's safety rules</caption>
               <thead className="text-left text-xs text-muted">
-                <tr>
-                  <th scope="col" className="py-2 pr-3 font-normal">Rule</th>
-                  <th scope="col" className="py-2 pr-3 font-normal">Result</th>
-                  <th scope="col" className="py-2 font-normal">When</th>
+                <tr className="border-b border-ink">
+                  <th scope="col" className="pb-2 pr-4 font-normal">Rule</th>
+                  <th scope="col" className="pb-2 pr-4 font-normal">Result</th>
+                  <th scope="col" className="pb-2 font-normal">When</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {Object.entries(book.explain).map(([id, text]) => (
-                  <tr key={id} className="align-baseline">
-                    <th scope="row" className="num py-2.5 pr-3 font-medium">{id}</th>
-                    <td className={`whitespace-nowrap py-2.5 pr-3 font-semibold ${RULE_OUTCOME[id]?.cls ?? ''}`}>
-                      {RULE_OUTCOME[id]?.label}
-                    </td>
-                    <td className="py-2.5">{text}</td>
-                  </tr>
-                ))}
+                {Object.entries(book.explain).map(([id, text]) => {
+                  const o = RULE_OUTCOME[id]
+                  return (
+                    <tr key={id} className="align-baseline">
+                      <th scope="row" className="num py-3 pr-4 font-medium">{id}</th>
+                      <td className={`whitespace-nowrap py-3 pr-4 font-semibold ${o?.text ?? ''}`}>
+                        <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${o?.dot ?? ''}`} aria-hidden="true" />
+                        {o?.label}
+                      </td>
+                      <td className="py-3 leading-relaxed text-ink/85">{text}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -381,23 +323,61 @@ function WhoGoes() {
     ['Ward officer', 'If nobody accepts, the case is flagged on the ward console for the officer to act.'],
   ]
   return (
-    <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
-      <h2 className="display max-w-2xl text-[1.9rem] font-medium leading-tight">Escalation goes to people, one step at a time.</h2>
-      <ol className="mt-8 grid border-l border-line sm:grid-cols-2 sm:border-l-0 lg:grid-cols-4">
+    <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+      <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
+        Escalation goes to people, <span className="italic text-brand">one step at a time.</span>
+      </h2>
+      <ol className="mt-12 grid gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
         {tiers.map(([who, what], i) => (
-          <li key={who} className="relative border-line py-3 pl-5 sm:border-t sm:pl-0 sm:pr-6 sm:pt-5">
-            <span className="absolute -left-[4.5px] top-[1.15rem] h-2 w-2 rounded-full bg-brand sm:-top-[4.5px] sm:left-0" aria-hidden="true" />
-            <span className="num text-xs text-muted">Step {i + 1}</span>
-            <h3 className="font-semibold">{who}</h3>
-            <p className="mt-1 text-sm text-ink/85">{what}</p>
+          <li key={who} className="relative pr-6">
+            <div className="flex items-center">
+              <span className="display grid h-11 w-11 shrink-0 place-items-center rounded-full border border-brand text-lg font-medium text-brand">{i + 1}</span>
+              {i < tiers.length - 1 && <span className="ml-3 hidden h-px flex-1 bg-line-strong lg:block" aria-hidden="true" />}
+            </div>
+            <h3 className="mt-4 text-[1.0625rem] font-semibold">{who}</h3>
+            <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-ink/80">{what}</p>
           </li>
         ))}
       </ol>
-      <p className="mt-8 max-w-3xl border-t border-line pt-4 text-ink/85">
-        Neralu never calls an ambulance on its own. Only a person who has seen or heard the emergency records
-        "called 108". A volunteer sees someone’s address only after accepting their case.
-      </p>
+      <div className="mt-12 grid gap-6 border-t border-line pt-6 sm:grid-cols-2">
+        <p className="leading-relaxed text-ink/85">
+          <span className="font-semibold text-ink">Neralu never calls an ambulance on its own.</span> Only a person who
+          has seen or heard the emergency records "called 108".
+        </p>
+        <p className="leading-relaxed text-ink/85">
+          <span className="font-semibold text-ink">Addresses stay private.</span> A volunteer sees someone’s address
+          only after accepting their case.
+        </p>
+      </div>
     </section>
+  )
+}
+
+/** A drawn keypad phone: the device Neralu is designed for. 1 and 2 are the keys that matter. */
+function KeypadPhone() {
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
+  return (
+    <svg viewBox="0 0 160 300" className="h-auto w-[150px]" role="img" aria-label="A keypad phone showing an incoming Neralu call: press 1 for yes, 2 for no">
+      <rect x="4" y="4" width="152" height="292" rx="26" fill="#17302A" stroke="#F3F1EA" strokeOpacity="0.25" />
+      <rect x="22" y="26" width="116" height="96" rx="6" fill="#F3F1EA" />
+      <text x="80" y="54" textAnchor="middle" fontFamily="Public Sans" fontSize="11" fill="#5F625B">Incoming call</text>
+      <text x="80" y="76" textAnchor="middle" fontFamily="Public Sans" fontWeight="600" fontSize="17" fill="#1F3D33">Neralu</text>
+      <text x="80" y="96" textAnchor="middle" fontFamily="Public Sans" fontSize="10.5" fill="#5F625B">Code word: Mallige</text>
+      <text x="80" y="112" textAnchor="middle" fontFamily="IBM Plex Mono" fontSize="9" fill="#5F625B">1 = yes · 2 = no</text>
+      {keys.map((k, i) => {
+        const col = i % 3
+        const row = Math.floor(i / 3)
+        const hot = k === '1' || k === '2'
+        return (
+          <g key={k}>
+            <rect x={22 + col * 40} y={140 + row * 36} width="34" height="28" rx="9" fill={hot ? '#F3F1EA' : '#24453B'} />
+            <text x={39 + col * 40} y={159 + row * 36} textAnchor="middle" fontFamily="IBM Plex Mono" fontSize="13" fontWeight={hot ? 600 : 400} fill={hot ? '#1F3D33' : '#F3F1EA'} fillOpacity={hot ? 1 : 0.7}>
+              {k}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
   )
 }
 
@@ -409,17 +389,24 @@ function Phones() {
     ['Registered by family', 'A son or daughter registers a parent from any phone, with the parent’s permission. The address is shown only to the volunteer who accepts a case.'],
   ]
   return (
-    <section className="border-y border-line bg-brand text-brand-ink">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
-        <h2 className="display text-[1.9rem] font-medium leading-tight">Built for the phones people actually have.</h2>
-        <dl className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
-          {facts.map(([t, d]) => (
-            <div key={t}>
-              <dt className="font-semibold">{t}</dt>
-              <dd className="mt-1 text-brand-ink/80">{d}</dd>
-            </div>
-          ))}
-        </dl>
+    <section className="bg-brand text-brand-ink">
+      <div className="mx-auto grid max-w-6xl items-center gap-x-14 gap-y-12 px-5 py-20 sm:px-8 lg:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="flex justify-center lg:justify-start">
+          <KeypadPhone />
+        </div>
+        <div>
+          <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
+            Built for the phones <span className="italic">people actually have.</span>
+          </h2>
+          <dl className="mt-10 grid gap-x-12 gap-y-7 sm:grid-cols-2">
+            {facts.map(([t, d]) => (
+              <div key={t} className="border-t border-brand-ink/20 pt-4">
+                <dt className="font-semibold">{t}</dt>
+                <dd className="mt-1.5 leading-relaxed text-brand-ink/75">{d}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </div>
     </section>
   )
@@ -427,26 +414,66 @@ function Phones() {
 
 function Honesty() {
   return (
-    <section className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-2">
-      <div>
-        <h2 className="display text-[1.9rem] font-medium leading-tight">What is real in this demo</h2>
-        <ul className="mt-4 space-y-2 text-ink/85">
-          <li>The call to Kamala, on a real phone or, where the network blocks it, on the browser phone. Her keypad answers and her spoken answer.</li>
-          <li>The rules that classify the call, and the escalation that follows.</li>
-          <li>The volunteer accepting the case on a real phone, and the live ward console.</li>
-        </ul>
+    <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+      <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
+        What you are looking at <span className="italic text-brand">is a working prototype.</span>
+      </h2>
+      <div className="mt-10 grid gap-10 lg:grid-cols-2">
+        <div className="border-t border-ink pt-5">
+          <h3 className="font-semibold">Real in this demo</h3>
+          <ul className="mt-3 space-y-2.5 leading-relaxed text-ink/80">
+            <li>The call to Kamala, on a real phone or, where the network blocks it, on the browser phone. Her keypad answers and her spoken answer.</li>
+            <li>The rules that classify the call, and the escalation that follows.</li>
+            <li>The volunteer accepting the case on a real phone, and the live ward console.</li>
+          </ul>
+        </div>
+        <div className="border-t border-line-strong pt-5">
+          <h3 className="font-semibold">Simulated, and labelled as such</h3>
+          <ul className="mt-3 space-y-2.5 leading-relaxed text-ink/80">
+            <li>The weather, set from the demo controls.</li>
+            <li>The clock, which runs 60 times faster so a day fits in minutes.</li>
+            <li>The other 400 residents of Ward 47 and their answers, and messages to families.</li>
+          </ul>
+          <p className="mt-4 text-sm text-muted">Neralu has not been deployed yet. There are no user numbers on this page because there are none to show.</p>
+        </div>
       </div>
-      <div>
-        <h2 className="display text-[1.9rem] font-medium leading-tight">What is simulated</h2>
-        <ul className="mt-4 space-y-2 text-ink/85">
-          <li>The weather, set from the demo controls.</li>
-          <li>The clock, which runs 60 times faster so a day fits in minutes.</li>
-          <li>The other 400 residents of Ward 47 and their answers, and messages to families.</li>
-        </ul>
-        <p className="mt-4 text-sm text-muted">
-          Neralu has not been deployed yet. There are no user numbers on this page because there are none to show.
-        </p>
+      <div className="mt-14 flex flex-wrap items-center gap-x-7 gap-y-4 border-t border-line pt-8">
+        <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-brand px-5 py-3 font-semibold text-brand-ink hover:bg-brand/92">
+          Open the ward console
+          <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </Link>
+        <Link to="/register" className="font-semibold underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-brand">
+          Register someone for heat checks
+        </Link>
       </div>
     </section>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="border-t border-line bg-surface">
+      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,1fr))]">
+        <div>
+          <Wordmark />
+          <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+            <span className="kn" lang="kn">ನೆರಳು</span> (neralu) means shade in Kannada. Welfare checks for the people a
+            heatwave hurts first.
+          </p>
+        </div>
+        <nav aria-label="Product" className="text-sm">
+          <div className="font-semibold">Product</div>
+          <ul className="mt-2 space-y-1.5 text-muted">
+            <li><Link to="/ward" className="hover:text-ink">Ward console</Link></li>
+            <li><Link to="/register" className="hover:text-ink">Register someone</Link></li>
+            <li><a href="#rules" className="hover:text-ink">The rules</a></li>
+          </ul>
+        </nav>
+        <div className="text-sm">
+          <div className="font-semibold">Context</div>
+          <p className="mt-2 leading-relaxed text-muted">Hack4SDG prototype. SDG targets 11.5, 3.d and 13.1.</p>
+        </div>
+      </div>
+    </footer>
   )
 }

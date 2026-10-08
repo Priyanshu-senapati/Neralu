@@ -35,13 +35,13 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
       </button>
       {open && (
         <div className="space-y-1.5 border-t border-line p-3">
-          <div className="text-[11px] text-muted">Simulated weather</div>
+          <div className="text-[0.6875rem] text-muted">Simulated weather</div>
           {PRESETS.map((p) => (
             <Btn key={p.label} busy={busy === p.label} onClick={() => run(p.label, async () => void (await api.setHeat(p.w)))}>
               {p.label}
             </Btn>
           ))}
-          <div className="pt-1 text-[11px] text-muted">Calls</div>
+          <div className="pt-1 text-[0.6875rem] text-muted">Calls</div>
           <div className="grid grid-cols-2 gap-1.5">
             {[1, 2].map((n) => (
               <Btn key={n} busy={busy === `r${n}`} onClick={() => run(`r${n}`, async () => {

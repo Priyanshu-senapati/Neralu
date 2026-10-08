@@ -18,7 +18,7 @@ export function StatusPill({ tone, label }: { tone: Tone; label: string }) {
 
 export function SimTag() {
   return (
-    <span className="rounded-ui border border-line px-1 font-mono text-[10px] text-muted">
+    <span className="rounded-ui border border-line px-1 font-mono text-[0.625rem] text-muted">
       simulated
     </span>
   )

@@ -1,11 +1,19 @@
 import 'leaflet/dist/leaflet.css'
 import { memo, useEffect, useState } from 'react'
-import { AttributionControl, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet'
+import { AttributionControl, CircleMarker, MapContainer, Polygon, TileLayer, Tooltip } from 'react-leaflet'
 import { elderStatus, TONE_HEX } from '../status'
 import type { ElderListItem } from '../types'
 
-const CENTER: [number, number] = [12.925, 77.5838]
 const INK = '#1B1D1A'
+
+// Ward 47's demo boundary: the seeded residents' box (seed.py) with a small margin.
+const WARD: [number, number][] = [
+  [12.925 - 0.0102, 77.5838 - 0.0104],
+  [12.925 + 0.0102, 77.5838 - 0.0104],
+  [12.925 + 0.0102, 77.5838 + 0.0104],
+  [12.925 - 0.0102, 77.5838 + 0.0104],
+]
+const WORLD: [number, number][] = [[-89, -179], [89, -179], [89, 179], [-89, 179]]
 
 type View = 'risk' | 'status'
 
@@ -38,7 +46,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
   const ordered = [...elders].sort((a, b) => rank(a, view) - rank(b, view))
   return (
     <section aria-label="Ward map" className="relative isolate min-h-0 flex-1 overflow-hidden bg-[#ecebe6]">
-      <MapContainer center={CENTER} zoom={15} zoomControl={false} className="h-full w-full" attributionControl={false}>
+      <MapContainer bounds={WARD} boundsOptions={{ padding: [6, 6] }} zoomSnap={0.25} zoomControl={false} className="h-full w-full" attributionControl={false}>
         <AttributionControl position="bottomleft" prefix={false} />
         {/* Esri Light Gray Canvas: no POI icons, faint labels. Muted further in CSS. */}
         <TileLayer
@@ -47,6 +55,9 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
           className="neralu-tiles"
           maxZoom={16}
         />
+        {/* Everything outside the ward recedes; the ward boundary is drawn once, quietly. */}
+        <Polygon positions={[WORLD, WARD]} interactive={false} pathOptions={{ stroke: false, fillColor: '#F7F6F1', fillOpacity: 0.62 }} />
+        <Polygon positions={WARD} interactive={false} pathOptions={{ color: '#1F3D33', weight: 1.5, dashArray: '5 4', fill: false }} />
         {ordered.map((e) => {
           const selected = e.id === selectedId
           const real = !e.is_simulated
@@ -76,7 +87,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
             <CircleMarker
               key={e.id}
               center={[e.lat, e.lng]}
-              radius={selected ? 9 : real ? 7.5 : s.tone === 'neutral' || s.tone === 'ok' ? 3.5 : 6}
+              radius={selected ? 9 : real ? 8 : s.tone === 'neutral' || s.tone === 'ok' ? 4 : 6.5}
               pathOptions={{
                 color: selected || real ? INK : '#ffffff',
                 weight: selected || real ? 2 : 0.8,
@@ -163,6 +174,10 @@ function Legend({ view }: { view: View }) {
       <span className="inline-flex items-center gap-1.5">
         <span className="h-2.5 w-2.5 rounded-full border-2 border-ink" />
         Real phone
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-0 w-4 border-t-[1.5px] border-dashed border-brand" />
+        Ward 47 (demo)
       </span>
     </div>
   )

@@ -85,12 +85,12 @@ a {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(27, 29, 26, 0.08);
   color: var(--ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 3px 7px;
 }
 .leaflet-control-attribution {
   background: rgba(247, 246, 241, 0.85) !important;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 
 /* Keyboard focus: visible on every control, never on mouse click. */
@@ -175,4 +175,62 @@ textarea {
     animation: none;
     opacity: 0.8;
   }
+}
+
+.leaflet-tooltip.ward-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  padding: 0;
+}
+.leaflet-tooltip.ward-label::before {
+  display: none;
+}
+
+/* Heat slider: a plain track that fills in heat, a thumb you can grab. */
+.heat-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.heat-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.heat-range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.heat-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--heat);
+}
+.heat-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -10px;
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--heat);
+  box-shadow: 0 2px 6px rgba(27, 29, 26, 0.18);
+  transition: transform 140ms var(--ease-out);
+}
+.heat-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.heat-range::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--heat);
 }
