@@ -149,7 +149,9 @@ function nextAction(call: CheckInOut, e: ElderListItem): string {
   }
   if (e.last_resolution) return 'Closed by a person who checked in person.'
   if (e.current_call && !e.current_call.started) {
-    return `${e.current_call.is_recall ? 'Follow-up call' : 'Next attempt'} at ${fmtTime(e.current_call.scheduled_scenario)}.`
+    return e.current_call.is_recall
+      ? `Follow-up call at ${fmtTime(e.current_call.scheduled_scenario)}.`
+      : `Calling again at ${fmtTime(e.current_call.scheduled_scenario)} (attempt ${e.current_call.attempt}).`
   }
   if (call.outcome === 'GREEN') return 'Nothing now. Neralu calls again if the heat stays above their threshold.'
   if (call.outcome === 'AMBER') return 'Family informed. A follow-up call is scheduled.'

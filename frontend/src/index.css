@@ -25,6 +25,7 @@
   --font-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --font-kn: "Noto Sans Kannada", "Public Sans", sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
 }
 
 html,
@@ -57,6 +58,14 @@ a {
   font-family: var(--font-kn);
 }
 
+/* Editorial display voice for the story page: a newspaper's calm, not a startup's shout. */
+.display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
 /* Data: numbers align in columns everywhere they are compared. */
 .num {
   font-family: var(--font-mono);
@@ -64,12 +73,24 @@ a {
 }
 
 .neralu-tiles {
-  filter: grayscale(1) contrast(0.8) brightness(1.1);
-  opacity: 0.42;
+  filter: grayscale(1) sepia(0.12) contrast(0.85) brightness(1.04);
+  opacity: 0.62;
 }
 .leaflet-container {
-  background: var(--paper);
+  background: #ecebe6;
   font-family: var(--font-sans);
+}
+.leaflet-tooltip {
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(27, 29, 26, 0.08);
+  color: var(--ink);
+  font-size: 12px;
+  padding: 3px 7px;
+}
+.leaflet-control-attribution {
+  background: rgba(247, 246, 241, 0.85) !important;
+  font-size: 10px;
 }
 
 /* Keyboard focus: visible on every control, never on mouse click. */

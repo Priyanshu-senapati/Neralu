@@ -1,5 +1,7 @@
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mark, Wordmark } from '../components/Brand'
+import { gsap, reducedMotion } from '../motion'
 import { useRuleBook } from '../rules'
 
 /*
@@ -84,78 +86,153 @@ export default function Story() {
 
 function Hero() {
   return (
-    <section className="mx-auto grid max-w-6xl gap-10 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:pt-14">
+    <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-10 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-14 lg:pt-16">
       <div>
-        <h1 className="text-balance text-[2.1rem] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[2.9rem]">
-          Heat warnings tell a city what's coming. Neralu checks who's safe.
+        <h1 className="display text-[2.4rem] font-medium leading-[1.05] text-ink sm:text-[3rem] xl:text-[3.55rem]">
+          <span className="block lg:whitespace-nowrap">Heat warnings tell a city</span>
+          <span className="block">what's coming.</span>
+          <span className="mt-1 block italic text-brand lg:whitespace-nowrap">Neralu checks who's safe.</span>
         </h1>
-        <p className="mt-5 max-w-[38rem] text-lg leading-relaxed text-ink/85">
-          When the heat crosses a person's own risk threshold, Neralu phones them on whatever phone they have,
-          in their language. Four safety questions on the keypad, one spoken answer, and a key for "I need help".
-          If something is wrong, or nobody picks up, a person nearby is asked to go to the door.
+        <p className="mt-7 max-w-[34rem] text-[1.125rem] leading-[1.65] text-ink/80">
+          When the heat crosses a person's own threshold, Neralu calls them on whatever phone they have, in their
+          language. If an answer is worrying, or nobody picks up, a person nearby is asked to go to the door.
         </p>
-        <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <Link to="/ward" className="press rounded-[4px] bg-brand px-4 py-2.5 font-semibold text-brand-ink hover:bg-brand/90">
+        <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4">
+          <Link to="/ward" className="press inline-flex items-center gap-2 rounded-[5px] bg-brand px-5 py-3 font-semibold text-brand-ink shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_6px_16px_-8px_rgba(31,61,51,0.6)] hover:bg-brand/92">
             Open the ward console
+            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
-          <a href="#call" className="font-semibold underline decoration-line-strong hover:decoration-ink">
-            See what happens on a call
+          <a href="#call" className="font-semibold text-ink underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-brand">
+            How a call works
           </a>
         </div>
-        <p className="mt-6 max-w-[38rem] text-sm text-muted">
-          Ward 47 is a demo ward. Its residents, weather and most call outcomes are simulated and labelled as such.
+        <p className="mt-10 max-w-[34rem] border-t border-line pt-4 text-sm leading-relaxed text-muted">
+          Ward 47 is a demo ward: its residents, weather and most call outcomes are simulated and labelled.
           The rules, the escalation and the live call are real.
         </p>
       </div>
-      <ExampleCall />
+      <CallReplay />
     </section>
   )
 }
 
-/** One call as the ward officer sees it. An example, and it follows the real rules (R6). */
-function ExampleCall() {
-  const rows: [string, string, boolean?][] = [
-    ['Water in the last hour', 'No', true],
-    ['Dizzy, weak or confused', 'No'],
-    ['Room very hot', 'Yes'],
-    ['Fan or cooler working', 'Yes'],
-    ['Knew what day it is', 'Yes (spoken)'],
-    ['Okay, or needs help', 'Okay'],
-  ]
+/**
+ * Kamala's call, replayed once: the page's one authored motion. It follows the real rules (R6), is
+ * labelled demo data, and with reduced motion it simply shows the finished call.
+ */
+const REPLAY: { q: string; a: string; concern?: boolean; via?: string }[] = [
+  { q: 'Water in the last hour', a: 'No', concern: true },
+  { q: 'Dizzy, weak or confused', a: 'No' },
+  { q: 'Room very hot', a: 'Yes' },
+  { q: 'Fan or cooler working', a: 'Yes' },
+  { q: 'What day is it today?', a: '"Friday"', via: 'spoken' },
+  { q: 'Okay, or needs help', a: 'Okay' },
+]
+
+function CallReplay() {
+  const root = useRef<HTMLDivElement>(null)
+  const status = useRef<HTMLSpanElement>(null)
+  const [done, setDone] = useState(false)
+  const tl = useRef<gsap.core.Timeline | null>(null)
+
+  const play = useCallback(() => {
+    const el = root.current
+    if (!el) return
+    tl.current?.kill()
+    setDone(false)
+    const say = (t: string) => () => status.current && (status.current.textContent = t)
+    const rows = el.querySelectorAll('[data-row]')
+    const answers = el.querySelectorAll('[data-answer]')
+    const t = gsap.timeline({ delay: 0.4, onComplete: () => setDone(true) })
+    // Pending parts stay visible but quiet, so the card never shows an empty block.
+    t.set(rows, { opacity: 0.35 })
+      .set(answers, { opacity: 0, x: 6 })
+      .set('[data-verdict]', { opacity: 0.18 })
+      .call(say('Ringing'))
+      .call(say('Connected · code word Mallige played'), [], '+=0.7')
+    rows.forEach((row, i) => {
+      t.call(say(`Question ${i + 1} of ${rows.length}`), [], '+=0.25')
+        .to(row, { opacity: 1, duration: 0.2 }, '<')
+        .to(answers[i], { opacity: 1, x: 0, duration: 0.3 }, '+=0.4')
+    })
+    t.call(say('Assessing with the published rules'), [], '+=0.3')
+      .call(say('Call ended · 1 min 12 s'), [], '+=0.55')
+      .to('[data-verdict]', { opacity: 1, duration: 0.45 }, '<')
+    tl.current = t
+  }, [])
+
+  useLayoutEffect(() => {
+    if (reducedMotion()) {
+      setDone(true)
+      if (status.current) status.current.textContent = 'Call ended · 1 min 12 s'
+      return
+    }
+    const ctx = gsap.context(play, root)
+    return () => ctx.revert()
+  }, [play])
+
   return (
-    <figure className="self-start border border-line-strong bg-surface">
-      <figcaption className="flex items-baseline justify-between border-b border-line px-4 py-2.5 text-xs text-muted">
-        <span>Example welfare check</span>
-        <span className="rounded-[3px] border border-line px-1 font-mono uppercase tracking-wide">demo data</span>
+    <figure
+      ref={root}
+      className="relative rounded-[8px] border border-line bg-surface shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(27,29,26,0.28)]"
+    >
+      <figcaption className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 text-xs">
+        <span className="inline-flex items-center gap-2 text-ink">
+          <span className="relative flex h-2 w-2" aria-hidden="true">
+            {!done && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ok opacity-60" />}
+            <span className={`relative inline-flex h-2 w-2 rounded-full ${done ? 'bg-line-strong' : 'bg-ok'}`} />
+          </span>
+          <span ref={status} aria-live="polite">Call ended · 1 min 12 s</span>
+        </span>
+        <span className="rounded-[3px] border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+          Example · demo data
+        </span>
       </figcaption>
-      <div className="px-4 pt-3.5">
-        <div className="flex items-baseline justify-between">
-          <span className="text-lg font-semibold">Kamala R.</span>
-          <span className="num text-sm text-muted">11:02 · attempt 1</span>
+
+      <div className="flex items-baseline justify-between gap-4 px-5 pt-4">
+        <div>
+          <div className="text-xl font-semibold tracking-[-0.01em]">Kamala R.</div>
+          <div className="text-sm text-muted">74 · lives alone · sheet roof · Kannada</div>
         </div>
-        <p className="text-sm text-muted">74 · lives alone · sheet roof · Kannada</p>
-        <p className="mt-2 text-sm">
-          Call opens with her family's code word <span className="font-semibold">Mallige</span>.
-        </p>
+        <div className="num text-right text-sm text-muted">
+          11:02
+          <span className="block text-xs">attempt 1</span>
+        </div>
       </div>
-      <dl className="mx-4 mt-3 divide-y divide-line border-y border-line text-sm">
-        {rows.map(([q, a, concern]) => (
-          <div key={q} className="flex justify-between gap-4 py-1.5">
-            <dt>{q}</dt>
-            <dd className={concern ? 'font-semibold text-alert' : ''}>{a}</dd>
-          </div>
+
+      <ol className="mx-5 mt-4 border-t border-line">
+        {REPLAY.map((r, i) => (
+          <li key={r.q} data-row className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-baseline gap-x-2 border-b border-line py-2 text-[15px]">
+            <span className="num text-xs text-muted">{i + 1}</span>
+            <span>{r.q}</span>
+            <span data-answer className={`text-right ${r.concern ? 'font-semibold text-alert' : ''}`}>
+              {r.a}
+              {r.via && <span className="ml-1 text-xs text-muted">{r.via}</span>}
+            </span>
+          </li>
         ))}
-      </dl>
-      <div className="space-y-1.5 px-4 py-3.5 text-sm">
-        <p>
-          <span className="rounded-[3px] bg-watch-bg px-1.5 py-0.5 font-semibold text-watch">AMBER · Follow-up</span>{' '}
-          <span className="num text-xs text-muted">Rule R6</span>
+      </ol>
+
+      <div data-verdict className="px-5 pb-5 pt-4">
+        <div className="flex items-center gap-2.5">
+          <span className="rounded-[4px] bg-watch-bg px-2 py-1 text-sm font-semibold leading-none text-watch">AMBER · Follow-up</span>
+          <span className="num text-xs leading-none text-muted">Rule R6</span>
+        </div>
+        <p className="mt-2.5 text-[15px] leading-relaxed">
+          No water in the last hour, so the call ended with advice to drink a glass of water now.
         </p>
-        <p>No water in the last hour. The call ends with advice to drink a glass of water now.</p>
-        <p>
-          <span className="font-semibold">Next:</span> her son is informed and Neralu calls again in 30 minutes. A second
-          concerning call sends a person.
+        <p className="mt-1.5 text-[15px] leading-relaxed">
+          <span className="font-semibold">Next:</span> her son is told, and Neralu calls again in 30 minutes. A second
+          worrying call sends a person.
         </p>
+        <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
+          <span>Decided by a fixed rule, not by AI</span>
+          {done && !reducedMotion() && (
+            <button onClick={play} className="font-semibold text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
+              Replay
+            </button>
+          )}
+        </div>
       </div>
     </figure>
   )
@@ -170,7 +247,7 @@ function RiskIsPersonal() {
     <section className="border-y border-line bg-surface">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <div>
-          <h2 className="text-2xl font-semibold tracking-[-0.01em]">Heat warnings are city-wide. Risk is personal.</h2>
+          <h2 className="display text-[1.9rem] font-medium leading-tight">Heat warnings are city‑wide. Risk is personal.</h2>
           <p className="mt-3 text-ink/85">
             The same afternoon is ordinary for one person and dangerous for another. Neralu gives everyone a threshold
             from things a family already knows: age, living alone, the roof, a fan, medicines that make heat harder.
@@ -232,7 +309,7 @@ function TheCall() {
   ]
   return (
     <section id="call" className="mx-auto max-w-6xl scroll-mt-6 px-5 py-16 sm:px-8">
-      <h2 className="max-w-2xl text-2xl font-semibold tracking-[-0.01em]">
+      <h2 className="display max-w-2xl text-[1.9rem] font-medium leading-tight">
         One unanswered call is enough to send someone to the door.
       </h2>
       <ol className="mt-8 grid gap-x-12 lg:grid-cols-2">
@@ -256,7 +333,7 @@ function Rules() {
     <section id="rules" className="scroll-mt-6 border-y border-line bg-surface">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="text-2xl font-semibold tracking-[-0.01em]">Rules decide. AI only listens.</h2>
+          <h2 className="display text-[1.9rem] font-medium leading-tight">Rules decide. AI only listens.</h2>
           <p className="mt-3 text-ink/85">
             Speech-to-text turns the spoken day into a word. That is all the AI does. Whether someone is safe is
             decided by these rules, in this order, and the first one that matches wins.
@@ -305,7 +382,7 @@ function WhoGoes() {
   ]
   return (
     <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
-      <h2 className="max-w-2xl text-2xl font-semibold tracking-[-0.01em]">Escalation goes to people, one step at a time.</h2>
+      <h2 className="display max-w-2xl text-[1.9rem] font-medium leading-tight">Escalation goes to people, one step at a time.</h2>
       <ol className="mt-8 grid border-l border-line sm:grid-cols-2 sm:border-l-0 lg:grid-cols-4">
         {tiers.map(([who, what], i) => (
           <li key={who} className="relative border-line py-3 pl-5 sm:border-t sm:pl-0 sm:pr-6 sm:pt-5">
@@ -334,7 +411,7 @@ function Phones() {
   return (
     <section className="border-y border-line bg-brand text-brand-ink">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
-        <h2 className="text-2xl font-semibold tracking-[-0.01em]">Built for the phones people actually have.</h2>
+        <h2 className="display text-[1.9rem] font-medium leading-tight">Built for the phones people actually have.</h2>
         <dl className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
           {facts.map(([t, d]) => (
             <div key={t}>
@@ -352,7 +429,7 @@ function Honesty() {
   return (
     <section className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-2">
       <div>
-        <h2 className="text-2xl font-semibold tracking-[-0.01em]">What is real in this demo</h2>
+        <h2 className="display text-[1.9rem] font-medium leading-tight">What is real in this demo</h2>
         <ul className="mt-4 space-y-2 text-ink/85">
           <li>The call to Kamala, on a real phone or, where the network blocks it, on the browser phone. Her keypad answers and her spoken answer.</li>
           <li>The rules that classify the call, and the escalation that follows.</li>
@@ -360,7 +437,7 @@ function Honesty() {
         </ul>
       </div>
       <div>
-        <h2 className="text-2xl font-semibold tracking-[-0.01em]">What is simulated</h2>
+        <h2 className="display text-[1.9rem] font-medium leading-tight">What is simulated</h2>
         <ul className="mt-4 space-y-2 text-ink/85">
           <li>The weather, set from the demo controls.</li>
           <li>The clock, which runs 60 times faster so a day fits in minutes.</li>
