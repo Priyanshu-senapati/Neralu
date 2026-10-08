@@ -149,7 +149,7 @@ function CallReplay() {
   return (
     <figure
       ref={root}
-      className="relative rounded-[8px] border border-line bg-surface shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(27,29,26,0.28)]"
+      className="relative rounded-[8px] border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(0,0,0,0.55)]"
     >
       <figcaption className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 text-xs">
         <span className="inline-flex items-center gap-2 text-ink">
