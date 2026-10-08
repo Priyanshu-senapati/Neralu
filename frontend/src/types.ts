@@ -74,6 +74,7 @@ export interface ElderListItem {
   roof_type: string
   risk_score: number
   risk_factors: string[]
+  threshold_c: number
   caregiver_route: boolean
   due_calls: number
   has_neighbour: boolean
@@ -89,6 +90,22 @@ export interface ElderListItem {
     resolution: string
     resolved_scenario: string
   } | null
+}
+
+export interface RoundSummary {
+  round_no: number
+  started_scenario: string
+  called: number
+  called_real: number
+  called_simulated: number
+  caregiver_route: number
+  outcomes: Record<Outcome, number>
+  in_progress: number
+  red_cases: number
+  support_cases: number
+  accepted: number
+  overdue: number
+  as_of_scenario: string
 }
 
 export interface NeraluEvent {

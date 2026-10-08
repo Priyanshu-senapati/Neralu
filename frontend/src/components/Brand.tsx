@@ -14,21 +14,21 @@ export function Mark({ className = 'h-6 w-6' }: { className?: string }) {
 }
 
 const SIZES = {
-  sm: { mark: 'h-[22px] w-[22px]', text: 'text-[17px]', kn: 'text-[13px]', gap: 'gap-2' },
-  md: { mark: 'h-7 w-7', text: 'text-[21px]', kn: 'text-[15px]', gap: 'gap-2.5' },
-  lg: { mark: 'h-9 w-9', text: 'text-[28px]', kn: 'text-lg', gap: 'gap-3' },
+  sm: { mark: 'h-[22px] w-[22px]', text: 'text-[1.0625rem]', kn: 'text-[0.8125rem]', gap: 'gap-2' },
+  md: { mark: 'h-7 w-7', text: 'text-[1.3125rem]', kn: 'text-[0.9375rem]', gap: 'gap-2.5' },
+  lg: { mark: 'h-9 w-9', text: 'text-[1.75rem]', kn: 'text-lg', gap: 'gap-3' },
 }
 
 /** Mark centred on the cap height; English and Kannada names share one baseline. */
-export function Wordmark({ size = 'md', kannada = true }: { size?: keyof typeof SIZES; kannada?: boolean }) {
+export function Wordmark({ size = 'md', kannada = true, onDark = false }: { size?: keyof typeof SIZES; kannada?: boolean; onDark?: boolean }) {
   const s = SIZES[size]
   return (
     <span className={`inline-flex items-center ${s.gap}`}>
-      <Mark className={`${s.mark} shrink-0 text-brand`} />
+      <Mark className={`${s.mark} shrink-0 ${onDark ? 'text-brand-ink' : 'text-brand'}`} />
       <span className="inline-flex items-baseline gap-2 leading-none">
-        <span className={`${s.text} font-semibold tracking-[-0.02em] text-ink`}>Neralu</span>
+        <span className={`${s.text} font-semibold tracking-[-0.02em] ${onDark ? 'text-brand-ink' : 'text-ink'}`}>Neralu</span>
         {kannada && (
-          <span className={`kn ${s.kn} leading-none text-muted`} lang="kn">
+          <span className={`kn ${s.kn} leading-none ${onDark ? 'text-brand-ink/65' : 'text-muted'}`} lang="kn">
             ನೆರಳು
           </span>
         )}

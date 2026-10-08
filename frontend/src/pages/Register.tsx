@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { api, ApiError } from '../api'
+import { Wordmark } from '../components/Brand'
 import { AnimatedNumber, DrawnCheck } from '../components/Motion'
 import type { ElderDetail } from '../types'
 
@@ -101,7 +102,7 @@ export default function Register() {
     <Page>
       <p className="text-sm text-muted">Heat welfare register · family registration</p>
       <Progress step={step} />
-      <h1 ref={heading} tabIndex={-1} className="mt-4 text-xl font-semibold outline-none">{STEPS[step].title}</h1>
+      <h1 ref={heading} tabIndex={-1} className="display mt-4 text-[1.6rem] font-medium leading-tight outline-none">{STEPS[step].title}</h1>
 
       <form onSubmit={submit} className="mt-3 space-y-5">
         {step === 0 && (
@@ -200,7 +201,7 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
     <Page>
       <DrawnCheck className="mb-3 h-10 w-10 text-ok" />
       <p className="text-sm text-muted">Registration complete</p>
-      <h1 className="text-2xl font-semibold tracking-[-0.01em]">{done.name} is on the Ward 47 heat register</h1>
+      <h1 className="display text-[1.85rem] font-medium leading-tight">{done.name} is on the Ward 47 heat register</h1>
       <div className="mt-4 rounded-ui border border-line bg-surface">
         <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
           <span className="text-sm text-muted">Registration number</span>
@@ -290,8 +291,8 @@ function Next({ n, title, children }: { n: number; title: string; children: Reac
 function Page({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto min-h-dvh max-w-[430px] bg-paper px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <div className="mb-4 flex items-baseline justify-between">
-        <span className="text-lg font-semibold">Neralu</span>
+      <div className="mb-6 flex items-center justify-between">
+        <Wordmark size="sm" />
         <span className="text-sm text-muted">Ward 47 · demo ward, Bengaluru</span>
       </div>
       {children}

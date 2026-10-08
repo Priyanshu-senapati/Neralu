@@ -249,3 +249,9 @@ def test_rounds_are_separate_and_reset_clears_them(client, monkeypatch):
     assert all(r["called"] > 0 for r in rounds)
     client.post("/api/sim/reset")
     assert client.get("/api/rounds").json() == []
+
+
+def test_elder_list_carries_each_personal_threshold(client):
+    client.post("/api/sim/heat", json=HEATWAVE)  # night 27 °C: thresholds drop by 1
+    kamala = next(e for e in client.get("/api/elders").json() if e["name"] == "Kamala R.")
+    assert kamala["risk_score"] == 70 and kamala["threshold_c"] == 32.0
