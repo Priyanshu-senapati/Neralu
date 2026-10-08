@@ -1,4 +1,5 @@
 import 'leaflet/dist/leaflet.css'
+import { memo } from 'react'
 import { AttributionControl, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet'
 import { elderStatus, TONE_HEX } from '../status'
 import type { ElderListItem } from '../types'
@@ -11,7 +12,9 @@ interface Props {
   onSelect: (id: number) => void
 }
 
-export function WardMap({ elders, selectedId, onSelect }: Props) {
+// Memoised: the dashboard re-renders every 500 ms for the scenario clock; the map only needs to
+// redraw its ~400 markers when residents or the selection change.
+export const WardMap = memo(function WardMap({ elders, selectedId, onSelect }: Props) {
   // Draw calm dots first so coloured statuses sit on top.
   const ordered = [...elders].sort((a, b) => rank(a) - rank(b))
   return (
@@ -52,7 +55,7 @@ export function WardMap({ elders, selectedId, onSelect }: Props) {
       <Legend />
     </section>
   )
-}
+})
 
 function rank(e: ElderListItem) {
   if (!e.is_simulated) return 5

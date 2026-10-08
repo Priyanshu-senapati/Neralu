@@ -55,6 +55,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
             <li key={e.id}>
               <button
                 onClick={() => onSelect(e.id)}
+                aria-current={selectedId === e.id ? 'true' : undefined}
                 className={`grid w-full grid-cols-[1fr_auto_5.5rem_8rem] items-center gap-x-3 border-b border-line px-4 py-2 text-left hover:bg-paper ${selectedId === e.id ? 'bg-paper' : ''}`}
               >
                 <span className="min-w-0">

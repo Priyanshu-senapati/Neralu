@@ -12,7 +12,8 @@ export function WeatherBlock({ w }: { w: Weather }) {
     <div className="flex items-center gap-4 text-sm" title="Weather is set from the demo controls (simulated)">
       <Reading label="Temp" value={`${w.temp_c.toFixed(0)} °C`} />
       <Reading label="Humidity" value={`${w.humidity_pct.toFixed(0)} %`} />
-      <Reading label="Heat index" value={`${w.heat_index_c.toFixed(1)} °C`} heat />
+      {/* Heat colour only when it means something: a normal day stays ink on paper. */}
+      <Reading label="Heat index" value={`${w.heat_index_c.toFixed(1)} °C`} heat={w.level !== 'normal'} />
       <Reading label="Night min" value={`${w.night_min_c.toFixed(0)} °C`} />
       <span className={`rounded-ui px-2 py-0.5 text-xs font-semibold ${level.cls}`}>{level.label}</span>
       <span className="font-mono text-[10px] text-muted">simulated</span>

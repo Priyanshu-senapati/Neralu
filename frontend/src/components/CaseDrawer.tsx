@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { elderStatus, TIER_LABEL } from '../status'
 import { fmtTime } from '../time'
@@ -27,6 +27,12 @@ interface Props {
 export function CaseDrawer({ elderId, refreshKey, now, onClose }: Props) {
   const [d, setD] = useState<ElderDetail | null>(null)
   const [error, setError] = useState(false)
+  const closeRef = useRef<HTMLButtonElement>(null)
+
+  // Move keyboard focus into the drawer when it opens so Escape and Tab work from there.
+  useEffect(() => {
+    closeRef.current?.focus({ preventScroll: true })
+  }, [elderId])
 
   useEffect(() => {
     let live = true
@@ -44,10 +50,15 @@ export function CaseDrawer({ elderId, refreshKey, now, onClose }: Props) {
 
   const loaded = d && d.id === elderId
   return (
-    <aside className="fixed inset-y-0 right-0 z-[1000] flex w-[480px] max-w-full flex-col border-l border-line bg-surface">
+    <aside
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="case-drawer-title"
+      className="drawer-enter fixed inset-y-0 right-0 z-[1000] flex w-[480px] max-w-full flex-col border-l border-line bg-surface"
+    >
       <div className="flex items-start justify-between border-b border-line px-5 py-3">
         {loaded ? <Header d={d} /> : <div className="h-10 w-48 animate-pulse rounded-ui bg-line" />}
-        <button onClick={onClose} className="rounded-ui border border-line px-2 py-1 text-sm text-muted hover:text-ink">
+        <button ref={closeRef} onClick={onClose} className="press rounded-ui border border-line px-2 py-1 text-sm text-muted hover:text-ink">
           Close
         </button>
       </div>
@@ -65,7 +76,7 @@ function Header({ d }: { d: ElderDetail }) {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">{d.name}</h2>
+        <h2 id="case-drawer-title" className="text-lg font-semibold">{d.name}</h2>
         <span className="font-mono text-sm text-muted">{d.age}</span>
         {d.is_simulated && <SimTag />}
       </div>

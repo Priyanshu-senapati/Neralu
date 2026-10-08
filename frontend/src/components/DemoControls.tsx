@@ -74,7 +74,7 @@ function Btn({ children, onClick, busy }: { children: React.ReactNode; onClick: 
     <button
       onClick={onClick}
       disabled={busy}
-      className="w-full rounded-ui border border-line px-2 py-1.5 text-left text-sm hover:bg-paper disabled:text-muted"
+      className="press w-full rounded-ui border border-line px-2 py-1.5 text-left text-sm hover:bg-paper disabled:text-muted"
     >
       {busy ? 'Working…' : children}
     </button>
