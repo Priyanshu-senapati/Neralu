@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
+import Phone from './pages/Phone'
 import Register from './pages/Register'
 import Volunteer from './pages/Volunteer'
 
@@ -10,6 +11,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/volunteer" element={<Volunteer />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/phone" element={<Phone />} />
       </Routes>
     </BrowserRouter>
   )

@@ -60,6 +60,21 @@ To make real calls, fill these in `backend/.env` (never commit `.env`):
 - `PUBLIC_BASE_URL`: the public https address Twilio can reach, e.g. `ngrok http 8000`
 - `SARVAM_API_KEY`: speech-to-text for the "What day is it?" answer
 
+Check everything before going on stage (read-only, never places a call):
+`.venv\Scripts\python scripts\preflight.py`
+
+### No Twilio? Use the browser phone
+
+Set `TELEPHONY_MODE=browser` in `backend/.env` and restart the backend. Kamala's call then rings the
+`/phone` page instead of a SIM: open `http://<laptop-ip>:5173/phone` on a teammate's phone, tap
+**Turn on phone**, and hand it to the judge. It plays the same prompts (with English captions), takes the
+same keypad answers and records the spoken day, and everything after that (rules, escalation,
+volunteer alert, dashboard) is the same code a real call uses. The call's events say "browser phone".
+
+- The microphone needs https (or localhost). Over plain http on a phone the page asks the judge to tap
+  the day instead, which is scored the same way.
+- Twilio settings are not needed in this mode, and the preflight skips them.
+
 ## Layout
 
 ```
