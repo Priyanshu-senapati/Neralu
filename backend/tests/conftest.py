@@ -13,6 +13,7 @@ os.environ.update({
     "STT_TIMEOUT_S": "0.3",
     "SCHEDULER_ENABLED": "false",
     "ORIENTATION_MODE": "voice",
+    "ACK_TIMEOUT_MIN": "15",
     "MAX_ATTEMPTS": "2",
 })
 
