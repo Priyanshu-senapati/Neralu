@@ -1,13 +1,21 @@
 from collections.abc import Iterator
 
+from sqlalchemy import event
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import get_settings
 
 _url = get_settings().database_url
-engine = create_engine(
-    _url, connect_args={"check_same_thread": False} if _url.startswith("sqlite") else {}
-)
+_sqlite = _url.startswith("sqlite")
+engine = create_engine(_url, connect_args={"check_same_thread": False, "timeout": 15} if _sqlite else {})
+
+if _sqlite:
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(conn, _record) -> None:
+        cur = conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA synchronous=NORMAL")
+        cur.close()
 
 _run_id: str | None = None
 

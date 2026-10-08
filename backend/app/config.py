@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     amber_recall_min: float = 30
     scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")
 
+    scheduler_enabled: bool = True
+
     kamala_phone: str = ""
     volunteer_demo_token: str = "priya-demo"
 

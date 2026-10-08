@@ -72,6 +72,7 @@ class CheckIn(SQLModel, table=True):
     processed: bool = False
     classified_real: datetime | None = None
     is_simulated: bool = False
+    sim_resolve_at_real: datetime | None = None  # simulated residents only
 
 
 class Case(SQLModel, table=True):

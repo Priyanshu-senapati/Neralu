@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
+from app.calls import start_round
 from app.db import get_session
 from app.events import log_event
 from app.runs import start_new_run
@@ -33,3 +34,12 @@ def set_heat(body: HeatIn, session: Session = Depends(get_session)) -> dict:
 @router.post("/reset")
 def reset(session: Session = Depends(get_session)) -> dict:
     return {"run_id": start_new_run(session)}
+
+
+class RoundIn(BaseModel):
+    round_no: int = Field(ge=1, le=2)
+
+
+@router.post("/round")
+def start(body: RoundIn, session: Session = Depends(get_session)) -> dict:
+    return {"created": start_round(session, body.round_no)}

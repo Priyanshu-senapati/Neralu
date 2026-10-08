@@ -18,8 +18,16 @@ def _scenario(dt) -> str | None:
 
 
 def latest_checkins(session: Session) -> dict[int, CheckIn]:
-    """Most recent check-in per elder in this run (by id: later attempts have later ids)."""
-    rows = session.exec(select(CheckIn).where(CheckIn.run_id == current_run_id()).order_by(CheckIn.id))
+    """Most recent *classified* check-in per elder in this run (later attempts have later ids)."""
+    rows = session.exec(select(CheckIn).where(CheckIn.run_id == current_run_id(),
+                                              CheckIn.processed == True).order_by(CheckIn.id))  # noqa: E712
+    return {c.elder_id: c for c in rows}
+
+
+def pending_checkins(session: Session) -> dict[int, CheckIn]:
+    """The earliest not-yet-classified check-in per elder (a call in progress or scheduled)."""
+    rows = session.exec(select(CheckIn).where(CheckIn.run_id == current_run_id(),
+                                              CheckIn.processed == False).order_by(CheckIn.id.desc()))  # noqa: E712
     return {c.elder_id: c for c in rows}
 
 
@@ -42,12 +50,18 @@ def due_count(elder: Elder) -> int:
 def latest_out(c: CheckIn | None) -> dict[str, Any]:
     if c is None:
         return {"outcome": None, "rule_id": None, "reason": None, "attempt": None,
-                "at_scenario": None, "needs_support": False, "call_status": None,
-                "round_no": None}
+                "at_scenario": None, "needs_support": False, "call_status": None}
     return {"outcome": c.outcome, "rule_id": c.rule_id, "reason": c.reason, "attempt": c.attempt,
-            "at_scenario": _scenario(c.classified_real or c.scheduled_for_real),
-            "needs_support": c.needs_support, "call_status": c.call_status,
-            "round_no": c.round_no}
+            "at_scenario": _scenario(c.classified_real), "needs_support": c.needs_support,
+            "call_status": c.call_status}
+
+
+def current_call_out(c: CheckIn | None) -> dict[str, Any] | None:
+    if c is None:
+        return None
+    return {"checkin_id": c.id, "attempt": c.attempt, "is_recall": c.is_recall,
+            "started": c.started, "call_status": c.call_status, "round_no": c.round_no,
+            "scheduled_scenario": _scenario(c.scheduled_for_real)}
 
 
 def case_brief(c: Case | None) -> dict[str, Any] | None:
@@ -59,7 +73,8 @@ def case_brief(c: Case | None) -> dict[str, Any] | None:
             "rule_id": c.rule_id, "reason": c.reason}
 
 
-def elder_item(e: Elder, latest: CheckIn | None, case: Case | None) -> dict[str, Any]:
+def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
+               pending: CheckIn | None = None) -> dict[str, Any]:
     score, breakdown = vulnerability_score(e)
     return {
         "id": e.id, "name": e.name, "age": e.age, "language": e.language,
@@ -68,7 +83,8 @@ def elder_item(e: Elder, latest: CheckIn | None, case: Case | None) -> dict[str,
         "caregiver_route": e.cognitive_flag, "due_calls": due_count(e),
         "has_neighbour": e.neighbour_phone is not None,
         "lat": e.lat, "lng": e.lng, "is_simulated": e.is_simulated,
-        "latest": latest_out(latest), "open_case": case_brief(case),
+        "latest": latest_out(latest), "current_call": current_call_out(pending),
+        "open_case": case_brief(case),
     }
 
 
@@ -77,8 +93,14 @@ def run_elders(session: Session) -> list[Elder]:
 
 
 def elder_items(session: Session) -> list[dict[str, Any]]:
-    latest, cases = latest_checkins(session), active_cases(session)
-    return [elder_item(e, latest.get(e.id), cases.get(e.id)) for e in run_elders(session)]
+    latest, cases, pending = latest_checkins(session), active_cases(session), pending_checkins(session)
+    return [elder_item(e, latest.get(e.id), cases.get(e.id), pending.get(e.id))
+            for e in run_elders(session)]
+
+
+def elder_item_one(session: Session, e: Elder) -> dict[str, Any]:
+    return elder_item(e, latest_checkins(session).get(e.id), active_cases(session).get(e.id),
+                      pending_checkins(session).get(e.id))
 
 
 def risk_detail(e: Elder) -> dict[str, Any]:
@@ -95,7 +117,8 @@ def checkin_out(c: CheckIn) -> dict[str, Any]:
             "recording_url": f"/api/recordings/{c.id}" if c.recording_url else None,
             "outcome": c.outcome, "rule_id": c.rule_id, "reason": c.reason,
             "needs_support": c.needs_support, "is_simulated": c.is_simulated,
-            "at_scenario": _scenario(c.classified_real or c.scheduled_for_real)}
+            "at_scenario": _scenario(c.classified_real or c.scheduled_for_real),
+            "classified": c.processed}
 
 
 def elder_checkins(session: Session, elder_id: int) -> list[CheckIn]:
@@ -104,11 +127,10 @@ def elder_checkins(session: Session, elder_id: int) -> list[CheckIn]:
 
 
 def elder_detail(session: Session, e: Elder, *, reveal_address: bool | None = None) -> dict[str, Any]:
-    latest = latest_checkins(session).get(e.id)
     case = active_cases(session).get(e.id)
     if reveal_address is None:
         reveal_address = case is not None and case.state == "assigned"
-    item = elder_item(e, latest, case)
+    item = elder_item_one(session, e)
     item.update(risk_detail(e))
     item.update({"address": e.address if reveal_address else None,
                  "code_word": e.code_word, "family_name": e.family_name})
@@ -121,7 +143,7 @@ def case_detail(session: Session, case: Case, *, reveal_address: bool | None = N
     e = session.get(Elder, case.elder_id)
     if reveal_address is None:
         reveal_address = case.state == "assigned"
-    elder = elder_item(e, latest_checkins(session).get(e.id), active_cases(session).get(e.id))
+    elder = elder_item_one(session, e)
     elder.update(risk_detail(e))
     elder["address"] = e.address if reveal_address else None
     return {

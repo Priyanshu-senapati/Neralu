@@ -10,7 +10,9 @@ os.environ.update({
     "TWILIO_ACCOUNT_SID": "ACtest",
     "TWILIO_AUTH_TOKEN": "test-token",
     "TWILIO_FROM_NUMBER": "+15550000000",
-    "STT_TIMEOUT_S": "0.2",
+    "STT_TIMEOUT_S": "0.3",
+    "SCHEDULER_ENABLED": "false",
+    "MAX_ATTEMPTS": "2",
 })
 
 import pytest  # noqa: E402
@@ -28,3 +30,25 @@ def session():
     reset_state()
     with Session(engine) as s:
         yield s
+
+
+@pytest.fixture
+def client(monkeypatch):
+    """App client with a fresh seeded run; outbound Twilio calls are faked."""
+    from fastapi.testclient import TestClient
+
+    from app import calls
+    from app.main import app
+
+    placed = []
+
+    def fake_place_call(to, checkin_id):
+        placed.append((to, checkin_id))
+        return f"CA{checkin_id:032d}"
+
+    monkeypatch.setattr(calls, "place_call", fake_place_call)
+    SQLModel.metadata.drop_all(engine)
+    SQLModel.metadata.create_all(engine)
+    with TestClient(app) as c:
+        c.placed = placed
+        yield c
