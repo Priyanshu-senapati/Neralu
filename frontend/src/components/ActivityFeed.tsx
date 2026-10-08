@@ -14,7 +14,7 @@ const ACTOR: Record<string, string> = {
 export function ActivityFeed({ events, onSelect }: { events: NeraluEvent[]; onSelect: (elderId: number) => void }) {
   return (
     <section aria-label="Ward activity" className="flex min-h-0 flex-col border-t border-line bg-surface">
-      <h2 className="border-b border-line px-5 py-2 text-sm font-semibold">Ward activity</h2>
+      <h2 className="flex items-baseline justify-between border-b border-line px-5 py-2 text-sm font-semibold">Ward activity<span className="text-xs font-normal text-muted">Real calls, cases and officer actions</span></h2>
       {events.length === 0 ? (
         <p className="px-5 py-4 text-sm text-muted">Nothing yet. Set the weather and start a call round from the demo controls.</p>
       ) : (

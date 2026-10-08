@@ -86,16 +86,16 @@ export default function Dashboard() {
         </div>
       )}
       <SituationBar summary={summary} elders={elders} />
-      <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[minmax(0,1fr)_minmax(0,11.5rem)]">
+      <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[minmax(0,1fr)_auto]">
         {/* Urgent column first in the DOM: on a phone it is what the officer needs before the map. */}
         <div className="flex min-h-0 flex-col border-line lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l">
           <LiveCall elders={elders} refreshKey={drawerKey} onOpen={setSelected} />
           <AttentionList elders={elders} now={now} selectedId={selected} onSelect={setSelected} loading={loading} />
         </div>
         <div className="flex h-[55vh] min-h-0 flex-col border-t border-line lg:col-start-1 lg:row-start-1 lg:h-auto lg:border-t-0">
-          <WardMap elders={elders} selectedId={selected} onSelect={setSelected} />
+          <WardMap elders={elders} selectedId={selected} onSelect={setSelected} calling={summary.round_no !== null} />
         </div>
-        <div className="flex h-72 min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:h-auto">
+        <div className="flex max-h-72 min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:max-h-[11.5rem]">
           <ActivityFeed events={events} onSelect={setSelected} />
         </div>
       </main>
