@@ -176,3 +176,16 @@ textarea {
     opacity: 0.8;
   }
 }
+
+.leaflet-tooltip.ward-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 0;
+}
+.leaflet-tooltip.ward-label::before {
+  display: none;
+}

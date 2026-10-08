@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { api, ApiError } from '../api'
+import { Wordmark } from '../components/Brand'
 import { AnimatedNumber, DrawnCheck } from '../components/Motion'
 import type { ElderDetail } from '../types'
 
@@ -87,7 +88,7 @@ export default function Register() {
 
   return (
     <Page>
-      <h1 className="text-xl font-semibold">Register someone for heat checks</h1>
+      <h1 className="display text-[1.85rem] font-medium leading-tight">Register someone for heat checks</h1>
       <p className="mt-1 text-sm text-muted">On hot days Neralu calls them on any phone and tells someone nearby if they need help.</p>
       <form onSubmit={submit} className="mt-5 space-y-5">
         <Section title="About them">
@@ -143,8 +144,8 @@ export default function Register() {
 function Page({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto min-h-dvh max-w-[430px] bg-paper px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <div className="mb-4 flex items-baseline justify-between">
-        <span className="text-lg font-semibold">Neralu</span>
+      <div className="mb-6 flex items-center justify-between">
+        <Wordmark size="sm" />
         <span className="text-sm text-muted">Ward 47 · demo ward</span>
       </div>
       {children}

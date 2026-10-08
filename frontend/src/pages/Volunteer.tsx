@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api'
+import { Wordmark } from '../components/Brand'
 import { DrawnCheck } from '../components/Motion'
 import { StatusPill } from '../components/StatusPill'
 import { WaitingTimer } from '../components/WaitingTimer'
@@ -75,16 +76,28 @@ export default function Volunteer() {
   if (!onDuty) {
     return (
       <Shell>
-        <p className="mb-6 text-sm text-muted">
-          When you go on duty this phone will vibrate and sound when someone near you needs a check.
-        </p>
+        <h1 className="display text-[1.85rem] font-medium leading-tight">Someone near you may need a check today.</h1>
+        <ol className="mt-5 space-y-3 border-t border-line pt-4 text-[15px] leading-snug">
+          {[
+            'When a person near you does not answer Neralu, or says something worrying, this phone buzzes.',
+            'Accept the case. Only then do you see their address.',
+            'Go to their door, then record what you found. Their family is told.',
+          ].map((t, i) => (
+            <li key={t} className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2">
+              <span className="num text-sm text-muted">{i + 1}</span>
+              <span>{t}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-sm text-muted">Neralu never calls an ambulance. If it is an emergency, you decide to call 108.</p>
+        <div className="flex-1" />
         <button
           onClick={() => {
             audioCtx = new AudioContext()
             navigator.vibrate?.(50)
             setOnDuty(true)
           }}
-          className="press w-full rounded-ui bg-ink py-4 text-base font-semibold text-paper"
+          className="press mt-8 w-full rounded-[5px] bg-brand py-4 text-base font-semibold text-brand-ink"
         >
           Go on duty
         </button>
@@ -132,12 +145,21 @@ export default function Volunteer() {
 
 function Shell({ children, name }: { children: React.ReactNode; name?: string }) {
   return (
-    <div className="mx-auto min-h-dvh max-w-[430px] bg-paper px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
-      <header className="mb-5 flex items-baseline justify-between">
-        <span className="text-lg font-semibold">Neralu</span>
-        <span className="text-sm text-muted">{name ? `${name} · on duty` : 'Volunteer'}</span>
+    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-paper">
+      <header className="flex items-center justify-between bg-brand px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-brand-ink">
+        <Wordmark size="sm" onDark />
+        <span className="text-sm text-brand-ink/75">
+          {name ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#7fd1a0]" aria-hidden="true" />
+              {name} · on duty
+            </span>
+          ) : (
+            'Volunteer · Ward 47'
+          )}
+        </span>
       </header>
-      {children}
+      <div className="flex flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">{children}</div>
     </div>
   )
 }

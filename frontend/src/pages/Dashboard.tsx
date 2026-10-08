@@ -9,7 +9,7 @@ import { DemoControls } from '../components/DemoControls'
 import { TopBar } from '../components/TopBar'
 import { WardMap } from '../components/WardMap'
 import { useScenarioNow } from '../time'
-import type { ElderListItem, NeraluEvent, Summary } from '../types'
+import type { ElderListItem, NeraluEvent, RoundSummary, Summary } from '../types'
 import { useEventStream } from '../useEventStream'
 
 const REFETCH_GAP_MS = 700
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [selected, setSelected] = useState<number | null>(null)
   const [drawerKey, setDrawerKey] = useState(0)
   const [events, setEvents] = useState<NeraluEvent[]>([])
+  const [rounds, setRounds] = useState<RoundSummary[]>([])
   const timer = useRef<number | undefined>(undefined)
   const lastFetch = useRef(0)
   const selectedRef = useRef<number | null>(null)
@@ -30,10 +31,11 @@ export default function Dashboard() {
   const fetchAll = useCallback(async () => {
     lastFetch.current = Date.now()
     try {
-      const [s, e, ev] = await Promise.all([api.summary(), api.elders(), api.events(40)])
+      const [s, e, ev, r] = await Promise.all([api.summary(), api.elders(), api.events(40), api.rounds()])
       setSummary(s)
       setElders(e)
       setEvents(ev)
+      setRounds(r)
       setError(false)
     } catch {
       setError(true)
@@ -85,7 +87,7 @@ export default function Dashboard() {
           Live updates interrupted. Reconnecting; the ward refreshes when the connection is back.
         </div>
       )}
-      <SituationBar summary={summary} elders={elders} />
+      <SituationBar summary={summary} elders={elders} round={rounds.at(-1) ?? null} />
       <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[minmax(0,1fr)_auto]">
         {/* Urgent column first in the DOM: on a phone it is what the officer needs before the map. */}
         <div className="flex min-h-0 flex-col border-line lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l">
@@ -95,7 +97,7 @@ export default function Dashboard() {
         <div className="flex h-[55vh] min-h-0 flex-col border-t border-line lg:col-start-1 lg:row-start-1 lg:h-auto lg:border-t-0">
           <WardMap elders={elders} selectedId={selected} onSelect={setSelected} calling={summary.round_no !== null} />
         </div>
-        <div className="flex max-h-72 min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:max-h-[11.5rem]">
+        <div className="flex max-h-72 min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:max-h-[8.75rem]">
           <ActivityFeed events={events} onSelect={setSelected} />
         </div>
       </main>

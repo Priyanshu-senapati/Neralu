@@ -20,15 +20,15 @@ const SIZES = {
 }
 
 /** Mark centred on the cap height; English and Kannada names share one baseline. */
-export function Wordmark({ size = 'md', kannada = true }: { size?: keyof typeof SIZES; kannada?: boolean }) {
+export function Wordmark({ size = 'md', kannada = true, onDark = false }: { size?: keyof typeof SIZES; kannada?: boolean; onDark?: boolean }) {
   const s = SIZES[size]
   return (
     <span className={`inline-flex items-center ${s.gap}`}>
-      <Mark className={`${s.mark} shrink-0 text-brand`} />
+      <Mark className={`${s.mark} shrink-0 ${onDark ? 'text-brand-ink' : 'text-brand'}`} />
       <span className="inline-flex items-baseline gap-2 leading-none">
-        <span className={`${s.text} font-semibold tracking-[-0.02em] text-ink`}>Neralu</span>
+        <span className={`${s.text} font-semibold tracking-[-0.02em] ${onDark ? 'text-brand-ink' : 'text-ink'}`}>Neralu</span>
         {kannada && (
-          <span className={`kn ${s.kn} leading-none text-muted`} lang="kn">
+          <span className={`kn ${s.kn} leading-none ${onDark ? 'text-brand-ink/65' : 'text-muted'}`} lang="kn">
             ನೆರಳು
           </span>
         )}
