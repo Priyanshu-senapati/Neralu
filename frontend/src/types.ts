@@ -1,0 +1,159 @@
+export type Outcome = 'GREEN' | 'AMBER' | 'RED' | 'UNREACHED'
+export type CaseState = 'open' | 'assigned' | 'resolved'
+export type Tier = 'neighbour' | 'volunteer' | 'asha'
+export type WeatherLevel = 'normal' | 'caution' | 'severe_for_vulnerable'
+
+export interface Weather {
+  temp_c: number
+  humidity_pct: number
+  heat_index_c: number
+  night_min_c: number
+  level: WeatherLevel
+  simulated: true
+}
+
+export interface Summary {
+  run_id: string
+  scenario_now: string
+  demo_speed: number
+  max_attempts: number
+  weather: Weather
+  round_no: number | null
+  counts: {
+    registered: number
+    due_today: number
+    fine: number
+    follow_up: number
+    escalated: number
+    unreached_now: number
+    support: number
+  }
+}
+
+export interface Latest {
+  outcome: Outcome | null
+  rule_id: string | null
+  reason: string | null
+  attempt: number | null
+  at_scenario: string | null
+  needs_support: boolean
+  call_status: string | null
+}
+
+export interface CurrentCall {
+  checkin_id: number
+  attempt: number
+  is_recall: boolean
+  started: boolean
+  call_status: string | null
+  round_no: number
+  scheduled_scenario: string
+}
+
+export interface CaseBrief {
+  id: number
+  level: 'red' | 'support'
+  tier: Tier
+  state: CaseState
+  opened_scenario: string
+  overdue: boolean
+  tier_started_scenario: string
+  rule_id: string
+  reason: string
+}
+
+export interface ElderListItem {
+  id: number
+  name: string
+  age: number
+  language: string
+  lives_alone: boolean
+  roof_type: string
+  risk_score: number
+  risk_factors: string[]
+  caregiver_route: boolean
+  due_calls: number
+  has_neighbour: boolean
+  lat: number
+  lng: number
+  is_simulated: boolean
+  latest: Latest
+  current_call: CurrentCall | null
+  open_case: CaseBrief | null
+}
+
+export interface NeraluEvent {
+  id: number
+  kind: string
+  ts_scenario: string
+  actor: string
+  message: string
+  elder_id: number | null
+  case_id: number | null
+  checkin_id: number | null
+  data: Record<string, unknown>
+  simulated: boolean
+}
+
+export interface CheckInOut {
+  id: number
+  round_no: number
+  attempt: number
+  is_recall: boolean
+  call_status: string | null
+  answers: Record<string, string>
+  transcript: string | null
+  recording_url: string | null
+  outcome: Outcome | null
+  rule_id: string | null
+  reason: string | null
+  needs_support: boolean
+  is_simulated: boolean
+  at_scenario: string | null
+  classified: boolean
+}
+
+export interface RiskDetail {
+  risk_breakdown: [string, number][]
+  threshold_c: number
+  heat_index_c: number
+  night_min_c: number
+}
+
+export interface ElderDetail extends ElderListItem, RiskDetail {
+  address: string | null
+  code_word: string
+  family_name: string | null
+  checkins: CheckInOut[]
+  events: NeraluEvent[]
+}
+
+export interface CaseListItem extends CaseBrief {
+  elder: ElderListItem
+}
+
+export interface CaseDetail {
+  id: number
+  level: 'red' | 'support'
+  state: CaseState
+  tier: Tier
+  overdue: boolean
+  rule_id: string
+  reason: string
+  opened_scenario: string
+  tier_started_scenario: string
+  resolved_scenario: string | null
+  resolution: string | null
+  resolution_note: string | null
+  assignee_id: number | null
+  elder: ElderListItem & RiskDetail & { address: string | null; phone?: string | null; maps_url?: string | null }
+  checkins: CheckInOut[]
+  events: NeraluEvent[]
+  mine?: boolean
+  distance_km?: number
+}
+
+export interface VolunteerMe {
+  volunteer: { id: number; name: string; role: 'volunteer' | 'asha' }
+  cases: CaseDetail[]
+}

@@ -147,3 +147,16 @@ def test_round_two_only_for_twice_due(client):
     assert 0 < r2 < r1
     again = client.post("/api/sim/round", json={"round_no": 1}).json()["created"]
     assert again == 0  # no duplicate check-ins for the same round
+
+
+def test_volunteer_still_sees_case_after_it_moves_to_asha(client):
+    cid = red_case_for_kamala()
+    with Session(engine) as s:
+        from app.models import Case
+        c = s.get(Case, cid)
+        c.tier = "asha"
+        s.commit()
+    me = client.get("/api/volunteer/me", params={"token": "priya-demo"}).json()
+    assert cid in [c["id"] for c in me["cases"]]
+    asha = client.get("/api/volunteer/me", params={"token": "sim-asha-1"}).json()
+    assert cid in [c["id"] for c in asha["cases"]]

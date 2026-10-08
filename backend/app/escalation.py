@@ -66,7 +66,8 @@ def open_case(session: Session, elder_id: int, level: str, rule_id: str, reason:
     session.add(case)
     session.flush()
     label = "RED" if level == "red" else "Needs support"
-    log_event(session, "case_opened", f"{label} case opened · Rule {rule_id} · {reason}",
+    source = f"Escalated by {rule_id}" if rule_id.startswith("E") else f"Rule {rule_id}"
+    log_event(session, "case_opened", f"{label} case opened · {source} · {reason}",
               actor="rules", elder_id=elder_id, case_id=case.id,
               data={"level": level, "rule_id": rule_id, "reason": reason},
               simulated=elder.is_simulated)

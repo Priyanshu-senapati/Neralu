@@ -29,3 +29,12 @@ body {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
+
+.neralu-tiles {
+  filter: grayscale(1) contrast(0.85) brightness(1.08);
+  opacity: 0.55;
+}
+.leaflet-container {
+  background: var(--paper);
+  font-family: var(--font-sans);
+}

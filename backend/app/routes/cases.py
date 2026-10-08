@@ -105,9 +105,10 @@ def volunteer_case(session: Session, c: Case, v: Volunteer) -> dict:
 @router.get("/volunteer/me")
 def volunteer_me(token: str, session: Session = Depends(get_session)) -> dict:
     v = _volunteer(session, token)
-    tier = "asha" if v.role == "asha" else "volunteer"
+    # Escalating adds responders: volunteers keep seeing a case after it moves up to ASHA.
+    tiers = ("asha",) if v.role == "asha" else ("volunteer", "asha")
     rows = session.exec(select(Case).where(Case.run_id == current_run_id()).order_by(Case.id))
-    visible = [c for c in rows if (c.state == "open" and c.tier == tier)
+    visible = [c for c in rows if (c.state == "open" and c.tier in tiers)
                or (c.state == "assigned" and c.assignee_id == v.id)]
     return {"volunteer": {"id": v.id, "name": v.name, "role": v.role},
             "cases": [volunteer_case(session, c, v) for c in visible]}
