@@ -27,7 +27,7 @@ export function elderStatus(e: ElderListItem): ElderStatus {
   const c = e.open_case
   if (c?.level === 'red') {
     if (c.overdue) return { tone: 'alert', label: 'RED · overdue', group: 0 }
-    if (c.state === 'assigned') return { tone: 'alert', label: 'RED · accepted', group: 1 }
+    if (c.state === 'assigned') return { tone: 'alert', label: 'RED · accepted', group: 3.5 }
     return { tone: 'alert', label: 'RED', group: 1 }
   }
   const call = e.current_call
