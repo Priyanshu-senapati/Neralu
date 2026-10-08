@@ -270,3 +270,17 @@ textarea {
 .street-map .leaflet-control-attribution a {
   color: #1f3d33;
 }
+
+/* In-page links (The call, The rules, Back to top) glide instead of jumping. */
+html {
+  scroll-behavior: smooth;
+}
+:target,
+section[id] {
+  scroll-margin-top: 1.5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

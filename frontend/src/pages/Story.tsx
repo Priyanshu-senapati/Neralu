@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { ArrowUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Wordmark } from '../components/Brand'
 import { FlowButton } from '@/components/ui/flow-button'
@@ -36,7 +37,7 @@ export default function Story() {
   }, [])
   const heroBg = theme === 'light' ? '#f7f6f1' : '#000000' // matches --paper; the shader needs a concrete colour
   return (
-    <div className="min-h-dvh bg-paper text-ink">
+    <div id="top" className="min-h-dvh bg-paper text-ink">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink">
         Skip to content
       </a>
@@ -52,9 +53,6 @@ export default function Story() {
             <a href="#call" className="hover:text-ink hover:underline">The call</a>
             <a href="#rules" className="hover:text-ink hover:underline">The rules</a>
             <Link to="/register" className="hover:text-ink hover:underline">Register someone</Link>
-            <FlowButton to="/ward" size="sm">
-              Open the ward console
-            </FlowButton>
           </nav>
         </header>
         <Hero elders={elders} />
@@ -101,9 +99,6 @@ function Hero({ elders }: { elders: ElderListItem[] | null }) {
         )}
         <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4">
           <FlowButton to="/ward">Open the ward console</FlowButton>
-          <a href="#call" className="font-semibold text-ink underline decoration-line-strong decoration-2 underline-offset-[6px] hover:decoration-sun">
-            How a call works
-          </a>
         </div>
         <p className="mt-10 max-w-[34rem] border-t border-line pt-4 text-sm leading-relaxed text-muted">
           Ward 47 is a demo ward: its residents, weather and most call outcomes are simulated and labelled.
@@ -535,12 +530,6 @@ function Honesty() {
           <p className="mt-4 text-sm text-muted">Neralu has not been deployed yet. There are no user numbers on this page because there are none to show.</p>
         </div>
       </div>
-      <div className="mt-14 flex flex-wrap items-center gap-x-7 gap-y-4 border-t border-line pt-8">
-        <FlowButton to="/ward">Open the ward console</FlowButton>
-        <FlowButton to="/register" variant="secondary">
-          Register someone for heat checks
-        </FlowButton>
-      </div>
     </section>
   )
 }
@@ -548,7 +537,7 @@ function Honesty() {
 function Footer() {
   return (
     <footer className="border-t border-line bg-surface">
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,1fr))]">
+      <div className="mx-auto grid max-w-6xl items-end gap-8 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
         <div>
           <Wordmark />
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
@@ -556,18 +545,14 @@ function Footer() {
             heatwave hurts first.
           </p>
         </div>
-        <nav aria-label="Product" className="text-sm">
-          <div className="font-semibold">Product</div>
-          <ul className="mt-2 space-y-1.5 text-muted">
-            <li><Link to="/ward" className="hover:text-ink">Ward console</Link></li>
-            <li><Link to="/register" className="hover:text-ink">Register someone</Link></li>
-            <li><a href="#rules" className="hover:text-ink">The rules</a></li>
-          </ul>
-        </nav>
         <div className="text-sm">
           <div className="font-semibold">Context</div>
           <p className="mt-2 leading-relaxed text-muted">Hack4SDG prototype. SDG targets 11.5, 3.d and 13.1.</p>
         </div>
+        <a href="#top" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
+          Back to top
+          <ArrowUp className="h-4 w-4" aria-hidden="true" />
+        </a>
       </div>
     </footer>
   )
