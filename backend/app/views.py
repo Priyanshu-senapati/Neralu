@@ -99,8 +99,13 @@ def elder_items(session: Session) -> list[dict[str, Any]]:
 
 
 def elder_item_one(session: Session, e: Elder) -> dict[str, Any]:
-    return elder_item(e, latest_checkins(session).get(e.id), active_cases(session).get(e.id),
-                      pending_checkins(session).get(e.id))
+    checkins = elder_checkins(session, e.id)
+    latest = next((c for c in reversed(checkins) if c.processed), None)
+    pending = next((c for c in checkins if not c.processed), None)
+    cases = [c for c in session.exec(select(Case).where(
+        Case.elder_id == e.id, Case.state.in_(ACTIVE_CASE_STATES))).all()]
+    case = next((c for c in cases if c.level == "red"), cases[0] if cases else None)
+    return elder_item(e, latest, case, pending)
 
 
 def risk_detail(e: Elder) -> dict[str, Any]:
@@ -127,10 +132,10 @@ def elder_checkins(session: Session, elder_id: int) -> list[CheckIn]:
 
 
 def elder_detail(session: Session, e: Elder, *, reveal_address: bool | None = None) -> dict[str, Any]:
-    case = active_cases(session).get(e.id)
-    if reveal_address is None:
-        reveal_address = case is not None and case.state == "assigned"
     item = elder_item_one(session, e)
+    case = item["open_case"]
+    if reveal_address is None:
+        reveal_address = case is not None and case["state"] == "assigned"
     item.update(risk_detail(e))
     item.update({"address": e.address if reveal_address else None,
                  "code_word": e.code_word, "family_name": e.family_name})
