@@ -39,8 +39,11 @@ def url(path: str, **params) -> str:
 
 
 def audio(name: str, lang: str) -> str:
-    """Public URL of a prompt; the audio route falls back to English if `lang` lacks it."""
-    return url(f"/audio/{lang}/{name}.mp3")
+    """Public URL of a prompt; the audio route falls back to English if `lang` lacks it.
+    The file's modification time is in the URL so Twilio never plays a stale cached clip."""
+    path = resolve(lang, name)
+    version = int(path.stat().st_mtime) if path else 0
+    return url(f"/audio/{lang}/{name}.mp3", v=version)
 
 
 def has_audio(name: str, lang: str) -> bool:
