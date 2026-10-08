@@ -374,3 +374,22 @@ def test_answered_call_without_completion_callback_is_classified(client, monkeyp
         sync_tick(s)
     c = checkin(cid)
     assert c.processed and c.answers["water"] == "no" and c.outcome == "AMBER"
+
+
+def test_call_stuck_ringing_without_final_update_counts_as_no_answer(client, monkeypatch):
+    from datetime import timedelta
+    from app import calls as calls_mod
+    from app.escalation import sync_tick
+    from app.state import state
+    monkeypatch.setattr(calls_mod, "cancel_call", lambda sid: False)  # trial: cannot hang up
+    cid = start_kamala_call(client)
+    post(client, f"/voice/status?checkin_id={cid}", CallStatus="ringing")
+    t = [state.clock.real_now() + timedelta(seconds=90)]
+    monkeypatch.setattr(state.clock, "_now", lambda: t[0])
+    with Session(engine) as s:
+        sync_tick(s)
+    assert checkin(cid).processed is False  # the network's own ~50 s limit should still report
+    t[0] += timedelta(seconds=40)
+    with Session(engine) as s:
+        sync_tick(s)
+    assert (checkin(cid).processed, checkin(cid).outcome) == (True, "UNREACHED")

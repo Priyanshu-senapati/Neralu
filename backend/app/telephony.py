@@ -67,12 +67,21 @@ def place_call(to: str, checkin_id: int) -> str:
     return _twilio().calls.create(**params).sid
 
 
+_cancel_unsupported = False  # Twilio trial accounts answer every call update with 404
+
+
 def cancel_call(call_sid: str) -> bool:
-    """Hang up a call that is still queued or ringing. False if it was already answered or over."""
+    """Hang up a call that is still queued or ringing. False if it was already answered or over,
+    or if the account cannot update calls (then the network's own ring limit, ~50 s, applies)."""
+    global _cancel_unsupported
+    if _cancel_unsupported:
+        return False
     try:
         _twilio().calls(call_sid).update(status="canceled")
         return True
-    except TwilioRestException:
+    except TwilioRestException as exc:
+        if exc.code == 20404:
+            _cancel_unsupported = True
         return False
 
 

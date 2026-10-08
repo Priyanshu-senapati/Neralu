@@ -100,6 +100,7 @@ def cancel_unanswered_calls(session: Session) -> None:
 
 
 LOST_CALLBACK_AFTER = timedelta(seconds=60)    # after we hung up an unanswered call
+LOST_RINGING_AFTER = timedelta(minutes=2)      # still "ringing" with no final update
 LOST_COMPLETION_AFTER = timedelta(minutes=10)  # after the call was answered
 
 
@@ -113,6 +114,8 @@ def close_lost_calls(session: Session) -> None:
     for c in open_calls:
         age = now - c.placed_real
         if c.ring_timed_out and age >= timedelta(seconds=get_settings().ring_timeout_s) + LOST_CALLBACK_AFTER:
+            handle_call_ended(session, c.id, "no-answer")
+        elif c.call_status in ("queued", "initiated", "ringing") and age >= LOST_RINGING_AFTER:
             handle_call_ended(session, c.id, "no-answer")
         elif c.call_status == "in-progress" and age >= LOST_COMPLETION_AFTER:
             handle_call_ended(session, c.id, "completed")
