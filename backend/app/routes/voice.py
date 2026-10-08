@@ -37,6 +37,10 @@ def _live_checkin(session: Session, checkin_id: int) -> CheckIn | None:
     return c
 
 
+def _lang(session: Session, c: CheckIn) -> str:
+    return session.get(Elder, c.elder_id).language
+
+
 def _store(session: Session, c: CheckIn, field: str, value: str, via: str, **extra) -> None:
     c.answers = {**(c.answers or {}), field: value}
     if field == "orientation":
@@ -54,7 +58,7 @@ async def answer(request: Request, checkin_id: int) -> Response:
         if c is None:
             return twiml(tw.hangup_twiml())
         elder = session.get(Elder, c.elder_id)
-        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word))
+        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, elder.language))
 
 
 @router.post("/gather/{step}")
@@ -72,23 +76,23 @@ async def gather(request: Request, step: str, checkin_id: int, r: int = 0) -> Re
             _store(session, c, "self_report", value, "keypad")
             advice = (c.answers or {}).get("water") == "no"
             session.commit()
-            return twiml(tw.close_twiml(advice=advice, help_=value == "help"))
+            return twiml(tw.close_twiml(advice=advice, help_=value == "help", lang=_lang(session, c)))
         value = KEYPAD.get(digits)
         if value is None and not r:
-            return twiml(tw.gather_twiml(step, c.id, reprompt=True))
+            return twiml(tw.gather_twiml(step, c.id, reprompt=True, lang=_lang(session, c)))
         _store(session, c, tw.STEPS[step], value or "none", "keypad")
         session.commit()
         i = tw.STEP_ORDER.index(step)
         if i + 1 < len(tw.STEP_ORDER):
-            return twiml(tw.gather_twiml(tw.STEP_ORDER[i + 1], c.id, reprompt=False))
-        return twiml(tw.orientation_twiml(c.id))
+            return twiml(tw.gather_twiml(tw.STEP_ORDER[i + 1], c.id, reprompt=False, lang=_lang(session, c)))
+        return twiml(tw.orientation_twiml(c.id, _lang(session, c)))
 
 
 def _day_keypad(session: Session, c: CheckIn, digits: str | None, *, retried: bool) -> Response:
     """Orientation by keypad: 1 = Monday … 7 = Sunday, scored against the scenario day."""
     valid = digits is not None and digits in "1234567" and len(digits) == 1
     if not valid and not retried:
-        return twiml(tw.gather_twiml("day", c.id, reprompt=True))
+        return twiml(tw.gather_twiml("day", c.id, reprompt=True, lang=_lang(session, c)))
     if valid:
         pressed = int(digits) - 1
         today = state.clock.scenario_now().date().weekday()
@@ -98,7 +102,7 @@ def _day_keypad(session: Session, c: CheckIn, digits: str | None, *, retried: bo
         # No press is "none"; a key outside 1-7 is "uncertain". Neither ever counts as fine.
         _store(session, c, "orientation", "uncertain" if digits else "none", "keypad")
     session.commit()
-    return twiml(tw.gather_twiml("help", c.id, reprompt=False))
+    return twiml(tw.gather_twiml("help", c.id, reprompt=False, lang=_lang(session, c)))
 
 
 @router.post("/orientation")
@@ -117,7 +121,7 @@ async def orientation(request: Request, checkin_id: int, empty: int = 0) -> Resp
         elif "orientation" not in (c.answers or {}) and not c.recording_url:
             _store(session, c, "orientation", "none", "voice", transcript=None)
         session.commit()
-        return twiml(tw.gather_twiml("help", c.id, reprompt=False))
+        return twiml(tw.gather_twiml("help", c.id, reprompt=False, lang=_lang(session, c)))
 
 
 async def _score_orientation(checkin_id: int, recording_url: str, lang: str) -> None:

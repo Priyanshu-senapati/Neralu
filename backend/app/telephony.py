@@ -1,5 +1,4 @@
 """Twilio Programmable Voice: placing calls, TwiML builders, webhook signature validation."""
-from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, Request
@@ -8,9 +7,9 @@ from twilio.request_validator import RequestValidator
 from twilio.rest import Client
 from twilio.twiml.voice_response import Gather, VoiceResponse
 
+from app.audio import resolve
 from app.config import get_settings
 
-AUDIO_DIR = Path(__file__).resolve().parent.parent / "static" / "audio" / "kn"
 
 # Keypad steps in call order: url step -> Signals field
 STEPS = {"water": "water", "symptoms": "symptoms", "room": "room_hot", "fan": "fan_working"}
@@ -39,12 +38,13 @@ def url(path: str, **params) -> str:
     return f"{base}{path}" + (f"?{urlencode(params)}" if params else "")
 
 
-def audio(name: str) -> str:
-    return url(f"/audio/kn/{name}.mp3")
+def audio(name: str, lang: str) -> str:
+    """Public URL of a prompt; the audio route falls back to English if `lang` lacks it."""
+    return url(f"/audio/{lang}/{name}.mp3")
 
 
-def has_audio(name: str) -> bool:
-    return (AUDIO_DIR / f"{name}.mp3").exists()
+def has_audio(name: str, lang: str) -> bool:
+    return resolve(lang, name) is not None
 
 
 def place_call(to: str, checkin_id: int) -> str:
@@ -76,7 +76,7 @@ def cancel_call(call_sid: str) -> bool:
         return False
 
 
-def keypad_gather(resp: VoiceResponse, step: str, checkin_id: int, *, reprompt: bool) -> None:
+def keypad_gather(resp: VoiceResponse, step: str, checkin_id: int, *, reprompt: bool, lang: str) -> None:
     """Gather one digit for `step`; on silence Twilio falls through to the Redirect."""
     params = {"checkin_id": checkin_id}
     if reprompt:
@@ -84,37 +84,37 @@ def keypad_gather(resp: VoiceResponse, step: str, checkin_id: int, *, reprompt: 
     g = Gather(input="dtmf", num_digits=1, timeout=8, action=url(f"/voice/gather/{step}", **params),
                method="POST")
     if reprompt:
-        g.play(audio("reprompt"))
-    g.play(audio(PROMPTS[step]))
+        g.play(audio("reprompt", lang))
+    g.play(audio(PROMPTS[step], lang))
     resp.append(g)
     resp.redirect(url(f"/voice/gather/{step}", **params, timeout=1), method="POST")
 
 
-def answer_twiml(checkin_id: int, first_name: str, code_word: str) -> str:
+def answer_twiml(checkin_id: int, first_name: str, code_word: str, lang: str) -> str:
     resp = VoiceResponse()
-    resp.play(audio("greet"))
+    resp.play(audio("greet", lang))
     name_clip = f"name_{first_name.lower()}"
-    if has_audio(name_clip):
-        resp.play(audio(name_clip))
-    resp.play(audio("code_intro"))
-    resp.play(audio(f"code_{code_word}"))
-    resp.play(audio("safety"))
-    keypad_gather(resp, "water", checkin_id, reprompt=False)
+    if has_audio(name_clip, lang):
+        resp.play(audio(name_clip, lang))
+    resp.play(audio("code_intro", lang))
+    resp.play(audio(f"code_{code_word}", lang))
+    resp.play(audio("safety", lang))
+    keypad_gather(resp, "water", checkin_id, reprompt=False, lang=lang)
     return str(resp)
 
 
-def gather_twiml(step: str, checkin_id: int, *, reprompt: bool) -> str:
+def gather_twiml(step: str, checkin_id: int, *, reprompt: bool, lang: str) -> str:
     resp = VoiceResponse()
-    keypad_gather(resp, step, checkin_id, reprompt=reprompt)
+    keypad_gather(resp, step, checkin_id, reprompt=reprompt, lang=lang)
     return str(resp)
 
 
-def orientation_twiml(checkin_id: int) -> str:
+def orientation_twiml(checkin_id: int, lang: str) -> str:
     resp = VoiceResponse()
     if get_settings().orientation_mode == "keypad":
-        keypad_gather(resp, "day", checkin_id, reprompt=False)
+        keypad_gather(resp, "day", checkin_id, reprompt=False, lang=lang)
         return str(resp)
-    resp.play(audio("q_orientation"))
+    resp.play(audio("q_orientation", lang))
     resp.record(max_length=5, timeout=3, play_beep=False, method="POST",
                 action=url("/voice/orientation", checkin_id=checkin_id))
     # If nothing was recorded Twilio continues here instead of calling the action.
@@ -122,11 +122,11 @@ def orientation_twiml(checkin_id: int) -> str:
     return str(resp)
 
 
-def close_twiml(*, advice: bool, help_: bool) -> str:
+def close_twiml(*, advice: bool, help_: bool, lang: str) -> str:
     resp = VoiceResponse()
     if advice:
-        resp.play(audio("advice"))
-    resp.play(audio("close_help" if help_ else "close_ok"))
+        resp.play(audio("advice", lang))
+    resp.play(audio("close_help" if help_ else "close_ok", lang))
     resp.hangup()
     return str(resp)
 

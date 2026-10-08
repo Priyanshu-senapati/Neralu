@@ -11,3 +11,4 @@ dist/
 *.egg-info/
 *.db-wal
 *.db-shm
+.venv-tts/

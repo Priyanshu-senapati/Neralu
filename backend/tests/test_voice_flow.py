@@ -320,3 +320,26 @@ def test_keypad_invalid_key_twice_is_uncertain(client, keypad_mode):
 def test_keypad_reprompt_then_correct(client, keypad_mode):
     c = keypad_call(client, day="9", retry_day="5")
     assert (c.answers["orientation"], c.outcome) == ("correct", "GREEN")
+
+
+def test_audio_route_falls_back_to_english(client):
+    hi = client.get("/audio/hi/greet.mp3")
+    kn = client.get("/audio/kn/greet.mp3")  # no Kannada recordings yet
+    en = client.get("/audio/en/greet.mp3")
+    assert hi.status_code == kn.status_code == en.status_code == 200
+    assert hi.headers["content-type"] == "audio/mpeg"
+    assert kn.content == en.content and hi.content != en.content
+    assert client.get("/audio/ur/greet.mp3").content == hi.content  # Urdu prefers Hindi
+    assert client.get("/audio/en/nope.mp3").status_code == 404
+    assert client.get("/audio/en/..%2F..%2F.env").status_code == 404
+
+
+def test_call_plays_prompts_in_the_elders_language(client, stt):
+    cid = start_kamala_call(client)
+    with Session(engine) as s:
+        c = s.get(CheckIn, cid)
+        s.get(Elder, c.elder_id).language = "hi"
+        s.commit()
+    twiml = post(client, f"/voice/answer?checkin_id={cid}")
+    assert "/audio/hi/greet.mp3" in twiml and "/audio/hi/q_water.mp3" in twiml
+    assert "/audio/kn/" not in twiml

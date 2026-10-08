@@ -65,7 +65,8 @@ To make real calls, fill these in `backend/.env` (never commit `.env`):
 ```
 backend/   FastAPI + SQLModel + SQLite: rules, risk, calls, escalation, simulation
   app/rules.py        the only place outcomes are decided (GREEN / AMBER / RED / UNREACHED)
-  static/audio/kn/    call prompts (temporary English until the Kannada recordings arrive)
+  static/audio/<lang>/  call prompts per language; missing clips fall back to English
+  scripts/make_audio.py regenerates prompts: English with Kokoro, Hindi with Sarvam
 frontend/  Vite + React + TypeScript + Tailwind: dashboard, volunteer and registration pages
 docs/      the plan
 ```
