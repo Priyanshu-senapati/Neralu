@@ -1,7 +1,8 @@
 """Call prompt texts per language (plan §7.3). Each key becomes static/audio/<lang>/<key>.mp3.
 
-English uses Kokoro; [word](/phonemes/) pins the pronunciation of Indian words it would
-otherwise say wrongly (e.g. Mallige as "malij"). Hindi uses Sarvam's Bulbul voices.
+English and Hindi use Sarvam's Indian voices, which say Indian words correctly as written.
+If English is generated with Kokoro instead (--kokoro), en() pins pronunciations with
+[word](/phonemes/), since Kokoro would otherwise say e.g. Mallige as "malij".
 Kannada lines are to be written and recorded by a native speaker (plan §7.3), not generated here.
 Have a native speaker review every non-English line before the demo.
 """
