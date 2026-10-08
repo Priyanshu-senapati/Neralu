@@ -16,8 +16,8 @@ export const TIER_LABEL: Record<Tier, string> = {
 }
 
 export const TONE_HEX: Record<Tone, string> = {
-  ok: '#2E7D4F',
-  watch: '#A8640F',
+  ok: '#2B764A', // keep in sync with styles/tokens.css
+  watch: '#985A0E',
   support: '#2B6CB0',
   alert: '#B83A26',
   neutral: '#9A988F',

@@ -8,6 +8,7 @@ from app.db import current_run_id
 from app.events import event_out, run_events, scenario_iso
 from app.models import Case, CheckIn, Elder
 from app.risk import calls_due, personal_threshold_c, vulnerability_score
+from app.rules import DECIDED_BY, explain
 from app.state import state
 
 ACTIVE_CASE_STATES = ("open", "assigned")
@@ -144,6 +145,7 @@ def checkin_out(c: CheckIn) -> dict[str, Any]:
             "call_status": c.call_status, "answers": c.answers or {}, "transcript": c.transcript,
             "recording_url": f"/api/recordings/{c.id}" if c.recording_url else None,
             "outcome": c.outcome, "rule_id": c.rule_id, "reason": c.reason,
+            "rule_explanation": explain(c.rule_id),
             "needs_support": c.needs_support, "is_simulated": c.is_simulated,
             "at_scenario": _scenario(c.classified_real or c.scheduled_for_real),
             "classified": c.processed}
@@ -177,6 +179,7 @@ def case_detail(session: Session, case: Case, *, reveal_address: bool | None = N
     return {
         "id": case.id, "level": case.level, "state": case.state, "tier": case.tier,
         "overdue": case.overdue, "rule_id": case.rule_id, "reason": case.reason,
+        "rule_explanation": explain(case.rule_id), "decided_by": DECIDED_BY,
         "opened_scenario": _scenario(case.opened_real),
         "tier_started_scenario": _scenario(case.tier_started_real),
         "resolved_scenario": _scenario(case.resolved_real),
@@ -187,12 +190,30 @@ def case_detail(session: Session, case: Case, *, reveal_address: bool | None = N
     }
 
 
+HELPED_RESOLUTIONS = ("safe_in_person", "support_delivered", "called_108")
+
+
+def impact(session: Session) -> dict[str, int]:
+    """Human outcomes, not system state: who was actually checked on and who a person reached."""
+    run = current_run_id()
+    answered = list(session.exec(select(CheckIn).where(
+        CheckIn.run_id == run, CheckIn.processed == True,  # noqa: E712
+        CheckIn.outcome.in_(("GREEN", "AMBER", "RED")))))
+    helped = session.exec(select(Case.elder_id).where(
+        Case.run_id == run, Case.state == "resolved",
+        Case.resolution.in_(HELPED_RESOLUTIONS))).all()
+    return {"checks_completed": len(answered),
+            "people_checked": len({c.elder_id for c in answered}),
+            "people_helped": len(set(helped))}
+
+
 def summary(session: Session) -> dict[str, Any]:
     s = get_settings()
     elders = run_elders(session)
     latest, cases, resolved = latest_checkins(session), active_cases(session), last_resolutions(session)
     counts = {"registered": len(elders), "due_today": 0, "fine": 0, "follow_up": 0,
-              "escalated": 0, "unreached_now": 0, "support": 0}
+              "escalated": 0, "unreached_now": 0, "support": 0,
+              "calls_active": sum(1 for c in pending_checkins(session).values() if c.started)}
     for e in elders:
         if due_count(e) > 0:
             counts["due_today"] += 1
@@ -213,6 +234,7 @@ def summary(session: Session) -> dict[str, Any]:
         Case.run_id == current_run_id(), Case.level == "support",
         Case.state.in_(ACTIVE_CASE_STATES))))
     return {
+        "impact": impact(session),
         "run_id": current_run_id(),
         "scenario_now": scenario_iso(state.clock.scenario_now()),
         "demo_speed": s.demo_speed, "max_attempts": s.max_attempts,

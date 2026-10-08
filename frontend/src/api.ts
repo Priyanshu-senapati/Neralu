@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, Summary, VolunteerMe } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, Summary, VolunteerMe } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -26,6 +26,7 @@ const post = <T>(path: string, body: unknown) =>
 
 export const api = {
   summary: () => request<Summary>('/api/summary'),
+  events: (limit = 40) => request<NeraluEvent[]>(`/api/events?limit=${limit}`),
   elders: () => request<ElderListItem[]>('/api/elders'),
   elder: (id: number) => request<ElderDetail>(`/api/elders/${id}`),
   cases: (state = 'open,assigned') => request<CaseListItem[]>(`/api/cases?state=${state}`),
@@ -40,4 +41,36 @@ export const api = {
   resolve: (id: number, token: string, resolution: string, note?: string) =>
     post<CaseDetail>(`/api/cases/${id}/resolve`, { volunteer_token: token, resolution, note }),
   register: (body: unknown) => post<ElderDetail>('/api/elders', body),
+  phone: {
+    current: () => request<{ call: PhoneCall | null }>('/api/phone/current'),
+    answer: (id: number) => post<PhoneScript>(`/api/phone/calls/${id}/answer`, {}),
+    key: (id: number, step: string, digit: string | null) =>
+      post<{ ok?: boolean; closing?: string[] }>(`/api/phone/calls/${id}/key`, { step, digit }),
+    orientation: async (id: number, body: { audio?: Blob; day?: number }) => {
+      const form = new FormData()
+      if (body.audio) form.append('audio', body.audio, `answer.${body.audio.type.includes('mp4') ? 'm4a' : 'webm'}`)
+      if (body.day !== undefined) form.append('day', String(body.day))
+      const res = await fetch(`/api/phone/calls/${id}/orientation`, { method: 'POST', body: form })
+      if (!res.ok) throw new ApiError(res.status, await res.text())
+    },
+    hangup: (id: number) => post<{ ok: boolean }>(`/api/phone/calls/${id}/hangup`, {}),
+    decline: (id: number) => post<{ ok: boolean }>(`/api/phone/calls/${id}/decline`, {}),
+  },
+}
+
+export interface PhoneCall {
+  checkin_id: number
+  status: 'ringing' | 'in-progress'
+  attempt: number
+  is_recall: boolean
+  elder_name: string
+}
+
+export interface PhoneScript {
+  intro: string[]
+  code_word: string
+  steps: { step: string; prompt: string; caption: string }[]
+  orientation: { prompt: string; caption: string }
+  help: { prompt: string; caption: string }
+  reprompt: string
 }

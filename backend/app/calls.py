@@ -1,5 +1,6 @@
 """Call rounds, dispatching due calls, classifying ended calls, retries and recalls (E1–E4)."""
 import logging
+from dataclasses import replace
 from datetime import timedelta
 
 from sqlmodel import Session, select
@@ -17,6 +18,9 @@ from app.views import due_count
 
 log = logging.getLogger(__name__)
 
+MISSED_REASON = {"no-answer": "Did not answer", "busy": "Line busy or declined",
+                 "failed": "Call could not be placed",
+                 "canceled": "Did not answer"}  # canceled = hung up by our ring timeout
 STATUS_LABEL = {"busy": "busy", "no-answer": "no answer", "failed": "call failed",
                 "canceled": "call canceled", "completed": "answered, no valid input"}
 
@@ -180,6 +184,8 @@ def handle_call_ended(session: Session, checkin_id: int, call_status: str) -> No
     if signals.orientation != (c.answers or {}).get("orientation") and call_status == "completed":
         c.answers = {**(c.answers or {}), "orientation": signals.orientation}
     verdict = classify(signals)
+    if call_status != "completed":  # nobody picked up: say what happened, not "no valid answer"
+        verdict = replace(verdict, reason=MISSED_REASON.get(call_status, "Not answered"))
     c.outcome, c.rule_id, c.reason = verdict.outcome.value, verdict.rule_id, verdict.reason
     c.needs_support = verdict.needs_support
     actor = "sim" if sim else "twilio"

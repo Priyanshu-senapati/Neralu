@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef } from 'react'
+import { gsap, reducedMotion } from '../motion'
 import { fmtTime } from '../time'
 import type { NeraluEvent } from '../types'
 import { SimTag } from './StatusPill'
@@ -12,11 +14,24 @@ const EMPHASIS: Record<string, string> = {
 }
 
 export function EventTimeline({ events }: { events: NeraluEvent[] }) {
+  const list = useRef<HTMLOListElement>(null)
+  const seen = useRef<Set<number> | null>(null)
+
+  // Events that arrive while the drawer is open slide in at the top; the history does not replay.
+  useLayoutEffect(() => {
+    const ids = new Set(events.map((e) => e.id))
+    const fresh = seen.current ? events.filter((e) => !seen.current!.has(e.id)) : []
+    seen.current = ids
+    if (!fresh.length || reducedMotion() || !list.current) return
+    const els = fresh.map((e) => list.current!.querySelector(`[data-event="${e.id}"]`)).filter(Boolean)
+    gsap.from(els, { opacity: 0, y: -8, duration: 0.4, stagger: 0.05 })
+  }, [events])
+
   if (events.length === 0) return <p className="text-sm text-muted">No events yet</p>
   return (
-    <ol className="relative border-l border-line pl-4">
+    <ol ref={list} className="relative border-l border-line pl-4">
       {[...events].reverse().map((e) => (
-        <li key={e.id} className="mb-2.5 last:mb-0">
+        <li key={e.id} data-event={e.id} className="mb-2.5 last:mb-0">
           <span className="absolute -left-[3.5px] mt-1.5 h-1.5 w-1.5 rounded-full bg-muted" />
           <div className="flex items-center gap-2 text-xs text-muted">
             <span className="font-mono tabular-nums">{fmtTime(e.ts_scenario)}</span>

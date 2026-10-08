@@ -179,6 +179,33 @@ def test_resolution_supersedes_unreached_call(client):
     assert counts["unreached_now"] == 0 and counts["escalated"] == 0 and counts["fine"] == 1
 
 
+def test_summary_counts_people_helped_after_resolution(client):
+    before = client.get("/api/summary").json()["impact"]
+    assert before == {"checks_completed": 0, "people_checked": 0, "people_helped": 0}
+    cid = red_case_for_kamala()
+    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
+    client.post(f"/api/cases/{cid}/resolve",
+                json={"volunteer_token": "priya-demo", "resolution": "safe_in_person"})
+    assert client.get("/api/summary").json()["impact"]["people_helped"] == 1
+
+
+def test_case_detail_and_rule_book_explain_the_rule(client):
+    cid = red_case_for_kamala()
+    d = client.get(f"/api/cases/{cid}").json()
+    assert d["rule_id"] == "E1" and "No one answered" in d["rule_explanation"]
+    assert "not by AI" in d["decided_by"]
+    book = client.get("/api/rules").json()
+    assert {r["id"] for r in book["rules"]} >= {"R0", "R3", "R9", "S1", "E1", "E3"}
+
+
+def test_ward_events_feed_is_newest_first_and_leaves_out_routine_simulation(client):
+    client.post("/api/sim/heat", json=HEATWAVE)
+    client.post("/api/sim/round", json={"round_no": 1})
+    feed = client.get("/api/events?limit=5").json()
+    assert feed and feed[0]["kind"] == "round_started"
+    assert all(not e["simulated"] or e["kind"].startswith(("case_", "tier_")) for e in feed)
+
+
 def _run_sim(minutes, monkeypatch, t=None):
     from app.state import state
     t = t or [state.clock.real_now()]

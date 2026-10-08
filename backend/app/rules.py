@@ -67,3 +67,38 @@ def classify(signals: Signals) -> Verdict:
     outcome, rule_id, reason = _rule(signals)
     needs_support = signals.room_hot == "yes" and signals.fan_working == "no"
     return Verdict(outcome, rule_id, reason, needs_support)
+
+
+# Plain-English explanation of every rule a judge, officer or family member may see (plan §7.2).
+# The single source for this wording: the dashboard reads it from GET /api/rules.
+EXPLANATIONS: dict[str, str] = {
+    "R0": "No keypad answers came back: the call was not picked up, or was picked up with no answers. "
+          "We could not confirm they are safe, so this counts as not reached, never as fine.",
+    "R1": "They pressed the key for \"I need help now\". This is escalated straight away, whatever the "
+          "other answers were.",
+    "R2": "They reported dizziness, weakness or confusion, and could not say what day it is. Together "
+          "these can be early signs of heat illness affecting thinking.",
+    "R3": "They reported dizziness, weakness or confusion, and had no water in the last hour. Together "
+          "these signal heat distress.",
+    "R4": "They reported dizziness, weakness or confusion. On its own this needs a follow-up call and a "
+          "family check.",
+    "R5": "They named the wrong day. Heat can cause confusion, so this is followed up even if they said "
+          "they are okay.",
+    "R6": "They have not had water in the last hour. Neralu advises them to drink now and calls again later.",
+    "R7": "Their answer to \"What day is it today?\" was missing or unclear, so we cannot rule out confusion.",
+    "R8": "Two or more questions went unanswered, so the check is incomplete.",
+    "R9": "All answers were fine and they knew the day.",
+    "E1": "No one answered any of the call attempts, so a person nearby is asked to check in person.",
+    "E3": "A follow-up call was still concerning or went unanswered, so this moves to a person checking "
+          "in person.",
+    "S1": "Their room is very hot and their fan or cooler is not working. A volunteer can bring water, "
+          "ORS or a fan.",
+}
+
+# Shown wherever an outcome is explained: the reason rules, not a model, decide.
+DECIDED_BY = ("Decided by a fixed rule, not by AI. \"I'm okay\" never overrides another warning sign, "
+              "and anything unclear is followed up rather than assumed fine.")
+
+
+def explain(rule_id: str | None) -> str | None:
+    return EXPLANATIONS.get(rule_id) if rule_id else None

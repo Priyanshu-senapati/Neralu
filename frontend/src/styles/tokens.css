@@ -1,17 +1,37 @@
+/*
+ * Neralu design tokens. Light only: the console is read on projectors and in bright ward offices.
+ * Colour carries meaning. Brand shade-green is for identity and primary actions only; it is
+ * deliberately darker and cooler than --ok so "Neralu" never reads as "safe".
+ */
 :root {
-  --paper: #fafaf7;
+  /* Surfaces */
+  --paper: #f7f6f1;
+  --sunken: #efede6;
   --surface: #ffffff;
-  --line: #e4e2dc;
-  --ink: #1c1c1a;
-  --muted: #6b6a64;
-  --ok: #2e7d4f;
+  --line: #e2dfd6;
+  --line-strong: #c9c5b9;
+
+  /* Text */
+  --ink: #1b1d1a;
+  --muted: #5f625b; /* 5.9:1 on paper */
+
+  /* Brand: shade */
+  --brand: #1f3d33;
+  --brand-ink: #f3f1ea;
+  --brand-tint: #e6ece8;
+
+  /* Status (semantic only, AA on their tints) */
+  --ok: #2b764a;
   --ok-bg: #e8f3ec;
-  --watch: #a8640f;
+  --watch: #985a0e;
   --watch-bg: #fbf0dd;
-  --support: #2b6cb0;
+  --support: #2a69ac;
   --support-bg: #e6f0fa;
   --alert: #b83a26;
   --alert-bg: #fbe9e5;
-  --heat: #c2410c;
-  --radius: 6px;
+  --heat: #b63d0b;
+
+  --radius: 4px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
