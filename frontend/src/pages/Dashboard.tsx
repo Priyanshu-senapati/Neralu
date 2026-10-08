@@ -8,7 +8,7 @@ import { LiveCall } from '../components/LiveCall'
 import { SituationBar } from '../components/SituationBar'
 import { DemoControls } from '../components/DemoControls'
 import { TopBar } from '../components/TopBar'
-import { WardMap } from '../components/WardMap'
+import { WardPanel } from '../components/WardPanel'
 import { useScenarioNow } from '../time'
 import type { ElderListItem, NeraluEvent, RoundSummary, Summary } from '../types'
 import { useEventStream } from '../useEventStream'
@@ -97,7 +97,7 @@ export default function Dashboard() {
           <AttentionList elders={elders} now={now} selectedId={selected} onSelect={setSelected} loading={loading} />
         </div>
         <div className="flex h-[55vh] min-h-0 flex-col border-t border-line lg:col-start-1 lg:row-start-1 lg:h-auto lg:border-t-0">
-          <WardMap elders={elders} selectedId={selected} onSelect={setSelected} calling={summary.round_no !== null} />
+          <WardPanel elders={elders} selectedId={selected} onSelect={setSelected} calling={summary.round_no !== null} now={now} />
         </div>
         <div className="flex max-h-72 min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:max-h-[8.75rem]">
           <ActivityFeed events={events} onSelect={setSelected} />

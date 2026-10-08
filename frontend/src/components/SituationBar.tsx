@@ -37,7 +37,7 @@ export function SituationBar({ summary, elders, round }: Props) {
         <div className={`text-[0.8125rem] ${waiting.length ? 'font-semibold text-alert' : 'text-muted'}`}>Need a person now</div>
         <AnimatedNumber
           value={waiting.length}
-          className={`num mt-1 block text-[2.9rem] font-medium leading-none tracking-[-0.03em] ${waiting.length ? 'text-alert' : ''}`}
+          className={`num mt-1 block text-[2.9rem] font-medium leading-none tracking-[-0.03em] ${waiting.length ? 'oled text-alert' : ''}`}
         />
         <div className={`mt-1.5 text-xs leading-snug ${waiting.length ? 'text-alert/85' : 'text-muted'}`}>
           {waiting.length ? (
@@ -75,7 +75,7 @@ function HeatVsPeople({ summary, elders }: { summary: Summary; elders: ElderList
           Heat index <span className="text-xs">· simulated</span>
         </div>
         <div className="mt-1 flex items-baseline gap-1">
-          <span className={`num text-[2.9rem] font-medium leading-none tracking-[-0.04em] transition-colors duration-500 ${hot ? 'text-heat' : ''}`}>
+          <span className={`num text-[2.9rem] font-medium leading-none tracking-[-0.04em] transition-colors duration-500 ${hot ? 'oled text-heat' : ''}`}>
             {w.heat_index_c.toFixed(1)}
           </span>
           <span className={`num text-lg ${hot ? 'text-heat' : 'text-muted'}`}>°C</span>

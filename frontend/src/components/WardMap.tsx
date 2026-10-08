@@ -31,17 +31,20 @@ interface Props {
   onSelect: (id: number) => void
   /** True once a call round has started; the map then defaults to today's checks. */
   calling: boolean
+  /** When the parent controls the view (the ward panel), the map shows no toggle of its own. */
+  view?: View
 }
 
 // Memoised: the dashboard re-renders every 500 ms for the scenario clock; the map only needs to
 // redraw its ~400 markers when residents, the selection or the view change.
-export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, calling }: Props) {
+export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, calling, view: forced }: Props) {
   // Re-read colours when the theme changes (Leaflet needs concrete colour strings).
   const theme = useTheme()
   const INK = token('--ink')
   const RING = token('--paper')
   const TONE_HEX = { ok: toneHex('ok'), watch: toneHex('watch'), support: toneHex('support'), alert: toneHex('alert'), neutral: toneHex('neutral') }
-  const [view, setView] = useState<View>(calling ? 'status' : 'risk')
+  const [own, setView] = useState<View>(calling ? 'status' : 'risk')
+  const view = forced ?? own
   const [touched, setTouched] = useState(false)
   // Follow the round (risk before calls, checks during them) until the officer picks a view.
   useEffect(() => {
@@ -123,6 +126,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
       </MapContainer>
 
       <div className="pointer-events-none absolute inset-x-3 top-3 z-[400] flex flex-wrap items-start justify-between gap-2">
+        {forced === undefined ? (
         <div role="radiogroup" aria-label="Map shows" className="pointer-events-auto inline-flex rounded-[5px] border border-line-strong bg-surface p-0.5 text-sm shadow-[0_1px_2px_rgba(27,29,26,0.06)]">
           {(
             [
@@ -144,7 +148,10 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
             </button>
           ))}
         </div>
-        <Legend view={view} tones={TONE_HEX} />
+        ) : (
+          <span />
+        )}
+        {forced === undefined && <Legend view={view} tones={TONE_HEX} />}
       </div>
     </section>
   )
