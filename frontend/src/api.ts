@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, Summary, VolunteerMe } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, Summary, VolunteerMe } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -26,6 +26,7 @@ const post = <T>(path: string, body: unknown) =>
 
 export const api = {
   summary: () => request<Summary>('/api/summary'),
+  events: (limit = 40) => request<NeraluEvent[]>(`/api/events?limit=${limit}`),
   elders: () => request<ElderListItem[]>('/api/elders'),
   elder: (id: number) => request<ElderDetail>(`/api/elders/${id}`),
   cases: (state = 'open,assigned') => request<CaseListItem[]>(`/api/cases?state=${state}`),

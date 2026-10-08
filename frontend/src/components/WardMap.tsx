@@ -18,7 +18,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect }: P
   // Draw calm dots first so coloured statuses sit on top.
   const ordered = [...elders].sort((a, b) => rank(a) - rank(b))
   return (
-    <section className="relative isolate min-h-0 flex-1 overflow-hidden rounded-ui border border-line bg-surface">
+    <section aria-label="Ward map" className="relative isolate min-h-0 flex-1 overflow-hidden bg-sunken">
       <MapContainer center={CENTER} zoom={15} zoomControl={false} className="h-full w-full" attributionControl={false}>
         <AttributionControl position="bottomleft" prefix={false} />
         {/* CARTO basemaps now require an API key; OSM tiles are desaturated in CSS to stay quiet. */}
@@ -38,7 +38,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect }: P
               center={[e.lat, e.lng]}
               radius={selected ? 9 : real ? 7 : s.tone === 'neutral' || s.tone === 'ok' ? 3.5 : 5.5}
               pathOptions={{
-                color: selected || real ? '#1C1C1A' : TONE_HEX[s.tone],
+                color: selected || real ? '#1B1D1A' : TONE_HEX[s.tone],
                 weight: selected || real ? 2 : 1,
                 fillColor: TONE_HEX[s.tone],
                 fillOpacity: s.tone === 'neutral' ? 0.45 : 0.85,
@@ -82,10 +82,10 @@ function Legend() {
     [TONE_HEX.support, 'Needs support'],
     [TONE_HEX.alert, 'RED'],
     [TONE_HEX.neutral, 'Not reached yet'],
-    ['#1C1C1A', 'Real phone (outlined)'],
+    ['#1B1D1A', 'Real phone (ringed)'],
   ]
   return (
-    <div className="absolute left-2 top-2 z-[400] flex gap-3 rounded-ui border border-line bg-surface/95 px-2.5 py-1.5 text-[11px]">
+    <div className="absolute left-3 top-3 z-[400] flex max-w-[calc(100%-1.5rem)] flex-wrap gap-x-3 gap-y-1 rounded-[3px] border border-line bg-surface/95 px-2.5 py-1.5 text-xs">
       {items.map(([c, l]) => (
         <span key={l} className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full" style={{ background: c }} />

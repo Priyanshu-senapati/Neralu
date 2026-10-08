@@ -35,40 +35,6 @@ export function AnimatedNumber({ value, from, className = '' }: { value: number;
   return <span ref={ref} className={className}>{initial}</span>
 }
 
-const DIGITS = '0123456789'
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-/**
- * Departure-board text: when the value changes, characters shuffle briefly and settle.
- * Used only for values that change rarely (weather, round), never for the ticking clock.
- */
-export function FlapText({ text, className = '' }: { text: string; className?: string }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const last = useRef(text)
-  const [initial] = useState(text)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el || last.current === text) return
-    last.current = text
-    if (reducedMotion()) {
-      el.textContent = text
-      return
-    }
-    const tween = gsap.to(el, {
-      duration: 0.7,
-      ease: 'none',
-      scrambleText: { text, chars: /\d/.test(text) ? DIGITS : LETTERS, speed: 0.6, revealDelay: 0.15 },
-    })
-    return () => {
-      tween.kill()
-      el.textContent = text
-    }
-  }, [text])
-
-  return <span ref={ref} className={className}>{initial}</span>
-}
-
 /** A check mark that draws itself once, for confirmations (case resolved, person registered). */
 export function DrawnCheck({ className = 'h-5 w-5' }: { className?: string }) {
   const circle = useRef<SVGCircleElement>(null)

@@ -7,9 +7,8 @@ import gsap from 'gsap'
 import { CustomEase } from 'gsap/CustomEase'
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin'
 import { Flip } from 'gsap/Flip'
-import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin'
 
-gsap.registerPlugin(CustomEase, DrawSVGPlugin, Flip, ScrambleTextPlugin)
+gsap.registerPlugin(CustomEase, DrawSVGPlugin, Flip)
 
 /** Strong ease-out: instant response, long gentle settle (same curve as --ease-out in tokens.css). */
 export const EASE = CustomEase.create('neralu', '0.23, 1, 0.32, 1')
