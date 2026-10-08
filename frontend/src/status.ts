@@ -35,6 +35,12 @@ export function elderStatus(e: ElderListItem): ElderStatus {
   if (calling) {
     return { tone: 'neutral', label: `${call.is_recall ? 'Recall' : 'Calling'} · attempt ${call.attempt}`, group: 4 }
   }
+  const r = e.last_resolution
+  if (r && !c) {
+    if (r.resolution === 'called_108') return { tone: 'alert', label: 'Called 108 · by volunteer', group: 5 }
+    const label = r.resolution === 'support_delivered' ? 'Resolved · support delivered' : 'Resolved · safe in person'
+    return { tone: 'ok', label, group: e.is_simulated ? null : 5 }
+  }
   if (e.latest.outcome === 'AMBER') return { tone: 'watch', label: 'Follow-up', group: 2 }
   if (c?.level === 'support') {
     return { tone: 'support', label: c.state === 'assigned' ? 'Support · accepted' : 'Needs support', group: 3 }

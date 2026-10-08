@@ -20,23 +20,39 @@ export function useEventStream(
     let retry: number | undefined
     let closed = false
     let delay = 1000
+    let lastSeen = Date.now()
+
+    const reconnect = () => {
+      source?.close()
+      if (closed) return
+      setStatus('reconnecting')
+      window.clearTimeout(retry)
+      retry = window.setTimeout(connect, delay)
+      delay = Math.min(delay * 2, 8000)
+    }
+
+    // The server sends a heartbeat every 10 s; silence means a dead connection that never errored.
+    const watchdog = window.setInterval(() => {
+      if (Date.now() - lastSeen > STALE_MS) {
+        lastSeen = Date.now()
+        reconnect()
+      }
+    }, 5000)
 
     const connect = () => {
+      lastSeen = Date.now()
       source = new EventSource('/api/stream')
       source.onopen = () => {
         delay = 1000
         setStatus('live')
         handlers.current.onReconnect()
       }
-      source.onmessage = () => {}
-      source.onerror = () => {
-        source?.close()
-        if (closed) return
-        setStatus('reconnecting')
-        retry = window.setTimeout(connect, delay)
-        delay = Math.min(delay * 2, 8000)
-      }
+      source.onerror = reconnect
+      source.addEventListener('heartbeat', () => {
+        lastSeen = Date.now()
+      })
       const listener = (msg: MessageEvent) => {
+        lastSeen = Date.now()
         try {
           handlers.current.onEvent(JSON.parse(msg.data) as NeraluEvent)
         } catch {
@@ -49,12 +65,15 @@ export function useEventStream(
     return () => {
       closed = true
       window.clearTimeout(retry)
+      window.clearInterval(watchdog)
       source?.close()
     }
   }, [])
 
   return status
 }
+
+const STALE_MS = 25000
 
 const EVENT_KINDS = [
   'run_reset', 'sim_weather_set', 'round_started', 'call_placed', 'call_ringing', 'call_answered',

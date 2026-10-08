@@ -160,3 +160,20 @@ def test_volunteer_still_sees_case_after_it_moves_to_asha(client):
     assert cid in [c["id"] for c in me["cases"]]
     asha = client.get("/api/volunteer/me", params={"token": "sim-asha-1"}).json()
     assert cid in [c["id"] for c in asha["cases"]]
+
+
+def test_resolution_supersedes_unreached_call(client):
+    from app.calls import handle_call_ended
+    from app.models import CheckIn
+    with Session(engine) as s:
+        from app.db import current_run_id
+        c = CheckIn(run_id=current_run_id(), elder_id=kamala_id(), round_no=1, attempt=2, started=True)
+        s.add(c); s.commit()
+        handle_call_ended(s, c.id, "no-answer"); s.commit()
+    cid = client.get("/api/cases").json()[0]["id"]
+    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
+    client.post(f"/api/cases/{cid}/resolve", json={"volunteer_token": "priya-demo", "resolution": "safe_in_person"})
+    item = next(i for i in client.get("/api/elders").json() if i["id"] == kamala_id())
+    assert item["last_resolution"]["resolution"] == "safe_in_person"
+    counts = client.get("/api/summary").json()["counts"]
+    assert counts["unreached_now"] == 0 and counts["escalated"] == 0 and counts["fine"] == 1

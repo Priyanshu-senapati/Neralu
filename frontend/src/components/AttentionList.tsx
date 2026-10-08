@@ -5,6 +5,7 @@ import { WaitingTimer } from './WaitingTimer'
 
 function since(e: ElderListItem): string | null {
   if (e.open_case) return e.open_case.opened_scenario
+  if (e.last_resolution) return e.last_resolution.resolved_scenario
   if (e.current_call?.started && !e.is_simulated) return e.current_call.scheduled_scenario
   return e.latest.at_scenario ?? e.current_call?.scheduled_scenario ?? null
 }

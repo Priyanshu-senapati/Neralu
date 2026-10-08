@@ -80,6 +80,12 @@ export interface ElderListItem {
   latest: Latest
   current_call: CurrentCall | null
   open_case: CaseBrief | null
+  last_resolution: {
+    case_id: number
+    level: 'red' | 'support'
+    resolution: string
+    resolved_scenario: string
+  } | null
 }
 
 export interface NeraluEvent {

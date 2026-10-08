@@ -42,6 +42,25 @@ def active_cases(session: Session) -> dict[int, Case]:
     return out
 
 
+def last_resolutions(session: Session) -> dict[int, Case]:
+    rows = session.exec(select(Case).where(Case.run_id == current_run_id(), Case.state == "resolved")
+                        .order_by(Case.resolved_real))
+    return {c.elder_id: c for c in rows}
+
+
+def resolution_out(c: Case | None) -> dict[str, Any] | None:
+    if c is None:
+        return None
+    return {"case_id": c.id, "level": c.level, "resolution": c.resolution,
+            "resolved_scenario": _scenario(c.resolved_real)}
+
+
+def resolved_after_latest(resolved: Case | None, latest: CheckIn | None) -> bool:
+    """A human resolution newer than the last classified call supersedes that call's outcome."""
+    return resolved is not None and (latest is None or latest.classified_real is None
+                                     or resolved.resolved_real >= latest.classified_real)
+
+
 def due_count(elder: Elder) -> int:
     w = state.weather
     return calls_due(elder, w.heat_index_c, w.night_min_c)
@@ -74,7 +93,7 @@ def case_brief(c: Case | None) -> dict[str, Any] | None:
 
 
 def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
-               pending: CheckIn | None = None) -> dict[str, Any]:
+               pending: CheckIn | None = None, resolved: Case | None = None) -> dict[str, Any]:
     score, breakdown = vulnerability_score(e)
     return {
         "id": e.id, "name": e.name, "age": e.age, "language": e.language,
@@ -85,6 +104,7 @@ def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
         "lat": e.lat, "lng": e.lng, "is_simulated": e.is_simulated,
         "latest": latest_out(latest), "current_call": current_call_out(pending),
         "open_case": case_brief(case),
+        "last_resolution": resolution_out(resolved) if resolved_after_latest(resolved, latest) else None,
     }
 
 
@@ -94,7 +114,8 @@ def run_elders(session: Session) -> list[Elder]:
 
 def elder_items(session: Session) -> list[dict[str, Any]]:
     latest, cases, pending = latest_checkins(session), active_cases(session), pending_checkins(session)
-    return [elder_item(e, latest.get(e.id), cases.get(e.id), pending.get(e.id))
+    resolved = last_resolutions(session)
+    return [elder_item(e, latest.get(e.id), cases.get(e.id), pending.get(e.id), resolved.get(e.id))
             for e in run_elders(session)]
 
 
@@ -105,7 +126,9 @@ def elder_item_one(session: Session, e: Elder) -> dict[str, Any]:
     cases = [c for c in session.exec(select(Case).where(
         Case.elder_id == e.id, Case.state.in_(ACTIVE_CASE_STATES))).all()]
     case = next((c for c in cases if c.level == "red"), cases[0] if cases else None)
-    return elder_item(e, latest, case, pending)
+    resolved = session.exec(select(Case).where(Case.elder_id == e.id, Case.state == "resolved")
+                            .order_by(Case.resolved_real.desc())).first()
+    return elder_item(e, latest, case, pending, resolved)
 
 
 def risk_detail(e: Elder) -> dict[str, Any]:
@@ -167,7 +190,7 @@ def case_detail(session: Session, case: Case, *, reveal_address: bool | None = N
 def summary(session: Session) -> dict[str, Any]:
     s = get_settings()
     elders = run_elders(session)
-    latest, cases = latest_checkins(session), active_cases(session)
+    latest, cases, resolved = latest_checkins(session), active_cases(session), last_resolutions(session)
     counts = {"registered": len(elders), "due_today": 0, "fine": 0, "follow_up": 0,
               "escalated": 0, "unreached_now": 0, "support": 0}
     for e in elders:
@@ -175,6 +198,9 @@ def summary(session: Session) -> dict[str, Any]:
             counts["due_today"] += 1
         case = cases.get(e.id)
         outcome = latest[e.id].outcome if e.id in latest else None
+        r = resolved.get(e.id)
+        if not case and resolved_after_latest(r, latest.get(e.id)):
+            outcome = "GREEN" if r.resolution in ("safe_in_person", "support_delivered") else None
         if case and case.level == "red":
             counts["escalated"] += 1
         elif outcome == "GREEN":

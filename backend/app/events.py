@@ -28,12 +28,16 @@ class Broadcaster:
     def __init__(self) -> None:
         self._subs: set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]] = set()
 
-    async def subscribe(self) -> AsyncIterator[dict[str, Any]]:
+    async def subscribe(self, heartbeat_s: float | None = None) -> AsyncIterator[dict[str, Any] | None]:
+        """Yield published events; with heartbeat_s, yield None after that long without one."""
         sub = (asyncio.get_running_loop(), asyncio.Queue(maxsize=1000))
         self._subs.add(sub)
         try:
             while True:
-                yield await sub[1].get()
+                try:
+                    yield await asyncio.wait_for(sub[1].get(), timeout=heartbeat_s)
+                except asyncio.TimeoutError:
+                    yield None
         finally:
             self._subs.discard(sub)
 
