@@ -3,7 +3,9 @@ import { api } from '../api'
 import { elderStatus, TIER_LABEL } from '../status'
 import { fmtTime } from '../time'
 import type { CheckInOut, ElderDetail } from '../types'
+import { closedLoop, story } from '../loop'
 import { AnswerTable } from './AnswerTable'
+import { ClosedLoop, ResidentStory } from './ClosedLoop'
 import { EventTimeline } from './EventTimeline'
 import { RecordingPlayer } from './RecordingPlayer'
 import { RiskBreakdown } from './RiskBreakdown'
@@ -133,6 +135,21 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
           </div>
         </section>
       )}
+      {d.checkins.length > 0 && (
+        <section>
+          <h3 className="mb-2.5 text-sm font-semibold">Where {first}'s check stands</h3>
+          <ClosedLoop steps={closedLoop(d.events)} />
+        </section>
+      )}
+
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">What happened to {first} today</h3>
+        <ResidentStory
+          lines={story(d.events, first)}
+          empty={d.caregiver_route ? `${first} is on the caregiver route and is not called directly.` : `Neralu has not called ${first} yet.`}
+        />
+      </section>
+
       {d.address && (
         <p className="text-sm">
           <span className="text-muted">Address, shown because a volunteer accepted: </span>
@@ -184,10 +201,14 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
           </ul>
         )}
       </section>
-      <section>
-        <h3 className="mb-2 text-sm font-semibold">Timeline</h3>
-        <EventTimeline events={d.events} />
-      </section>
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-semibold marker:text-muted">
+          Audit log <span className="num text-xs font-normal text-muted">({d.events.length} events)</span>
+        </summary>
+        <div className="mt-2">
+          <EventTimeline events={d.events} />
+        </div>
+      </details>
     </>
   )
 }

@@ -5,6 +5,7 @@ import { Wordmark } from '../components/Brand'
 import { DrawnCheck } from '../components/Motion'
 import { StatusPill } from '../components/StatusPill'
 import { WaitingTimer } from '../components/WaitingTimer'
+import { callFindings } from '../loop'
 import { TIER_LABEL } from '../status'
 import { useScenarioNow } from '../time'
 import type { CaseDetail, Summary, VolunteerMe } from '../types'
@@ -172,15 +173,40 @@ function CaseHeader({ c, now }: { c: CaseDetail; now: Date | null }) {
         <span className={`rounded-ui px-2 py-0.5 text-sm font-semibold ${red ? 'bg-alert-bg text-alert' : 'bg-support-bg text-support'}`}>
           {red ? 'RED' : 'Needs support'} · waiting <WaitingTimer since={c.opened_scenario} now={now} />
         </span>
-        {c.distance_km !== undefined && <span className="font-mono text-xs text-muted">≈ {c.distance_km} km</span>}
+        {c.distance_km !== undefined && <span className="num text-xs text-muted">≈ {c.distance_km} km away</span>}
       </div>
       <div className="mt-3 text-xl font-semibold">
-        {c.elder.name} <span className="font-mono text-base font-normal text-muted">{c.elder.age}</span>
+        {c.elder.name} <span className="num text-base font-normal text-muted">{c.elder.age}</span>
       </div>
-      <div className="mt-1 text-sm">{c.reason}</div>
-      <div className="mt-1 text-sm text-muted">{c.elder.risk_factors.join(' · ')}</div>
+      <div className="mt-0.5 text-sm text-muted">{c.elder.risk_factors.join(' · ')}</div>
       {c.elder.is_simulated && <div className="mt-1 font-mono text-xs text-muted">simulated resident</div>}
     </>
+  )
+}
+
+/** What the phone check found, so the volunteer knows what they are walking into. */
+function CallFindings({ c }: { c: CaseDetail }) {
+  const first = c.elder.name.split(' ')[0]
+  const call = [...c.checkins].reverse().find((x) => x.classified) ?? null
+  const unanswered = c.checkins.filter((x) => x.classified && x.outcome === 'UNREACHED').length
+  const found = call && call.outcome !== 'UNREACHED' ? callFindings(call.answers) : []
+  return (
+    <div className="mt-3 rounded-ui bg-paper px-3 py-2.5">
+      <div className="text-xs font-semibold text-muted">WHAT NERALU'S CALL FOUND</div>
+      {found.length > 0 ? (
+        <ul className="mt-1 space-y-0.5 text-sm">
+          {found.slice(0, 4).map((f) => (
+            <li key={f.text} className={f.concern ? 'font-semibold text-alert' : ''}>
+              {first} {f.text}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 text-sm font-semibold text-alert">
+          {unanswered >= 2 ? `${first} did not answer ${unanswered} calls.` : c.reason}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -196,6 +222,7 @@ interface OpenProps {
 function OpenCase({ c, token, now, onAccepted, onTaken, onDismiss }: OpenProps) {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
+  const first = c.elder.name.split(' ')[0]
   const accept = async () => {
     setBusy(true)
     setFailed(false)
@@ -211,14 +238,21 @@ function OpenCase({ c, token, now, onAccepted, onTaken, onDismiss }: OpenProps) 
   }
   return (
     <article className="card-enter rounded-ui border border-line bg-surface p-4">
-      <CaseHeader c={c} now={now} />
-      <p className="mt-3 text-xs text-muted">
-        Address shown after you accept · {TIER_LABEL[c.tier]} tier{c.overdue ? ' · ward officer alerted' : ''}
+      <p className="mb-2 text-sm font-semibold">
+        {c.level === 'red' ? `${first} needs someone to check in person` : `${first} needs practical help`}
       </p>
-      {failed && <p className="mt-2 text-sm text-alert">Could not accept · check your connection and try again</p>}
+      <CaseHeader c={c} now={now} />
+      <CallFindings c={c} />
+      <p className="mt-3 text-sm">
+        If you accept, this visit is yours. Others stop being asked, and the ward office sees you are on the way.
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        The address appears after you accept · {TIER_LABEL[c.tier]} tier{c.overdue ? ' · ward officer alerted' : ''}
+      </p>
+      {failed && <p className="mt-2 text-sm text-alert">Could not accept. Check your connection and try again.</p>}
       <div className="mt-4 grid grid-cols-[2fr_1fr] gap-2">
         <button onClick={accept} disabled={busy} className="press rounded-ui bg-ink py-3.5 text-base font-semibold text-paper disabled:opacity-60">
-          {busy ? 'Accepting…' : 'Accept'}
+          {busy ? 'Accepting…' : `Accept · I'll go`}
         </button>
         <button onClick={onDismiss} className="press rounded-ui border border-line py-3.5 text-base">
           Can't go
@@ -239,7 +273,9 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
     setFailed(false)
     try {
       await api.resolve(c.id, token, key, note.trim() || undefined)
-      onDone(key === 'not_found_escalate' ? 'Case passed on to the next tier' : `Recorded: ${label}`)
+      onDone(key === 'not_found_escalate'
+        ? 'Passed on: the next tier is being asked to go.'
+        : `Recorded: ${label}. The ward office and family have been told. Thank you.`)
     } catch {
       setFailed(true)
     } finally {
@@ -248,11 +284,26 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
   }
 
   return (
-    <article className="card-enter rounded-ui border border-line bg-surface p-4">
+    <article className="card-enter overflow-hidden rounded-ui border border-line bg-surface">
+      <div className="bg-ink px-4 py-3 text-paper">
+        <div className="text-base font-semibold">You are now responsible for {first}'s visit</div>
+        <div className="mt-0.5 text-sm text-paper/80">Nobody else is being asked. The ward office and family can see you are on the way.</div>
+      </div>
+      <div className="p-4">
+      <ol className="mb-4 grid grid-cols-4 gap-1 text-center text-xs" aria-label="Your visit, step by step">
+        {['Accepted', `Go to ${first}`, 'Record what you found', 'Family told'].map((label, i) => (
+          <li key={label} className="flex flex-col items-center gap-1">
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${i === 0 ? 'bg-ink text-paper' : i === 1 ? 'border-2 border-ink font-semibold' : 'border border-line-strong text-muted'}`}>
+              {i === 0 ? '✓' : i + 1}
+            </span>
+            <span className={i <= 1 ? 'font-semibold' : 'text-muted'}>{label}</span>
+          </li>
+        ))}
+      </ol>
       <CaseHeader c={c} now={now} />
-      <div className="mt-4 rounded-ui bg-paper px-3 py-2.5">
-        <div className="text-xs text-muted">Address</div>
-        <div className="text-base">{c.elder.address}</div>
+      <div className="mt-4 rounded-ui border-2 border-ink px-3 py-2.5">
+        <div className="text-xs font-semibold text-muted">ADDRESS</div>
+        <div className="text-lg font-semibold">{c.elder.address}</div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {c.elder.phone ? (
@@ -268,7 +319,16 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
           </a>
         )}
       </div>
-      <h3 className="mt-5 text-sm font-semibold">After you see {first}</h3>
+      <CallFindings c={c} />
+      <div className="mt-4 text-sm">
+        <h3 className="font-semibold">At the door</h3>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted">
+          <li>Are they alert, and do they know what day it is?</li>
+          <li>Offer water. Help them to the coolest spot in the home.</li>
+          <li>Unresponsive, very confused or collapsed: call 108 first, then record it here.</li>
+        </ul>
+      </div>
+      <h3 className="mt-5 text-sm font-semibold">What did you find?</h3>
       <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
@@ -292,6 +352,7 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
         ))}
       </div>
       <div className="mt-3"><StatusPill tone="neutral" label="Accepted by you" /></div>
+      </div>
     </article>
   )
 }
