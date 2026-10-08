@@ -31,8 +31,9 @@ MIME_EXT = {"audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "au
             "audio/wav": ".wav", "audio/x-wav": ".wav"}
 
 
-def _audio(name: str) -> str:
-    return f"/audio/kn/{name}.mp3"
+def _audio(name: str, lang: str) -> str:
+    """Same-origin prompt URL; the audio route falls back to another language if `lang` lacks it."""
+    return f"/audio/{lang}/{name}.mp3"
 
 
 def _call(session: Session, checkin_id: int) -> tuple[bp.BrowserCall, CheckIn]:
@@ -67,17 +68,17 @@ def answer(checkin_id: int) -> dict:
         bp.answer(session, call)
         session.commit()
         elder = session.get(Elder, c.elder_id)
-        first = elder.name.split()[0]
-        intro = ["greet"] + ([f"name_{first.lower()}"] if tw.has_audio(f"name_{first.lower()}") else []) \
+        lang, first = elder.language, elder.name.split()[0].lower()
+        intro = ["greet"] + ([f"name_{first}"] if tw.has_audio(f"name_{first}", lang) else []) \
             + ["code_intro", f"code_{elder.code_word}", "safety"]
         return {
-            "intro": [_audio(n) for n in intro],
+            "intro": [_audio(n, lang) for n in intro],
             "code_word": elder.code_word.capitalize(),
-            "steps": [{"step": s, "prompt": _audio(tw.PROMPTS[s]), "caption": CAPTIONS[s]}
+            "steps": [{"step": s, "prompt": _audio(tw.PROMPTS[s], lang), "caption": CAPTIONS[s]}
                       for s in tw.STEP_ORDER],
-            "orientation": {"prompt": _audio("q_orientation"), "caption": CAPTIONS["orientation"]},
-            "help": {"prompt": _audio("q_help"), "caption": CAPTIONS["help"]},
-            "reprompt": _audio("reprompt"),
+            "orientation": {"prompt": _audio("q_orientation", lang), "caption": CAPTIONS["orientation"]},
+            "help": {"prompt": _audio("q_help", lang), "caption": CAPTIONS["help"]},
+            "reprompt": _audio("reprompt", lang),
         }
 
 
@@ -97,7 +98,8 @@ def key(checkin_id: int, body: KeyIn) -> dict:
             advice = (c.answers or {}).get("water") == "no"
             session.commit()
             closing = (["advice"] if advice else []) + ["close_help" if value == "help" else "close_ok"]
-            return {"closing": [_audio(n) for n in closing]}
+            lang = session.get(Elder, c.elder_id).language
+            return {"closing": [_audio(n, lang) for n in closing]}
         if body.step not in tw.STEPS:
             raise HTTPException(422, "Unknown step")
         _store(session, c, tw.STEPS[body.step], KEYPAD.get(body.digit or "", "none"), "keypad", **extra)

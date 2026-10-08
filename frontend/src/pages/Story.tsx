@@ -404,7 +404,7 @@ function WhoGoes() {
 function Phones() {
   const facts: [string, string][] = [
     ['Any phone', 'A normal voice call to a keypad phone. Nothing to install, no smartphone, no data plan.'],
-    ['Their language', 'Kannada, Tamil, Telugu, Urdu or Hindi, chosen by the family. Prompts are recorded human voices, not machine speech; this demo has one prompt set.'],
+    ['Their language', 'Kannada, Tamil, Telugu, Urdu or Hindi, chosen by the family. This demo speaks English and Hindi; Kannada recordings by a native speaker are next.'],
     ['A reason to pick up', 'Scam calls have taught people not to answer strangers. The family code word is how they know it is Neralu.'],
     ['Registered by family', 'A son or daughter registers a parent from any phone, with the parent’s permission. The address is shown only to the volunteer who accepts a case.'],
   ]

@@ -4,7 +4,7 @@ import { AnimatedNumber, DrawnCheck } from '../components/Motion'
 import type { ElderDetail } from '../types'
 
 const CODE_WORDS = ['mallige', 'sampige', 'sevanthige', 'tulasi', 'maavu', 'bevu', 'kaveri', 'chandra', 'nakshatra', 'gulabi']
-const LANGUAGES: [string, string][] = [['kn', 'Kannada'], ['ta', 'Tamil'], ['te', 'Telugu'], ['ur', 'Urdu'], ['hi', 'Hindi']]
+const LANGUAGES: [string, string][] = [['kn', 'Kannada'], ['hi', 'Hindi'], ['en', 'English'], ['ta', 'Tamil'], ['te', 'Telugu'], ['ur', 'Urdu']]
 const ROOFS: [string, string][] = [['sheet', 'Sheet'], ['tile', 'Tile'], ['concrete', 'Concrete'], ['top_floor', 'Top floor']]
 
 const cap = (w: string) => w[0].toUpperCase() + w.slice(1)
@@ -39,7 +39,7 @@ export default function Register() {
 
   const play = (w: string) => {
     audio.current?.pause()
-    audio.current = new Audio(`/audio/kn/code_${w}.mp3`)
+    audio.current = new Audio(`/audio/${f.language}/code_${w}.mp3`)
     audio.current.play().catch(() => {})
   }
 

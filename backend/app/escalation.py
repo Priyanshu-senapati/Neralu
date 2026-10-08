@@ -162,7 +162,7 @@ def check_ack_timeouts(session: Session) -> None:
 
 def sync_tick(session: Session) -> None:
     """One scheduler step: due calls and retries/recalls, simulated residents, ack timeouts."""
-    from app.calls import cancel_unanswered_calls, dispatch_due_calls
+    from app.calls import cancel_unanswered_calls, close_lost_calls, dispatch_due_calls
     from app.sim_caller import step_simulation
 
     from app import browser_phone
@@ -172,6 +172,7 @@ def sync_tick(session: Session) -> None:
         browser_phone.tick(session)  # ring timeout and idle hang-up for the browser phone
     else:
         cancel_unanswered_calls(session)  # Twilio: enforce the ring timeout ourselves
+        close_lost_calls(session)  # Twilio: never leave a call stuck on a lost callback
     step_simulation(session)
     check_ack_timeouts(session)
     session.commit()

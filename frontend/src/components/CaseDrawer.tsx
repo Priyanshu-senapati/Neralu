@@ -12,7 +12,7 @@ import { SimTag, StatusPill } from './StatusPill'
 import { WaitingTimer } from './WaitingTimer'
 
 const ROOF: Record<string, string> = { sheet: 'Sheet roof', tile: 'Tile roof', concrete: 'Concrete roof', top_floor: 'Top floor' }
-const LANG: Record<string, string> = { kn: 'Kannada', ta: 'Tamil', te: 'Telugu', ur: 'Urdu', hi: 'Hindi' }
+const LANG: Record<string, string> = { kn: 'Kannada', ta: 'Tamil', te: 'Telugu', ur: 'Urdu', hi: 'Hindi', en: 'English' }
 const CALL_STATUS: Record<string, string> = {
   queued: 'Calling', ringing: 'Ringing', 'in-progress': 'On the call', completed: 'Answered',
   busy: 'Busy or declined', 'no-answer': 'No answer', failed: 'Call could not be placed', canceled: 'No answer',

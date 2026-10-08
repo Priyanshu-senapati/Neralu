@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 SARVAM_URL = "https://api.sarvam.ai/speech-to-text"
 SARVAM_MODEL = "saaras:v4"
-SARVAM_LANGS = {"kn": "kn-IN", "hi": "hi-IN", "ta": "ta-IN", "te": "te-IN", "ur": "ur-IN"}
+SARVAM_LANGS = {"kn": "kn-IN", "hi": "hi-IN", "ta": "ta-IN", "te": "te-IN", "ur": "ur-IN", "en": "en-IN"}
 
 
 async def _sarvam(audio: bytes, lang: str, filename: str, mime: str) -> str | None:

@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import get_settings  # noqa: E402
 from app.models import CODE_WORDS  # noqa: E402
-from app.telephony import AUDIO_DIR  # noqa: E402
+from app.audio import AUDIO_ROOT, resolve  # noqa: E402
 
 PROMPTS = ["greet", "name_kamala", "code_intro", "safety", "q_water", "q_symptoms", "q_room",
            "q_fan", "q_orientation", "q_help", "reprompt", "advice", "close_ok", "close_help"]
@@ -87,11 +87,12 @@ def twilio(s) -> None:
 def audio_files() -> None:
     print("Audio prompts")
     names = PROMPTS + [f"code_{w}" for w in CODE_WORDS]
-    missing = [n for n in names if not (AUDIO_DIR / f"{n}.mp3").exists()]
-    check(not missing, f"{len(names)} prompt files present", f"missing: {', '.join(missing)}")
-    if (AUDIO_DIR / "README.md").exists() and "TEMPORARY" in (AUDIO_DIR / "README.md").read_text():
-        warn("prompts are still the temporary English placeholders (delete static/audio/kn/README.md "
-             "once the Kannada recordings are in)")
+    missing = [n for n in names if resolve("kn", n) is None]
+    check(not missing, f"{len(names)} prompts available for Kannada calls", f"missing in every language: {', '.join(missing)}")
+    fallback = [n for n in names if (p := resolve("kn", n)) and p.parent.name != "kn"]
+    if fallback:
+        warn(f"{len(fallback)} Kannada prompts fall back to {resolve('kn', fallback[0]).parent.name}: "
+             f"record them into {AUDIO_ROOT / 'kn'}")
 
 
 def public_url(s) -> None:

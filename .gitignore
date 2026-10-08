@@ -14,3 +14,4 @@ dist/
 
 # Browser-phone recordings (demo fallback)
 backend/recordings/
+.venv-tts/

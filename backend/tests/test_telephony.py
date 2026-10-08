@@ -51,3 +51,17 @@ def test_other_twilio_errors_still_raise(fake_twilio, monkeypatch):
     monkeypatch.setattr(telephony, "_twilio", lambda: SimpleNamespace(calls=SimpleNamespace(create=boom)))
     with pytest.raises(TwilioRestException):
         telephony.place_call("+919900000001", 7)
+
+
+def test_cancel_stops_trying_when_account_cannot_update_calls(monkeypatch):
+    attempts = []
+
+    def refuse(**kw):
+        attempts.append(kw)
+        raise TwilioRestException(404, "/Calls/CA1.json", "Unable to update record: not found", code=20404)
+
+    monkeypatch.setattr(telephony, "_twilio", lambda: SimpleNamespace(calls=lambda sid: SimpleNamespace(update=refuse)))
+    monkeypatch.setattr(telephony, "_cancel_unsupported", False)
+    assert telephony.cancel_call("CA1") is False
+    assert telephony.cancel_call("CA2") is False
+    assert len(attempts) == 1  # remembered: no API call every second while the phone rings

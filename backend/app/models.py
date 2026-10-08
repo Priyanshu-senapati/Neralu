@@ -7,7 +7,7 @@ from sqlmodel import Field, SQLModel
 
 CODE_WORDS = ("mallige", "sampige", "sevanthige", "tulasi", "maavu",
               "bevu", "kaveri", "chandra", "nakshatra", "gulabi")
-LANGUAGES = ("kn", "ta", "te", "ur", "hi")
+LANGUAGES = ("kn", "ta", "te", "ur", "hi", "en")
 ROOF_TYPES = ("sheet", "tile", "concrete", "top_floor")
 TERMINAL_CALL_STATUSES = ("completed", "busy", "no-answer", "failed", "canceled")
 RESOLUTIONS = ("safe_in_person", "support_delivered", "called_108", "not_found_escalate")
