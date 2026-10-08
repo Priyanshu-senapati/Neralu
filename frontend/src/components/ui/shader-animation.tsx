@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { reducedMotion } from '@/motion'
 
 /*
  * Concentric rings radiating outward, rendered in a fragment shader (adapted from the 21st.dev
@@ -131,7 +132,7 @@ export function ShaderAnimation({
     ro.observe(container)
     resize()
 
-    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const still = reducedMotion()
     let frame = 0
     let visible = true
     const loop = () => {

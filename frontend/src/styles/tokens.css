@@ -23,6 +23,8 @@
   /* Section tones (story page): sand = the hot afternoon, shade = the process that protects */
   --sand: #f4ece0;
   --shade: #e7ede8;
+  /* Sun: warm highlight on the dark hero only (10:1 on #0d1915) */
+  --sun: #f4c77a;
 
   /* Status (semantic only, AA on their tints) */
   --ok: #2b764a;

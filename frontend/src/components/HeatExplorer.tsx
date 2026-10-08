@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
+import { EXAMPLE_HEAT, personalThreshold } from '../heat'
 import type { ElderListItem } from '../types'
 
 /*
  * "Move the afternoon": every registered resident of the demo ward as one square, sorted by their
  * personal heat threshold. Drag the heat and the squares of the people Neralu would call turn hot.
- * Thresholds mirror backend/app/risk.py personal_threshold_c: 40 minus the score in tens (rounded
- * half up), one degree lower when the night stays at 26 °C or more.
  */
-const threshold = (score: number, warmNight: boolean) => 40 - Math.floor(score / 10 + 0.5) - (warmNight ? 1 : 0)
+const threshold = personalThreshold
 
 const MIN = 30
 const MAX = 42
@@ -16,7 +15,7 @@ const MAX = 42
 export function HeatExplorer() {
   const [elders, setElders] = useState<ElderListItem[] | null>(null)
   const [failed, setFailed] = useState(false)
-  const [heat, setHeat] = useState(35.8)
+  const [heat, setHeat] = useState(EXAMPLE_HEAT)
   const [warmNight, setWarmNight] = useState(false)
 
   useEffect(() => {
