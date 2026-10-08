@@ -46,6 +46,7 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
             {[1, 2].map((n) => (
               <Btn key={n} busy={busy === `r${n}`} onClick={() => run(`r${n}`, async () => {
                 const { created } = await api.startRound(n)
+                setOpen(false) // get out of the way: the live call spotlight is about to open
                 return `Round ${n}: ${created} calls`
               })}>
                 Start round {n}

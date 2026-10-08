@@ -83,7 +83,7 @@ const REPLAY: { q: string; a: string; concern?: boolean; via?: string }[] = [
   { q: 'Dizzy, weak or confused', a: 'No' },
   { q: 'Room very hot', a: 'Yes' },
   { q: 'Fan or cooler working', a: 'Yes' },
-  { q: 'What day is it today?', a: '"Friday"', via: 'spoken' },
+  { q: 'What day is it today?', a: 'Friday', via: 'pressed 5' },
   { q: 'Okay, or needs help', a: 'Okay' },
 ]
 
@@ -219,7 +219,7 @@ function TheCall() {
     ['The heat crosses her threshold', 'The forecast is checked against every registered person. Only those over their own threshold are called, once or twice depending on how far over.'],
     ['Neralu phones her', 'A recorded voice in her language. The call opens with a code word her family chose, and says Neralu never asks for money, OTP, Aadhaar or bank details.'],
     ['Four questions on the keypad', 'Water in the last hour, dizziness or weakness, a very hot room, a working fan. Press 1 for yes, 2 for no. Silence gets one repeat. The call ends with: press 2 if you need help now.'],
-    ['One spoken answer', '"What day is it today?" Heat can confuse people who still say they are fine, so the answer is checked, not trusted.'],
+    ['The day check', '"What day is it today?" Pressed on the keypad (1 for Monday to 7 for Sunday), or spoken where the line can record. Heat can confuse people who still say they are fine, so the answer is checked, not trusted.'],
     ['Fixed rules decide', 'GREEN, AMBER or RED, from the published rules below. A picked-up call with no answers is never counted as safe.'],
     ['A person responds', 'Her family is told. If the check is RED, or she does not answer twice, someone nearby is asked to go to her door.'],
   ]
@@ -274,7 +274,7 @@ function Rules() {
             Rules decide. <span className="italic text-brand">AI only listens.</span>
           </h2>
           <p className="mt-5 leading-relaxed text-ink/80">
-            Speech-to-text turns the spoken day into a word. That is all the AI does. Whether someone is safe is decided
+            Where the day is spoken rather than pressed, speech-to-text turns it into a word. That is all the AI does. Whether someone is safe is decided
             by these rules, in this order; the first one that matches wins.
           </p>
           <p className="mt-3 leading-relaxed text-ink/80">"I'm okay" never overrides another warning sign. Anything unclear is followed up, not assumed fine.</p>
@@ -422,7 +422,7 @@ function Honesty() {
         <div className="border-t border-ink pt-5">
           <h3 className="font-semibold">Real in this demo</h3>
           <ul className="mt-3 space-y-2.5 leading-relaxed text-ink/80">
-            <li>The call to Kamala, on a real phone or, where the network blocks it, on the browser phone. Her keypad answers and her spoken answer.</li>
+            <li>The call to Kamala, on a real phone or, where the network blocks it, on the browser phone. Her keypad answers, including the day.</li>
             <li>The rules that classify the call, and the escalation that follows.</li>
             <li>The volunteer accepting the case on a real phone, and the live ward console.</li>
           </ul>
