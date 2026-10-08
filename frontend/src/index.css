@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+@theme {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-watch: var(--watch);
+  --color-watch-bg: var(--watch-bg);
+  --color-support: var(--support);
+  --color-support-bg: var(--support-bg);
+  --color-alert: var(--alert);
+  --color-alert-bg: var(--alert-bg);
+  --color-heat: var(--heat);
+  --radius-ui: var(--radius);
+  --font-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}

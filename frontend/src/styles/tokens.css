@@ -1,0 +1,17 @@
+:root {
+  --paper: #fafaf7;
+  --surface: #ffffff;
+  --line: #e4e2dc;
+  --ink: #1c1c1a;
+  --muted: #6b6a64;
+  --ok: #2e7d4f;
+  --ok-bg: #e8f3ec;
+  --watch: #a8640f;
+  --watch-bg: #fbf0dd;
+  --support: #2b6cb0;
+  --support-bg: #e6f0fa;
+  --alert: #b83a26;
+  --alert-bg: #fbe9e5;
+  --heat: #c2410c;
+  --radius: 6px;
+}
