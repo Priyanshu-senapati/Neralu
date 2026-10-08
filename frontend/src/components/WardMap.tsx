@@ -1,8 +1,8 @@
 import 'leaflet/dist/leaflet.css'
 import { memo, useEffect, useState } from 'react'
 import { AttributionControl, CircleMarker, MapContainer, Polygon, TileLayer, Tooltip } from 'react-leaflet'
-import { elderStatus, toneHex } from '../status'
-import { token, useTheme } from '../theme'
+import { elderStatus } from '../status'
+import { useTheme } from '../theme'
 import type { ElderListItem } from '../types'
 
 
@@ -14,6 +14,15 @@ const WARD: [number, number][] = [
   [12.925 - 0.0102, 77.5838 + 0.0104],
 ]
 const WORLD: [number, number][] = [[-89, -179], [89, -179], [89, 179], [-89, 179]]
+
+// Light-map palette (the light theme's AA status colours), used whatever the page theme.
+const STREET = {
+  paper: '#f7f6f1',
+  ink: '#1b1d1a',
+  ring: '#ffffff',
+  brand: '#1f3d33',
+  tones: { ok: '#2b764a', watch: '#985a0e', support: '#2a69ac', alert: '#b83a26', neutral: '#9a988f' },
+}
 
 type View = 'risk' | 'status'
 
@@ -40,9 +49,11 @@ interface Props {
 export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, calling, view: forced }: Props) {
   // Re-read colours when the theme changes (Leaflet needs concrete colour strings).
   const theme = useTheme()
-  const INK = token('--ink')
-  const RING = token('--paper')
-  const TONE_HEX = { ok: toneHex('ok'), watch: toneHex('watch'), support: toneHex('support'), alert: toneHex('alert'), neutral: toneHex('neutral') }
+  // The street map is always a light map (a dark-filtered basemap is unreadable), so it uses
+  // colours made for a white background in either theme.
+  const INK = STREET.ink
+  const RING = STREET.ring
+  const TONE_HEX = STREET.tones
   const [own, setView] = useState<View>(calling ? 'status' : 'risk')
   const view = forced ?? own
   const [touched, setTouched] = useState(false)
@@ -53,7 +64,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
 
   const ordered = [...elders].sort((a, b) => rank(a, view) - rank(b, view))
   return (
-    <section aria-label="Ward map" className="relative isolate min-h-0 flex-1 overflow-hidden bg-[var(--map-bg)]" data-theme-key={theme}>
+    <section aria-label="Ward map" className="street-map relative isolate min-h-0 flex-1 overflow-hidden bg-[#ecebe6]" data-theme-key={theme}>
       <MapContainer bounds={WARD} boundsOptions={{ padding: [6, 6] }} zoomSnap={0.25} zoomControl={false} className="h-full w-full" attributionControl={false}>
         <AttributionControl position="bottomleft" prefix={false} />
         {/* Esri Light Gray Canvas: no POI icons, faint labels. Muted further in CSS. */}
@@ -64,8 +75,8 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, cal
           maxZoom={16}
         />
         {/* Everything outside the ward recedes; the ward boundary is drawn once, quietly. */}
-        <Polygon positions={[WORLD, WARD]} interactive={false} pathOptions={{ stroke: false, fillColor: token('--paper'), fillOpacity: theme === 'dark' ? 0.55 : 0.62 }} />
-        <Polygon positions={WARD} interactive={false} pathOptions={{ color: token('--brand'), weight: 1.5, dashArray: '5 4', fill: false }} />
+        <Polygon positions={[WORLD, WARD]} interactive={false} pathOptions={{ stroke: false, fillColor: STREET.paper, fillOpacity: 0.62 }} />
+        <Polygon positions={WARD} interactive={false} pathOptions={{ color: STREET.brand, weight: 1.5, dashArray: '5 4', fill: false }} />
         {ordered.map((e) => {
           const selected = e.id === selectedId
           const real = !e.is_simulated
