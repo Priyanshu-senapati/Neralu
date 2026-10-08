@@ -42,6 +42,16 @@ const OUTCOME_WORD: Record<string, string> = {
   GREEN: 'Safe', AMBER: 'Follow-up', RED: 'Needs a person now', UNREACHED: 'Not reached',
 }
 
+/** What a call found, as plain phrases, worrying answers first. */
+export function callFindings(answers: Record<string, string>): { text: string; concern: boolean }[] {
+  const out: { text: string; concern: boolean }[] = []
+  for (const [step, phrases] of Object.entries(ANSWER)) {
+    const v = answers[step]
+    if (v && phrases[v]) out.push({ text: phrases[v], concern: CONCERN[step]?.includes(v) ?? false })
+  }
+  return out.sort((a, b) => Number(b.concern) - Number(a.concern))
+}
+
 /** "6 volunteers on duty alerted · no neighbour on file" */
 function alertedText(alerted: NeraluEvent, ev: NeraluEvent[]): string {
   const onDuty = alerted.message.match(/(\d+) on duty/)?.[1]
