@@ -1,5 +1,6 @@
 """Call rounds, dispatching due calls, classifying ended calls, retries and recalls (E1–E4)."""
 import logging
+from datetime import timedelta
 
 from sqlmodel import Session, select
 
@@ -11,7 +12,7 @@ from app.models import CheckIn, Elder
 from app.notify import notify_family
 from app.rules import Outcome, Signals, classify
 from app.state import state
-from app.telephony import place_call
+from app.telephony import cancel_call, place_call
 from app.views import due_count
 
 log = logging.getLogger(__name__)
@@ -75,11 +76,27 @@ def dispatch_due_calls(session: Session) -> None:
             session.commit()
             continue
         c.call_status = "queued"
+        c.placed_real = state.clock.real_now()
         what = "Recall" if c.is_recall else "Calling"
         log_event(session, "call_placed", f"{what} · attempt {c.attempt}", actor="system",
                   elder_id=elder.id, checkin_id=c.id,
                   data={"attempt": c.attempt, "round_no": c.round_no, "call_sid": c.call_sid})
         session.commit()
+
+
+def cancel_unanswered_calls(session: Session) -> None:
+    """Hang up real calls still ringing after RING_TIMEOUT_S (needed where Twilio's own ring
+    timeout is unavailable, e.g. trial accounts). Twilio then reports them as canceled."""
+    limit = timedelta(seconds=get_settings().ring_timeout_s)
+    now = state.clock.real_now()
+    ringing = session.exec(select(CheckIn).where(
+        CheckIn.run_id == current_run_id(), CheckIn.is_simulated == False,  # noqa: E712
+        CheckIn.processed == False, CheckIn.ring_timed_out == False,  # noqa: E712
+        CheckIn.call_sid != None, CheckIn.call_status.in_(("queued", "initiated", "ringing"))))  # noqa: E711
+    for c in ringing:
+        if c.placed_real and now - c.placed_real >= limit and cancel_call(c.call_sid):
+            c.ring_timed_out = True
+            session.commit()
 
 
 def schedule_retry(session: Session, checkin: CheckIn) -> CheckIn | None:

@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app import browser_phone, calls
 from app.calls import dispatch_due_calls
+from app.config import get_settings
 from app.db import engine
 from app.escalation import sync_tick
 from app.models import Case, CheckIn, Elder, Event
@@ -16,6 +17,7 @@ from tests.test_voice_flow import HEATWAVE, stt  # noqa: F401  (fixture)
 def phone(client, monkeypatch):
     """Client whose real-phone calls ring the browser phone instead of Twilio."""
     browser_phone.calls.clear()
+    monkeypatch.setattr(get_settings(), "telephony_mode", "browser")
     monkeypatch.setattr(calls, "place_call", lambda to, cid: browser_phone.ring(cid))
     client.post("/api/sim/heat", json=HEATWAVE)
     client.post("/api/sim/round", json={"round_no": 1})

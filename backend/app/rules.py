@@ -70,39 +70,35 @@ def classify(signals: Signals) -> Verdict:
 
 
 # Plain-English explanation of every rule a judge, officer or family member may see (plan §7.2).
-# Shown next to the rule ID so the reasoning is visible, not just the code.
+# The single source for this wording: the dashboard reads it from GET /api/rules.
 EXPLANATIONS: dict[str, str] = {
-    "R0": "None of the keypad questions got an answer, so the call cannot count as a check. "
-          "A picked-up call with no answers is treated as not reached, never as fine.",
-    "R1": "They pressed 2 to say they need help now. A request for help always escalates.",
-    "R2": "They reported dizziness, weakness or confusion and could not clearly say what day it is. "
-          "Confusion is a warning sign of heat illness, so this goes straight to a person.",
-    "R3": "They reported dizziness, weakness or confusion and have not had water in the last hour. "
-          "Together these point to heat exhaustion, so this goes straight to a person.",
-    "R4": "They reported dizziness, weakness or confusion. Neralu informs the family and calls back "
-          "soon; a second concerning call escalates to a person.",
-    "R5": "They named the wrong day. Saying \"I'm fine\" does not override this, because heat can "
-          "cause confusion the person may not notice.",
-    "R6": "They have not had water in the last hour. The call ends with advice to drink water now, "
-          "the family is informed and Neralu calls back.",
-    "R7": "The spoken answer to \"what day is it?\" was missing or unclear. Uncertainty is treated "
-          "as a reason to call back, never as a reason to assume they are fine.",
-    "R8": "Two or more questions went unanswered, so the check is incomplete and Neralu calls back.",
-    "R9": "Every answer was fine: they have had water, feel well, knew the day and said they are okay.",
-    "S1": "Their room is very hot and the fan or cooler is not working. A volunteer is asked to help "
-          "(for example with a fan, water or ORS) even if the person feels fine.",
-    "E1": "Neralu could not reach them after every attempt. Not answering on a heat-risk day is "
-          "itself a warning sign, so a person is asked to check in person.",
-    "E3": "A follow-up call after a concerning check was also concerning or unanswered, so this now "
-          "goes to a person.",
+    "R0": "No keypad answers came back: the call was not picked up, or was picked up with no answers. "
+          "We could not confirm they are safe, so this counts as not reached, never as fine.",
+    "R1": "They pressed the key for \"I need help now\". This is escalated straight away, whatever the "
+          "other answers were.",
+    "R2": "They reported dizziness, weakness or confusion, and could not say what day it is. Together "
+          "these can be early signs of heat illness affecting thinking.",
+    "R3": "They reported dizziness, weakness or confusion, and had no water in the last hour. Together "
+          "these signal heat distress.",
+    "R4": "They reported dizziness, weakness or confusion. On its own this needs a follow-up call and a "
+          "family check.",
+    "R5": "They named the wrong day. Heat can cause confusion, so this is followed up even if they said "
+          "they are okay.",
+    "R6": "They have not had water in the last hour. Neralu advises them to drink now and calls again later.",
+    "R7": "Their answer to \"What day is it today?\" was missing or unclear, so we cannot rule out confusion.",
+    "R8": "Two or more questions went unanswered, so the check is incomplete.",
+    "R9": "All answers were fine and they knew the day.",
+    "E1": "No one answered any of the call attempts, so a person nearby is asked to check in person.",
+    "E3": "A follow-up call was still concerning or went unanswered, so this moves to a person checking "
+          "in person.",
+    "S1": "Their room is very hot and their fan or cooler is not working. A volunteer can bring water, "
+          "ORS or a fan.",
 }
 
 # Shown wherever an outcome is explained: the reason rules, not a model, decide.
-DECIDED_BY = ("Decided by a fixed, published rule, not by AI. AI is only used to transcribe the "
-              "spoken day; when anything is uncertain, Neralu escalates instead of assuming the "
-              "person is fine.")
+DECIDED_BY = ("Decided by a fixed rule, not by AI. \"I'm okay\" never overrides another warning sign, "
+              "and anything unclear is followed up rather than assumed fine.")
 
 
 def explain(rule_id: str | None) -> str | None:
     return EXPLANATIONS.get(rule_id) if rule_id else None
-

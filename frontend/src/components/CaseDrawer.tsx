@@ -7,6 +7,7 @@ import { AnswerTable } from './AnswerTable'
 import { EventTimeline } from './EventTimeline'
 import { RecordingPlayer } from './RecordingPlayer'
 import { RiskBreakdown } from './RiskBreakdown'
+import { RuleExplanation } from './RuleExplanation'
 import { SimTag, StatusPill } from './StatusPill'
 import { WaitingTimer } from './WaitingTimer'
 
@@ -107,6 +108,9 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
             <span>{c.state === 'assigned' ? 'Accepted' : c.overdue ? 'Ward officer action needed' : <>not accepted · <WaitingTimer since={c.tier_started_scenario} now={now} /></>}</span>
           </div>
           {!d.has_neighbour && c.level === 'red' && <div className="mt-1 text-xs text-muted">No neighbour on file</div>}
+          <div className="mt-2 border-t border-ink/10 pt-2">
+            <RuleExplanation ruleId={c.rule_id} heading={false} />
+          </div>
         </div>
       )}
       {d.address && (
@@ -115,6 +119,16 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
           {d.address}
         </div>
       )}
+      <div className="rounded-ui border border-line px-3 py-2 text-sm">
+        <div>
+          Family code word, played at the start of every call:{' '}
+          <span className="font-semibold">{d.code_word[0].toUpperCase() + d.code_word.slice(1)}</span>
+        </div>
+        <p className="mt-0.5 text-xs text-muted">
+          Chosen by {d.family_name ?? 'their family'} so {d.name.split(' ')[0]} knows the call is really from Neralu and not a
+          scam. Every call also says Neralu never asks for money, OTP, Aadhaar or bank details.
+        </p>
+      </div>
       <RiskBreakdown r={d} score={d.risk_score} />
       <section>
         <h3 className="mb-2 text-sm font-semibold">Call attempts</h3>
@@ -138,10 +152,10 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
             </div>
           )}
           {shown.rule_id && (
-            <p className="mt-2 text-sm">
-              <span className="font-mono">Rule {shown.rule_id}</span> · {shown.reason}
-              {shown.needs_support && ' · needs support (S1)'}
-            </p>
+            <div className="mt-2 space-y-2">
+              <RuleExplanation ruleId={shown.rule_id} reason={shown.reason} note={!c} />
+              {shown.needs_support && <RuleExplanation ruleId="S1" reason="Needs support" note={false} />}
+            </div>
           )}
         </section>
       )}

@@ -39,6 +39,8 @@ def _live_checkin(session: Session, checkin_id: int) -> CheckIn | None:
 
 def _store(session: Session, c: CheckIn, field: str, value: str, via: str, **extra) -> None:
     c.answers = {**(c.answers or {}), field: value}
+    if field == "orientation":
+        c.answers = {**c.answers, "orientation_via": via}
     log_event(session, "answer_recorded", f"{field.replace('_', ' ').capitalize()}: {value} · via {via}",
               actor="twilio", elder_id=c.elder_id, checkin_id=c.id,
               data={"step": field, "value": value, "via": via, **extra})
@@ -61,8 +63,10 @@ async def gather(request: Request, step: str, checkin_id: int, r: int = 0) -> Re
     digits = (await request.form()).get("Digits")
     with Session(engine) as session:
         c = _live_checkin(session, checkin_id)
-        if c is None or (step not in tw.STEPS and step != "help"):
+        if c is None or (step not in tw.STEPS and step not in ("help", "day")):
             return twiml(tw.hangup_twiml())
+        if step == "day":
+            return _day_keypad(session, c, digits, retried=bool(r))
         if step == "help":
             value = HELP_KEYPAD.get(digits, "none")
             _store(session, c, "self_report", value, "keypad")
@@ -78,6 +82,23 @@ async def gather(request: Request, step: str, checkin_id: int, r: int = 0) -> Re
         if i + 1 < len(tw.STEP_ORDER):
             return twiml(tw.gather_twiml(tw.STEP_ORDER[i + 1], c.id, reprompt=False))
         return twiml(tw.orientation_twiml(c.id))
+
+
+def _day_keypad(session: Session, c: CheckIn, digits: str | None, *, retried: bool) -> Response:
+    """Orientation by keypad: 1 = Monday … 7 = Sunday, scored against the scenario day."""
+    valid = digits is not None and digits in "1234567" and len(digits) == 1
+    if not valid and not retried:
+        return twiml(tw.gather_twiml("day", c.id, reprompt=True))
+    if valid:
+        pressed = int(digits) - 1
+        today = state.clock.scenario_now().date().weekday()
+        value = "correct" if pressed == today else "wrong"
+        _store(session, c, "orientation", value, "keypad", weekday_pressed=pressed)
+    else:
+        # No press is "none"; a key outside 1-7 is "uncertain". Neither ever counts as fine.
+        _store(session, c, "orientation", "uncertain" if digits else "none", "keypad")
+    session.commit()
+    return twiml(tw.gather_twiml("help", c.id, reprompt=False))
 
 
 @router.post("/orientation")
@@ -150,6 +171,8 @@ async def status(request: Request, checkin_id: int) -> Response:
                               elder_id=c.elder_id, checkin_id=c.id)
                 session.commit()
             return Response(status_code=204)
+        if call_status == "canceled" and c.ring_timed_out:
+            call_status = "no-answer"  # we hung up after RING_TIMEOUT_S of ringing
     await _await_orientation(checkin_id)
     with Session(engine) as session:
         handle_call_ended(session, checkin_id, call_status)

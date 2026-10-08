@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     bhashini_api_key: str = ""
     anthropic_api_key: str = ""
     stt_timeout_s: float = 6
+    # "voice": spoken day recorded + transcribed. "keypad": press 1-7 (Twilio trials cannot record).
+    orientation_mode: str = "voice"
 
     demo_speed: int = 60
     max_attempts: int = 2

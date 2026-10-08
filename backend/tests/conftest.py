@@ -12,6 +12,7 @@ os.environ.update({
     "TWILIO_FROM_NUMBER": "+15550000000",
     "STT_TIMEOUT_S": "0.3",
     "SCHEDULER_ENABLED": "false",
+    "ORIENTATION_MODE": "voice",
     "MAX_ATTEMPTS": "2",
 })
 
@@ -20,6 +21,15 @@ from sqlmodel import Session, SQLModel  # noqa: E402
 
 from app.db import engine, set_run_id  # noqa: E402
 from app.state import reset_state  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def no_real_twilio(monkeypatch):
+    """No test may reach the real Twilio API."""
+    from app import calls
+    cancelled = []
+    monkeypatch.setattr(calls, "cancel_call", lambda sid: cancelled.append(sid) or True)
+    return cancelled
 
 
 @pytest.fixture

@@ -192,7 +192,7 @@ def test_summary_counts_people_helped_after_resolution(client):
 def test_case_detail_and_rule_book_explain_the_rule(client):
     cid = red_case_for_kamala()
     d = client.get(f"/api/cases/{cid}").json()
-    assert d["rule_id"] == "E1" and "could not reach" in d["rule_explanation"]
+    assert d["rule_id"] == "E1" and "No one answered" in d["rule_explanation"]
     assert "not by AI" in d["decided_by"]
     book = client.get("/api/rules").json()
     assert {r["id"] for r in book["rules"]} >= {"R0", "R3", "R9", "S1", "E1", "E3"}

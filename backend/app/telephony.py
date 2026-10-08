@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, Request
+from twilio.base.exceptions import TwilioRestException
 from twilio.request_validator import RequestValidator
 from twilio.rest import Client
 from twilio.twiml.voice_response import Gather, VoiceResponse
@@ -15,9 +16,14 @@ AUDIO_DIR = Path(__file__).resolve().parent.parent / "static" / "audio" / "kn"
 STEPS = {"water": "water", "symptoms": "symptoms", "room": "room_hot", "fan": "fan_working"}
 STEP_ORDER = list(STEPS)
 PROMPTS = {"water": "q_water", "symptoms": "q_symptoms", "room": "q_room", "fan": "q_fan",
+           "day": "q_day_keypad",
            "help": "q_help"}
 
 _client: Client | None = None
+# Twilio trial accounts reject some call options; once seen, place calls without them.
+# Ring time is then enforced by calls.cancel_unanswered_calls instead of Twilio's `timeout`.
+_trial_limited = False
+TRIAL_LIMIT_TEXT = "trial accounts have limited parameter access"
 
 
 def _twilio() -> Client:
@@ -42,19 +48,35 @@ def has_audio(name: str) -> bool:
 
 
 def place_call(to: str, checkin_id: int) -> str:
+    global _trial_limited
     s = get_settings()
     if s.telephony_mode == "browser":
         from app import browser_phone
         return browser_phone.ring(checkin_id)
-    call = _twilio().calls.create(
+    params = dict(
         to=to, from_=s.twilio_from_number,
         url=url("/voice/answer", checkin_id=checkin_id),
         status_callback=url("/voice/status", checkin_id=checkin_id),
         status_callback_event=["initiated", "ringing", "answered", "completed"],
-        status_callback_method="POST",
-        timeout=s.ring_timeout_s,
     )
-    return call.sid
+    full = dict(status_callback_method="POST", timeout=s.ring_timeout_s)
+    if not _trial_limited:
+        try:
+            return _twilio().calls.create(**params, **full).sid
+        except TwilioRestException as exc:
+            if TRIAL_LIMIT_TEXT not in str(exc.msg):
+                raise
+            _trial_limited = True  # nothing was created; retry without the restricted options
+    return _twilio().calls.create(**params).sid
+
+
+def cancel_call(call_sid: str) -> bool:
+    """Hang up a call that is still queued or ringing. False if it was already answered or over."""
+    try:
+        _twilio().calls(call_sid).update(status="canceled")
+        return True
+    except TwilioRestException:
+        return False
 
 
 def keypad_gather(resp: VoiceResponse, step: str, checkin_id: int, *, reprompt: bool) -> None:
@@ -92,6 +114,9 @@ def gather_twiml(step: str, checkin_id: int, *, reprompt: bool) -> str:
 
 def orientation_twiml(checkin_id: int) -> str:
     resp = VoiceResponse()
+    if get_settings().orientation_mode == "keypad":
+        keypad_gather(resp, "day", checkin_id, reprompt=False)
+        return str(resp)
     resp.play(audio("q_orientation"))
     resp.record(max_length=5, timeout=3, play_beep=False, method="POST",
                 action=url("/voice/orientation", checkin_id=checkin_id))
@@ -115,15 +140,57 @@ def hangup_twiml() -> str:
     return str(resp)
 
 
+_verified_call_sids: set[str] = set()
+
+
+def _call_is_ours(call_sid: str) -> bool:
+    """Ask Twilio whether this CallSid is a real call on our account (cached per call)."""
+    if call_sid in _verified_call_sids:
+        return True
+    try:
+        call = _twilio().calls(call_sid).fetch()
+    except TwilioRestException:
+        return False
+    if call.account_sid != get_settings().twilio_account_sid:
+        return False
+    _verified_call_sids.add(call_sid)
+    return True
+
+
+def _checkin_call_sid(request: Request) -> str | None:
+    from sqlmodel import Session
+
+    from app.db import engine
+    from app.models import CheckIn
+
+    try:
+        checkin_id = int(request.query_params.get("checkin_id", ""))
+    except ValueError:
+        return None
+    with Session(engine) as session:
+        c = session.get(CheckIn, checkin_id)
+        return c.call_sid if c else None
+
+
 async def validate_signature(request: Request) -> None:
-    """Raise 403 unless the request carries a valid X-Twilio-Signature (when validation is on)."""
+    """Raise 403 unless the request provably comes from Twilio (when validation is on).
+
+    Normal webhooks carry X-Twilio-Signature. Twilio's trial-account gateway fetches the answer
+    URL unsigned, so an unsigned request is accepted only if its CallSid is the call we placed
+    for this check-in and Twilio's API confirms that call belongs to our account.
+    """
     s = get_settings()
     if not s.validate_twilio_signature:
         return
     form = await request.form()
-    # Behind ngrok/Railway the request URL seen here differs; Twilio signs the public URL.
-    public = url(request.url.path) + (f"?{request.url.query}" if request.url.query else "")
-    ok = RequestValidator(s.twilio_auth_token).validate(
-        public, dict(form), request.headers.get("X-Twilio-Signature", ""))
-    if not ok:
+    signature = request.headers.get("X-Twilio-Signature")
+    if signature:
+        # Behind ngrok/Railway the request URL seen here differs; Twilio signs the public URL.
+        public = url(request.url.path) + (f"?{request.url.query}" if request.url.query else "")
+        if RequestValidator(s.twilio_auth_token).validate(public, dict(form), signature):
+            return
         raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+    call_sid = form.get("CallSid")
+    if call_sid and call_sid == _checkin_call_sid(request) and _call_is_ours(call_sid):
+        return
+    raise HTTPException(status_code=403, detail="Unverified webhook")
