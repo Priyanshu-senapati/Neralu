@@ -18,6 +18,7 @@ EVENT_KINDS = (
     "call_answered", "answer_recorded", "call_ended", "attempt_failed", "retry_scheduled",
     "checkin_classified", "recall_scheduled", "case_opened", "tier_alerted", "tier_skipped",
     "tier_overdue", "case_accepted", "case_resolved", "family_notified", "elder_registered",
+    "elder_deleted",
 )
 
 

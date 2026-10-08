@@ -483,6 +483,56 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
             Register another person
           </FlowButton>
         </div>
+        <RemoveRegistration done={done} onRemoved={onAnother} />
+      </div>
+    </div>
+  )
+}
+
+/** Right to erasure: removes the person and everything Neralu recorded about them. */
+function RemoveRegistration({ done, onRemoved }: { done: ElderDetail; onRemoved: () => void }) {
+  const [stage, setStage] = useState<'idle' | 'confirm' | 'busy' | 'removed'>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const remove = async () => {
+    setStage('busy')
+    setError(null)
+    try {
+      await api.removeRegistration(done.id, regNo(done.id))
+      setStage('removed')
+    } catch {
+      setStage('confirm')
+      setError('Could not remove it. Check your connection and try again.')
+    }
+  }
+  if (stage === 'removed')
+    return (
+      <div role="status" className="mt-6 rounded-[8px] border border-line bg-surface px-4 py-3 text-sm">
+        {done.name}'s registration and everything recorded about them has been deleted.{' '}
+        <button type="button" onClick={onRemoved} className="font-semibold text-brand underline-offset-2 hover:underline">
+          Start a new registration
+        </button>
+      </div>
+    )
+  if (stage === 'idle')
+    return (
+      <button type="button" onClick={() => setStage('confirm')} className="mt-6 text-xs text-muted underline-offset-2 hover:text-alert hover:underline">
+        Remove this registration
+      </button>
+    )
+  return (
+    <div className="mt-6 rounded-[8px] border border-alert/50 bg-alert-bg px-4 py-3 text-sm">
+      <p>
+        Delete {done.name} from Neralu? Their details, call history and recordings are erased and Neralu stops
+        calling them. This cannot be undone.
+      </p>
+      {error && <p role="alert" className="mt-2 text-alert">{error}</p>}
+      <div className="mt-3 flex gap-2">
+        <button type="button" onClick={remove} disabled={stage === 'busy'} className="press min-h-11 rounded-full bg-alert px-4 font-semibold text-paper disabled:opacity-60">
+          {stage === 'busy' ? 'Deleting…' : 'Delete registration'}
+        </button>
+        <button type="button" onClick={() => setStage('idle')} className="press min-h-11 rounded-full border border-line-strong px-4">
+          Keep it
+        </button>
       </div>
     </div>
   )

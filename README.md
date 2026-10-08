@@ -8,7 +8,17 @@ Deterministic rules decide every outcome; the system never calls 108 itself.
 Full spec, decisions and build order: [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md).
 Rules for working in this repo: [CLAUDE.md](CLAUDE.md).
 
-## Run it locally (Windows)
+## One command (demo laptop)
+
+Builds the website and serves everything (site, API, call audio) on one port, :8000, and prints
+the address for phones on the same Wi-Fi.
+
+```
+scripts/demo.sh                                              # Mac / Linux
+powershell -ExecutionPolicy Bypass -File scripts\demo.ps1    # Windows
+```
+
+## Run it locally for development (Windows)
 
 Needs Python 3.11+ and Node 20+.
 
@@ -103,8 +113,22 @@ frontend/  Vite + React + TypeScript + Tailwind: dashboard, volunteer and regist
 docs/      the plan
 ```
 
+## Optional real-world switches (backend/.env)
+
+| Setting | Effect |
+|---|---|
+| `FAMILY_SMS=twilio` | Families and neighbours of people registered through the app get a real SMS from `TWILIO_FROM_NUMBER`. Simulated residents never do. A trial account can text verified numbers only; any failure falls back to the simulated log. |
+| `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
+| `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
+
+Demo controls also offer **Today's real forecast, Bengaluru** (Open-Meteo, free, no key): the hottest
+forecast hour and the overnight low become the run's weather, labelled "live forecast".
+
+A family can remove a person they registered from the confirmation screen (`DELETE /api/elders/{id}`
+with the registration number): the person, their check-ins, recordings, cases and events are erased.
+
 ## What is simulated
 
-The weather, the demo clock (×60), the ~400 seeded residents' answers and family notifications.
-Each is labelled "simulated" in the data and the UI. The call, the answers, the rules and the
-escalation are real.
+The weather (unless the live forecast is chosen), the demo clock (×60), the ~400 seeded residents'
+answers and family notifications (unless `FAMILY_SMS=twilio`). Each is labelled "simulated" in the
+data and the UI. The call, the answers, the rules and the escalation are real.

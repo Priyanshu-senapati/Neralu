@@ -3,11 +3,12 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.db import current_run_id, get_session
 from app.events import log_event
-from app.models import CODE_WORDS, LANGUAGES, ROOF_TYPES, Elder
+from app.erase import erase_elder
+from app.models import CODE_WORDS, LANGUAGES, ROOF_TYPES, Elder, Event
 from app.risk import vulnerability_score
 from app.views import elder_detail, elder_items
 from seed.seed import CENTER_LAT, CENTER_LNG, HALF_LAT, HALF_LNG
@@ -95,6 +96,33 @@ def get_elder(elder_id: int, session: Session = Depends(get_session)) -> dict:
     if e is None or e.run_id != current_run_id():
         raise HTTPException(404, "Not found")
     return elder_detail(session, e)
+
+
+class DeleteIn(BaseModel):
+    registration: str  # NRL-W47-00042, shown only to the family on the confirmation screen
+
+
+def registration_number(elder_id: int) -> str:
+    return f"NRL-W47-{elder_id:05d}"
+
+
+@router.delete("/elders/{elder_id}")
+def delete_elder(elder_id: int, body: DeleteIn, session: Session = Depends(get_session)) -> dict:
+    """Right to erasure: removes a person registered through the app and everything about them."""
+    e = session.get(Elder, elder_id)
+    if e is None or e.run_id != current_run_id():
+        raise HTTPException(404, "Not found")
+    registered = session.exec(select(Event.id).where(
+        Event.run_id == current_run_id(), Event.kind == "elder_registered", Event.elder_id == elder_id)).first()
+    if not registered:
+        raise HTTPException(409, "Only people registered through Neralu can be removed here")
+    if body.registration.strip().upper() != registration_number(elder_id):
+        raise HTTPException(403, "Registration number does not match")
+    removed = erase_elder(session, e)
+    log_event(session, "elder_deleted", "A registration was removed at the family's request · all their data deleted",
+              actor="family", data=removed)
+    session.commit()
+    return {"deleted": True, **removed}
 
 
 @router.post("/elders", status_code=201)

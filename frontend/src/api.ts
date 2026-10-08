@@ -43,6 +43,8 @@ export const api = {
   resolve: (id: number, token: string, resolution: string, note?: string) =>
     post<CaseDetail>(`/api/cases/${id}/resolve`, { volunteer_token: token, resolution, note }),
   register: (body: unknown) => post<ElderDetail>('/api/elders', body),
+  removeRegistration: (id: number, registration: string) =>
+    request<{ deleted: true }>(`/api/elders/${id}`, { method: 'DELETE', body: JSON.stringify({ registration }) }),
   phone: {
     current: () => request<{ call: PhoneCall | null }>('/api/phone/current'),
     answer: (id: number) => post<PhoneScript>(`/api/phone/calls/${id}/answer`, {}),
