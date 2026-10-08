@@ -94,6 +94,7 @@ class Case(SQLModel, table=True):
     opened_real: datetime = Field(default_factory=utcnow)
     resolved_real: datetime | None = None
     sim_accept_at_real: datetime | None = None  # simulated cases only: when a sim volunteer accepts
+    alerted_ids: list[int] = Field(default_factory=list, sa_column=Column(JSON))  # nearest responders alerted
 
 
 class Volunteer(SQLModel, table=True):

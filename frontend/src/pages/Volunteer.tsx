@@ -173,7 +173,11 @@ function CaseHeader({ c, now }: { c: CaseDetail; now: Date | null }) {
         <span className={`rounded-ui px-2 py-0.5 text-sm font-semibold ${red ? 'bg-alert-bg text-alert' : 'bg-support-bg text-support'}`}>
           {red ? 'RED' : 'Needs support'} · waiting <WaitingTimer since={c.opened_scenario} now={now} />
         </span>
-        {c.distance_km !== undefined && <span className="num text-xs text-muted">≈ {c.distance_km} km away</span>}
+        {c.distance_km !== undefined && (
+          <span className="num text-right text-xs text-muted">
+            {c.alerted_you && <span className="block font-sans font-semibold text-brand">You are one of the nearest</span>}≈ {c.distance_km} km away
+          </span>
+        )}
       </div>
       <div className="mt-3 text-xl font-semibold">
         {c.elder.name} <span className="num text-base font-normal text-muted">{c.elder.age}</span>

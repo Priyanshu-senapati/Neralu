@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     ring_timeout_s: int = 15
     retry_gap_min: float = 15
     ack_timeout_min: float = 15
+    alert_nearest: int = 3  # volunteers/ASHAs alerted first, nearest to the person
     amber_recall_min: float = 30
     scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")
 

@@ -182,6 +182,8 @@ export interface CaseDetail {
   events: NeraluEvent[]
   mine?: boolean
   distance_km?: number
+  /** this volunteer is one of the nearest alerted first */
+  alerted_you?: boolean
 }
 
 export interface VolunteerMe {

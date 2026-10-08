@@ -1,11 +1,10 @@
-import math
-
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app.db import current_run_id, get_session
+from app.geo import km
 from app.escalation import AlreadyAccepted, NotAllowed, accept_case, resolve_case
 from app.models import RESOLUTIONS, Case, Elder, Volunteer
 from app.views import case_brief, case_detail, elder_item_one
@@ -36,13 +35,6 @@ def _case(session: Session, case_id: int) -> Case:
     if c is None or c.run_id != current_run_id():
         raise HTTPException(404, "Not found")
     return c
-
-
-def _km(lat1, lng1, lat2, lng2) -> float:
-    p = math.pi / 180
-    a = (math.sin((lat2 - lat1) * p / 2) ** 2 +
-         math.cos(lat1 * p) * math.cos(lat2 * p) * math.sin((lng2 - lng1) * p / 2) ** 2)
-    return round(12742 * math.asin(math.sqrt(a)), 1)
 
 
 def case_list_item(session: Session, c: Case) -> dict:
@@ -95,7 +87,8 @@ def volunteer_case(session: Session, c: Case, v: Volunteer) -> dict:
     detail = case_detail(session, c, reveal_address=mine)
     e = session.get(Elder, c.elder_id)
     detail["mine"] = mine
-    detail["distance_km"] = _km(v.lat, v.lng, e.lat, e.lng)
+    detail["distance_km"] = km(v.lat, v.lng, e.lat, e.lng)
+    detail["alerted_you"] = v.id in (c.alerted_ids or [])
     detail["elder"]["phone"] = e.phone if mine else None
     detail["elder"]["maps_url"] = (f"https://www.google.com/maps/search/?api=1&query={e.lat},{e.lng}"
                                    if mine else None)
@@ -110,5 +103,7 @@ def volunteer_me(token: str, session: Session = Depends(get_session)) -> dict:
     rows = session.exec(select(Case).where(Case.run_id == current_run_id()).order_by(Case.id))
     visible = [c for c in rows if (c.state == "open" and c.tier in tiers)
                or (c.state == "assigned" and c.assignee_id == v.id)]
+    # Everyone on duty can still help; the ones alerted (nearest first) see those cases on top.
+    visible.sort(key=lambda c: (c.assignee_id != v.id, v.id not in (c.alerted_ids or []), c.id))
     return {"volunteer": {"id": v.id, "name": v.name, "role": v.role},
             "cases": [volunteer_case(session, c, v) for c in visible]}

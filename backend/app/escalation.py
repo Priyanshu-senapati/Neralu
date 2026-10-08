@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.db import current_run_id
 from app.events import log_event
+from app.geo import km
 from app.models import RESOLUTIONS, Case, Elder, Volunteer
 from app.notify import notify_family, notify_neighbour
 from app.state import state
@@ -43,9 +44,17 @@ def _alert_tier(session: Session, case: Case, elder: Elder, *, how: str = "") ->
         msg = "Neighbour alerted"
     else:
         role = "asha" if case.tier == "asha" else "volunteer"
-        n = len(list(session.exec(select(Volunteer).where(
-            Volunteer.run_id == current_run_id(), Volunteer.role == role, Volunteer.on_duty))))
-        msg = f"{TIER_LABEL[case.tier]} tier alerted · {n} on duty"
+        on_duty = list(session.exec(select(Volunteer).where(
+            Volunteer.run_id == current_run_id(), Volunteer.role == role, Volunteer.on_duty)))
+        ranked = sorted(on_duty, key=lambda v: (km(v.lat, v.lng, elder.lat, elder.lng), v.id))
+        nearest = ranked[:max(1, get_settings().alert_nearest)]
+        case.alerted_ids = [v.id for v in nearest]
+        if nearest and len(nearest) < len(on_duty):
+            far = km(nearest[-1].lat, nearest[-1].lng, elder.lat, elder.lng)
+            msg = (f"{TIER_LABEL[case.tier]} tier alerted · {len(nearest)} nearest of {len(on_duty)} on duty"
+                   f" (within {far:g} km)")
+        else:
+            msg = f"{TIER_LABEL[case.tier]} tier alerted · {len(on_duty)} on duty"
     log_event(session, "tier_alerted", msg + how, actor="system", elder_id=elder.id,
               case_id=case.id, data={"tier": case.tier}, simulated=elder.is_simulated)
 
