@@ -35,6 +35,9 @@ class Settings(BaseSettings):
 
     scheduler_enabled: bool = True
 
+    # Built website to serve on the same port (empty: ../frontend/dist when it exists).
+    frontend_dist: str = ""
+
     kamala_phone: str = ""
     volunteer_demo_token: str = "priya-demo"
 

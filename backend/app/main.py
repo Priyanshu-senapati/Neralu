@@ -1,8 +1,11 @@
 import asyncio
 from contextlib import asynccontextmanager, suppress
 
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlmodel import Session
 
 from app.config import get_settings
@@ -36,3 +39,28 @@ for module in (summary, stream, sim, voice, phone, recordings, elders, cases, au
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
+
+
+# One command, one port: when the frontend has been built (frontend/dist), FastAPI serves it too.
+# Files are served as they are; page paths (no extension) get index.html so deep links like /ward reload.
+# API, Twilio and audio routes are registered above and always take priority.
+_NOT_SITE = ("api/", "voice/", "audio/", "health")
+
+
+def _site_dir() -> Path | None:
+    configured = get_settings().frontend_dist
+    root = Path(configured) if configured else Path(__file__).resolve().parents[2] / "frontend" / "dist"
+    return root if (root / "index.html").is_file() else None
+
+
+@app.get("/{path:path}", include_in_schema=False)
+def site(path: str) -> FileResponse:
+    root = _site_dir()
+    if root is None or path.startswith(_NOT_SITE):
+        raise HTTPException(404)
+    target = (root / path).resolve()
+    if path and target.is_file() and root.resolve() in target.parents:
+        return FileResponse(target)
+    if Path(path).suffix:  # a missing file (old asset, typo) is a 404, not the home page
+        raise HTTPException(404)
+    return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache"})

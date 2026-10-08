@@ -25,6 +25,7 @@ os.environ.update({
     "VOLUNTEER_DEMO_TOKEN": "priya-demo",
     "STT_PROVIDER": "sarvam",
     "SARVAM_API_KEY": "",
+    "FRONTEND_DIST": "/nonexistent-neralu-dist",
 })
 
 import pytest  # noqa: E402
