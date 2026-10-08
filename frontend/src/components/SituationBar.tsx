@@ -34,7 +34,7 @@ export function SituationBar({ summary, elders, round }: Props) {
       </div>
 
       <div className={`flex flex-col justify-between border-t border-line px-5 py-3.5 transition-colors duration-500 lg:border-l lg:border-t-0 ${waiting.length ? 'bg-alert-bg' : ''}`}>
-        <div className={`text-[13px] ${waiting.length ? 'font-semibold text-alert' : 'text-muted'}`}>Need a person now</div>
+        <div className={`text-[0.8125rem] ${waiting.length ? 'font-semibold text-alert' : 'text-muted'}`}>Need a person now</div>
         <AnimatedNumber
           value={waiting.length}
           className={`num mt-1 block text-[2.9rem] font-medium leading-none tracking-[-0.03em] ${waiting.length ? 'text-alert' : ''}`}
@@ -71,8 +71,8 @@ function HeatVsPeople({ summary, elders }: { summary: Summary; elders: ElderList
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-x-6 px-5 py-3.5">
       <div>
-        <div className="text-[13px] text-muted">
-          Heat index <span className="text-[11px]">· simulated</span>
+        <div className="text-[0.8125rem] text-muted">
+          Heat index <span className="text-[0.6875rem]">· simulated</span>
         </div>
         <div className="mt-1 flex items-baseline gap-1">
           <span className={`num text-[2.9rem] font-medium leading-none tracking-[-0.04em] transition-colors duration-500 ${hot ? 'text-heat' : ''}`}>
@@ -81,7 +81,7 @@ function HeatVsPeople({ summary, elders }: { summary: Summary; elders: ElderList
           <span className={`num text-lg ${hot ? 'text-heat' : 'text-muted'}`}>°C</span>
         </div>
         <div className={`mt-1.5 text-xs ${level.cls}`}>{level.label}</div>
-        <div className="num text-[11px] text-muted">
+        <div className="num text-[0.6875rem] text-muted">
           {w.temp_c.toFixed(0)}°C · {w.humidity_pct.toFixed(0)}% RH · night {w.night_min_c.toFixed(0)}°C
         </div>
       </div>
@@ -127,13 +127,13 @@ function ThresholdChart({ elders, heatIndex, due, total }: { elders: ElderListIt
         })}
         <line x1={0} x2={W} y1={H + 0.5} y2={H + 0.5} stroke="#C9C5B9" />
         {[T_MIN + 1, 33, 36, T_MAX - 1].map((t) => (
-          <text key={t} x={(t - T_MIN + 0.5) * bw} y={H + 13} textAnchor="middle" className="fill-muted font-mono text-[9.5px]">
+          <text key={t} x={(t - T_MIN + 0.5) * bw} y={H + 13} textAnchor="middle" className="fill-muted font-mono text-[0.5938rem]">
             {t}°
           </text>
         ))}
         <g className="transition-transform duration-500" style={{ transform: `translateX(${x}px)` }}>
           <line x1={0} x2={0} y1={-4} y2={H + 4} stroke="#1B1D1A" strokeWidth={1.5} />
-          <text x={over ? -4 : 4} y={-5} textAnchor={over ? 'end' : 'start'} className="fill-ink font-mono text-[10px] font-medium">
+          <text x={over ? -4 : 4} y={-5} textAnchor={over ? 'end' : 'start'} className="fill-ink font-mono text-[0.625rem] font-medium">
             today
           </text>
         </g>
@@ -162,7 +162,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
   if (!round) {
     return (
       <div className="flex h-full flex-col justify-between">
-        <div className="text-[13px] text-muted">Call round</div>
+        <div className="text-[0.8125rem] text-muted">Call round</div>
         <div className="mt-2 h-3 rounded-[2px] border border-dashed border-line-strong" />
         <p className="mt-2 text-sm">
           No calls yet. <span className="num font-semibold">{due}</span> {due === 1 ? 'person is' : 'people are'} due a call today.
@@ -176,7 +176,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
   const done = round.called - round.in_progress
   return (
     <div className="flex h-full flex-col justify-between">
-      <div className="flex items-baseline justify-between text-[13px] text-muted">
+      <div className="flex items-baseline justify-between text-[0.8125rem] text-muted">
         <span>
           Call round {round.round_no} · started <span className="num">{fmtTime(round.started_scenario)}</span>
         </span>
@@ -196,7 +196,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
       <dl className="mt-2.5 grid grid-cols-5 gap-x-3">
         {SEGMENTS.map((s) => (
           <div key={s.key}>
-            <dt className="flex items-center gap-1.5 text-[11px] text-muted">
+            <dt className="flex items-center gap-1.5 text-[0.6875rem] text-muted">
               <span className={`h-2 w-2 shrink-0 rounded-[2px] ${s.fill}`} aria-hidden="true" />
               {s.label}
             </dt>
@@ -207,7 +207,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
         ))}
       </dl>
       {round.caregiver_route > 0 && (
-        <p className="mt-1 text-[11px] text-muted">
+        <p className="mt-1 text-[0.6875rem] text-muted">
           +<span className="num">{round.caregiver_route}</span> on the caregiver route, not called directly
         </p>
       )}

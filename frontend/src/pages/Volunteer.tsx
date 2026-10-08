@@ -77,7 +77,7 @@ export default function Volunteer() {
     return (
       <Shell>
         <h1 className="display text-[1.85rem] font-medium leading-tight">Someone near you may need a check today.</h1>
-        <ol className="mt-5 space-y-3 border-t border-line pt-4 text-[15px] leading-snug">
+        <ol className="mt-5 space-y-3 border-t border-line pt-4 text-[0.9375rem] leading-snug">
           {[
             'When a person near you does not answer Neralu, or says something worrying, this phone buzzes.',
             'Accept the case. Only then do you see their address.',

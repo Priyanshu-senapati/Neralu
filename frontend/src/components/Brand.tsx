@@ -14,9 +14,9 @@ export function Mark({ className = 'h-6 w-6' }: { className?: string }) {
 }
 
 const SIZES = {
-  sm: { mark: 'h-[22px] w-[22px]', text: 'text-[17px]', kn: 'text-[13px]', gap: 'gap-2' },
-  md: { mark: 'h-7 w-7', text: 'text-[21px]', kn: 'text-[15px]', gap: 'gap-2.5' },
-  lg: { mark: 'h-9 w-9', text: 'text-[28px]', kn: 'text-lg', gap: 'gap-3' },
+  sm: { mark: 'h-[22px] w-[22px]', text: 'text-[1.0625rem]', kn: 'text-[0.8125rem]', gap: 'gap-2' },
+  md: { mark: 'h-7 w-7', text: 'text-[1.3125rem]', kn: 'text-[0.9375rem]', gap: 'gap-2.5' },
+  lg: { mark: 'h-9 w-9', text: 'text-[1.75rem]', kn: 'text-lg', gap: 'gap-3' },
 }
 
 /** Mark centred on the cap height; English and Kannada names share one baseline. */
