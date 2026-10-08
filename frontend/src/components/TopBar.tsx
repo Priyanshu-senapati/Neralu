@@ -2,11 +2,12 @@ import type { Summary } from '../types'
 import { fmtDay, fmtTime } from '../time'
 import type { StreamStatus } from '../useEventStream'
 import { DemoClockBadge } from './DemoClockBadge'
+import { FlapText } from './Motion'
 import { WeatherBlock } from './WeatherBlock'
 
 export function TopBar({ summary, now, stream }: { summary: Summary; now: Date | null; stream: StreamStatus }) {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-2.5">
+    <header data-intro className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-2.5">
       <div className="flex items-baseline gap-3">
         <span className="text-lg font-semibold tracking-tight">Neralu</span>
         <span className="text-sm text-muted">Ward 47 · demo ward</span>
@@ -19,7 +20,7 @@ export function TopBar({ summary, now, stream }: { summary: Summary; now: Date |
         </div>
         <div className="leading-tight">
           <div className="text-[11px] text-muted">Round</div>
-          <div className="font-mono tabular-nums">{summary.round_no ?? '—'}</div>
+          <FlapText text={String(summary.round_no ?? '—')} className="block font-mono tabular-nums" />
         </div>
         <DemoClockBadge speed={summary.demo_speed} maxAttempts={summary.max_attempts} />
         <span

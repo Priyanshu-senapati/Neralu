@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { AttentionList } from '../components/AttentionList'
 import { CaseDrawer } from '../components/CaseDrawer'
@@ -6,6 +6,7 @@ import { CountCards } from '../components/CountCards'
 import { DemoControls } from '../components/DemoControls'
 import { TopBar } from '../components/TopBar'
 import { WardMap } from '../components/WardMap'
+import { gsap, reducedMotion } from '../motion'
 import { useScenarioNow } from '../time'
 import type { ElderListItem, NeraluEvent, Summary } from '../types'
 import { useEventStream } from '../useEventStream'
@@ -65,6 +66,16 @@ export default function Dashboard() {
   const now = useScenarioNow(summary?.scenario_now, summary?.demo_speed ?? 1)
   const closeDrawer = useCallback(() => setSelected(null), [])
 
+  // First paint of the ward: panels settle in top to bottom, once.
+  const ready = summary !== null
+  useLayoutEffect(() => {
+    if (!ready || reducedMotion()) return
+    const tween = gsap.from('[data-intro]', { opacity: 0, y: 10, duration: 0.7, stagger: 0.08, clearProps: 'all' })
+    return () => {
+      tween.revert()
+    }
+  }, [ready])
+
   if (!summary) {
     return (
       <div className="flex h-screen items-center justify-center text-sm text-muted">
@@ -80,10 +91,16 @@ export default function Dashboard() {
         <div className="bg-watch-bg px-5 py-1 text-xs text-watch">Live updates interrupted · reconnecting, data refreshes when back</div>
       )}
       <main className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-        <CountCards counts={summary.counts} />
+        <div data-intro>
+          <CountCards counts={summary.counts} />
+        </div>
         <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-3">
-          <AttentionList elders={elders} now={now} selectedId={selected} onSelect={setSelected} loading={loading} />
-          <WardMap elders={elders} selectedId={selected} onSelect={setSelected} />
+          <div data-intro className="flex min-h-0 flex-col">
+            <AttentionList elders={elders} now={now} selectedId={selected} onSelect={setSelected} loading={loading} />
+          </div>
+          <div data-intro className="flex min-h-0 flex-col">
+            <WardMap elders={elders} selectedId={selected} onSelect={setSelected} />
+          </div>
         </div>
       </main>
       {selected !== null && <CaseDrawer elderId={selected} refreshKey={drawerKey} now={now} onClose={closeDrawer} />}

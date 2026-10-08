@@ -99,3 +99,26 @@ textarea {
     }
   }
 }
+
+/* Map ring around an unaccepted RED case. Stops as soon as a volunteer accepts. */
+.neralu-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: neralu-pulse 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+}
+@keyframes neralu-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .neralu-pulse {
+    animation: none;
+    opacity: 0.8;
+  }
+}

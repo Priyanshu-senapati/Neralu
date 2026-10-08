@@ -1,4 +1,5 @@
 import type { Weather } from '../types'
+import { FlapText } from './Motion'
 
 const LEVEL: Record<Weather['level'], { label: string; cls: string }> = {
   normal: { label: 'Normal', cls: 'border border-line text-muted' },
@@ -15,7 +16,9 @@ export function WeatherBlock({ w }: { w: Weather }) {
       {/* Heat colour only when it means something: a normal day stays ink on paper. */}
       <Reading label="Heat index" value={`${w.heat_index_c.toFixed(1)} °C`} heat={w.level !== 'normal'} />
       <Reading label="Night min" value={`${w.night_min_c.toFixed(0)} °C`} />
-      <span className={`rounded-ui px-2 py-0.5 text-xs font-semibold ${level.cls}`}>{level.label}</span>
+      <span className={`status-pill rounded-ui px-2 py-0.5 text-xs font-semibold ${level.cls}`}>
+        <FlapText text={level.label} />
+      </span>
       <span className="font-mono text-[10px] text-muted">simulated</span>
     </div>
   )
@@ -25,7 +28,7 @@ function Reading({ label, value, heat }: { label: string; value: string; heat?: 
   return (
     <div className="leading-tight">
       <div className="text-[11px] text-muted">{label}</div>
-      <div className={`font-mono tabular-nums ${heat ? 'font-medium text-heat' : ''}`}>{value}</div>
+      <FlapText text={value} className={`block font-mono tabular-nums transition-colors duration-300 ${heat ? 'font-medium text-heat' : ''}`} />
     </div>
   )
 }

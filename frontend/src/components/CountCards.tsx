@@ -1,4 +1,5 @@
 import type { Summary } from '../types'
+import { AnimatedNumber } from './Motion'
 
 const CARDS: { key: keyof Summary['counts']; label: string; tone?: string }[] = [
   { key: 'registered', label: 'Registered' },
@@ -16,9 +17,10 @@ export function CountCards({ counts }: { counts: Summary['counts'] }) {
       {CARDS.map((c) => (
         <div key={c.key} className="bg-surface px-4 py-2.5">
           <div className="text-xs text-muted">{c.label}</div>
-          <div className={`font-mono text-2xl tabular-nums ${counts[c.key] > 0 && c.tone ? c.tone : ''}`}>
-            {counts[c.key]}
-          </div>
+          <AnimatedNumber
+            value={counts[c.key]}
+            className={`block font-mono text-2xl tabular-nums transition-colors duration-300 ${counts[c.key] > 0 && c.tone ? c.tone : ''}`}
+          />
         </div>
       ))}
     </div>

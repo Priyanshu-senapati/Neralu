@@ -65,7 +65,7 @@ export function CaseDrawer({ elderId, refreshKey, now, onClose }: Props) {
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
         {error && <p className="text-sm text-alert">Could not load this resident. Retrying on the next update.</p>}
         {!loaded && !error && <DrawerSkeleton />}
-        {loaded && <Body d={d} now={now} />}
+        {loaded && <Body key={d.id} d={d} now={now} />}
       </div>
     </aside>
   )

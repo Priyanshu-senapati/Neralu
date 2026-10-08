@@ -18,7 +18,7 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect }: P
   // Draw calm dots first so coloured statuses sit on top.
   const ordered = [...elders].sort((a, b) => rank(a) - rank(b))
   return (
-    <section className="relative isolate min-h-0 overflow-hidden rounded-ui border border-line bg-surface">
+    <section className="relative isolate min-h-0 flex-1 overflow-hidden rounded-ui border border-line bg-surface">
       <MapContainer center={CENTER} zoom={15} zoomControl={false} className="h-full w-full" attributionControl={false}>
         <AttributionControl position="bottomleft" prefix={false} />
         {/* CARTO basemaps now require an API key; OSM tiles are desaturated in CSS to stay quiet. */}
@@ -51,6 +51,18 @@ export const WardMap = memo(function WardMap({ elders, selectedId, onSelect }: P
             </CircleMarker>
           )
         })}
+        {/* Unaccepted RED cases breathe: someone is waiting and nobody has said "I'm going" yet. */}
+        {elders
+          .filter((e) => e.open_case?.level === 'red' && e.open_case.state === 'open')
+          .map((e) => (
+            <CircleMarker
+              key={`pulse-${e.id}`}
+              center={[e.lat, e.lng]}
+              radius={12}
+              interactive={false}
+              pathOptions={{ color: TONE_HEX.alert, weight: 2, fill: false, className: 'neralu-pulse' }}
+            />
+          ))}
       </MapContainer>
       <Legend />
     </section>

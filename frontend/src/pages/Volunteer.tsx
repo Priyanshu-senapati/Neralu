@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api'
+import { DrawnCheck } from '../components/Motion'
 import { StatusPill } from '../components/StatusPill'
 import { WaitingTimer } from '../components/WaitingTimer'
 import { TIER_LABEL } from '../status'
@@ -97,7 +98,12 @@ export default function Volunteer() {
   return (
     <Shell name={me?.volunteer.name}>
       {error && <p className="mb-3 rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
-      {notice && <p className="mb-3 rounded-ui border border-line bg-surface px-3 py-2 text-sm">{notice}</p>}
+      {notice && (
+        <p key={notice} className="card-enter mb-3 flex items-center gap-2 rounded-ui border border-line bg-surface px-3 py-2 text-sm">
+          {notice.startsWith('Recorded') && <DrawnCheck className="h-5 w-5 shrink-0 text-ok" />}
+          {notice}
+        </p>
+      )}
       {!me && !error && <div className="h-40 animate-pulse rounded-ui bg-line" />}
       {me && cases.length === 0 && (
         <p className="py-16 text-center text-sm text-muted">On duty · no cases near you right now</p>

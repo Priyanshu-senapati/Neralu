@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { api, ApiError } from '../api'
+import { AnimatedNumber, DrawnCheck } from '../components/Motion'
 import type { ElderDetail } from '../types'
 
 const CODE_WORDS = ['mallige', 'sampige', 'sevanthige', 'tulasi', 'maavu', 'bevu', 'kaveri', 'chandra', 'nakshatra', 'gulabi']
@@ -66,13 +67,14 @@ export default function Register() {
   if (done) {
     return (
       <Page>
+        <DrawnCheck className="mb-3 h-10 w-10 text-ok" />
         <h1 className="text-xl font-semibold">{done.name} is registered</h1>
         <p className="mt-2 text-sm">
           On hot days Neralu will call {done.name.split(' ')[0]} and play the code word <span className="font-semibold">{cap(done.code_word)}</span> at the start of every call.
         </p>
         <p className="mt-2 text-sm">Neralu will never ask for money, OTP, Aadhaar or bank details.</p>
         <div className="mt-4 rounded-ui border border-line bg-surface p-3 text-sm">
-          <div className="flex justify-between"><span>Heat-risk score</span><span className="font-mono">{done.risk_score}</span></div>
+          <div className="flex justify-between"><span>Heat-risk score</span><AnimatedNumber value={done.risk_score} from={0} className="font-mono" /></div>
           <div className="flex justify-between"><span>Personal heat threshold</span><span className="font-mono">{done.threshold_c.toFixed(1)} °C</span></div>
           <p className="mt-1 text-xs text-muted">Thresholds are starting values to be calibrated in a pilot.</p>
         </div>

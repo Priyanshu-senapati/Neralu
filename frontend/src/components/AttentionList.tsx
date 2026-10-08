@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef } from 'react'
+import { FLASH, Flip, gsap, reducedMotion } from '../motion'
 import { elderStatus, TIER_LABEL, whyLine } from '../status'
 import type { ElderListItem } from '../types'
 import { SimTag, StatusPill } from './StatusPill'
@@ -31,8 +33,51 @@ interface Props {
 
 export function AttentionList({ elders, now, selectedId, onSelect, loading }: Props) {
   const rows = attentionRows(elders)
+  const listRef = useRef<HTMLUListElement>(null)
+  const committedGroup = useRef<Map<number, number | null> | null>(null)
+  const before = useRef<{ ids: number[]; state: Flip.FlipState } | null>(null)
+  const prevTone = useRef<Map<number, string> | null>(null)
+
+  // Only a real resident whose status changed travels (Kamala going from "Calling" to RED).
+  // Simulated rows update instantly: during a round they change every refresh, and a list that
+  // is always moving explains nothing.
+  const movers = committedGroup.current
+    ? rows.filter((r) => !r.e.is_simulated && committedGroup.current!.has(r.e.id) &&
+        committedGroup.current!.get(r.e.id) !== r.s.group).map((r) => r.e.id)
+    : []
+  if (movers.length && listRef.current && !before.current) {
+    // Measure where they are right before React moves them.
+    const els = movers.map((id) => listRef.current!.querySelector(`[data-flip-id="${id}"]`)).filter(Boolean) as Element[]
+    if (els.length) before.current = { ids: movers, state: Flip.getState(els, { simple: true }) }
+  }
+
+  useLayoutEffect(() => {
+    const list = listRef.current
+    const animate = !reducedMotion()
+    const pending = before.current
+    before.current = null
+    if (list && pending && animate) {
+      const targets = pending.ids.map((id) => list.querySelector(`[data-flip-id="${id}"]`)).filter(Boolean) as Element[]
+      Flip.killFlipsOf(targets)
+      Flip.from(pending.state, { targets, duration: 0.7, simple: true, zIndex: 2 })
+    }
+    committedGroup.current = new Map(rows.map((r) => [r.e.id, r.s.group]))
+
+    // A row that has just turned RED gets one soft flash: the moment a judge should look at.
+    const tones = new Map(elders.map((e) => [e.id, elderStatus(e).tone as string]))
+    if (list && animate && prevTone.current) {
+      for (const [id, tone] of tones) {
+        const was = prevTone.current.get(id)
+        if (tone !== 'alert' || was === undefined || was === 'alert') continue
+        const el = list.querySelector(`[data-flip-id="${id}"] > button`)
+        if (el) gsap.fromTo(el, { backgroundColor: FLASH.alert }, { backgroundColor: 'rgba(251,233,229,0)', duration: 1.6, delay: 0.2, clearProps: 'backgroundColor' })
+      }
+    }
+    prevTone.current = tones
+  })
+
   return (
-    <section className="flex min-h-0 flex-col rounded-ui border border-line bg-surface">
+    <section className="flex min-h-0 flex-1 flex-col rounded-ui border border-line bg-surface">
       <div className="flex items-baseline justify-between border-b border-line px-4 py-2">
         <h2 className="text-sm font-semibold">Needs attention</h2>
         <span className="font-mono text-xs text-muted tabular-nums">{rows.length}</span>
@@ -43,7 +88,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
         <span className="text-right">Waiting</span>
         <span>Tier</span>
       </div>
-      <ul className="min-h-0 flex-1 overflow-y-auto">
+      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
         {loading && rows.length === 0 && <Skeleton />}
         {!loading && rows.length === 0 && (
           <li className="px-4 py-10 text-center text-sm text-muted">No one needs attention right now</li>
@@ -52,7 +97,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
           const c = e.open_case
           const unaccepted = c && c.state === 'open'
           return (
-            <li key={e.id}>
+            <li key={e.id} data-flip-id={e.id} className="relative bg-surface">
               <button
                 onClick={() => onSelect(e.id)}
                 aria-current={selectedId === e.id ? 'true' : undefined}
