@@ -1,20 +1,22 @@
+import { reducedMotion } from '../motion'
 import type { RiskDetail } from '../types'
+import { AnimatedNumber } from './Motion'
 
-export function RiskBreakdown({ r, score }: { r: RiskDetail; score: number }) {
+export function RiskBreakdown({ r, score, title = 'Why Neralu called today' }: { r: RiskDetail; score: number; title?: string }) {
   const over = r.heat_index_c >= r.threshold_c
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold">Why Neralu called today</h3>
-      <ul className="divide-y divide-line rounded-ui border border-line text-sm">
+      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
+      <ul className="divide-y divide-line border-y border-line text-sm">
         {r.risk_breakdown.map(([label, pts]) => (
-          <li key={label} className="flex justify-between px-3 py-1.5">
+          <li key={label} className="flex justify-between py-1.5">
             <span>{label}</span>
             <span className="font-mono tabular-nums text-muted">+{pts}</span>
           </li>
         ))}
-        <li className="flex justify-between px-3 py-1.5 font-semibold">
+        <li className="flex justify-between py-1.5 font-semibold">
           <span>Vulnerability score</span>
-          <span className="font-mono tabular-nums">{score}</span>
+          <AnimatedNumber value={score} from={reducedMotion() ? score : 0} className="font-mono tabular-nums" />
         </li>
       </ul>
       <div className="mt-2 grid grid-cols-2 gap-2 text-sm">

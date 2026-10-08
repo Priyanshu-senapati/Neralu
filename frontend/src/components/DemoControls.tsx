@@ -3,6 +3,7 @@ import { api } from '../api'
 
 const PRESETS = [
   { label: 'Normal day 31 °C / 45 %', w: { temp_c: 31, humidity_pct: 45, night_min_c: 23 } },
+  { label: 'Hot day 35 °C / 35 %, night 25 °C', w: { temp_c: 35, humidity_pct: 35, night_min_c: 25 } },
   { label: 'Heatwave 38 °C / 40 %, night 27 °C', w: { temp_c: 38, humidity_pct: 40, night_min_c: 27 } },
 ]
 
@@ -73,7 +74,7 @@ function Btn({ children, onClick, busy }: { children: React.ReactNode; onClick: 
     <button
       onClick={onClick}
       disabled={busy}
-      className="w-full rounded-ui border border-line px-2 py-1.5 text-left text-sm hover:bg-paper disabled:text-muted"
+      className="press w-full rounded-ui border border-line px-2 py-1.5 text-left text-sm hover:bg-paper disabled:text-muted"
     >
       {busy ? 'Working…' : children}
     </button>

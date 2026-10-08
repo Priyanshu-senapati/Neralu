@@ -50,6 +50,9 @@ def has_audio(name: str, lang: str) -> bool:
 def place_call(to: str, checkin_id: int) -> str:
     global _trial_limited
     s = get_settings()
+    if s.telephony_mode == "browser":
+        from app import browser_phone
+        return browser_phone.ring(checkin_id)
     params = dict(
         to=to, from_=s.twilio_from_number,
         url=url("/voice/answer", checkin_id=checkin_id),

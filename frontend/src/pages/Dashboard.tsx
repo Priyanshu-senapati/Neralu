@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { AttentionList } from '../components/AttentionList'
 import { CaseDrawer } from '../components/CaseDrawer'
-import { CountCards } from '../components/CountCards'
+import { ActivityFeed } from '../components/ActivityFeed'
+import { LiveCall } from '../components/LiveCall'
+import { SituationBar } from '../components/SituationBar'
 import { DemoControls } from '../components/DemoControls'
 import { TopBar } from '../components/TopBar'
 import { WardMap } from '../components/WardMap'
@@ -19,6 +21,7 @@ export default function Dashboard() {
   const [error, setError] = useState(false)
   const [selected, setSelected] = useState<number | null>(null)
   const [drawerKey, setDrawerKey] = useState(0)
+  const [events, setEvents] = useState<NeraluEvent[]>([])
   const timer = useRef<number | undefined>(undefined)
   const lastFetch = useRef(0)
   const selectedRef = useRef<number | null>(null)
@@ -27,9 +30,10 @@ export default function Dashboard() {
   const fetchAll = useCallback(async () => {
     lastFetch.current = Date.now()
     try {
-      const [s, e] = await Promise.all([api.summary(), api.elders()])
+      const [s, e, ev] = await Promise.all([api.summary(), api.elders(), api.events(40)])
       setSummary(s)
       setElders(e)
+      setEvents(ev)
       setError(false)
     } catch {
       setError(true)
@@ -67,23 +71,32 @@ export default function Dashboard() {
 
   if (!summary) {
     return (
-      <div className="flex h-screen items-center justify-center text-sm text-muted">
+      <div className="flex h-dvh items-center justify-center text-sm text-muted">
         {error ? 'Cannot reach the Neralu backend · retrying' : 'Loading ward…'}
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
       <TopBar summary={summary} now={now} stream={stream} />
       {stream !== 'live' && (
-        <div className="bg-watch-bg px-5 py-1 text-xs text-watch">Live updates interrupted · reconnecting, data refreshes when back</div>
+        <div role="status" className="bg-watch-bg px-5 py-1 text-xs text-watch">
+          Live updates interrupted. Reconnecting; the ward refreshes when the connection is back.
+        </div>
       )}
-      <main className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-        <CountCards counts={summary.counts} />
-        <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-3">
+      <SituationBar summary={summary} elders={elders} />
+      <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[minmax(0,1fr)_auto]">
+        {/* Urgent column first in the DOM: on a phone it is what the officer needs before the map. */}
+        <div className="flex min-h-0 flex-col border-line lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l">
+          <LiveCall elders={elders} refreshKey={drawerKey} onOpen={setSelected} />
           <AttentionList elders={elders} now={now} selectedId={selected} onSelect={setSelected} loading={loading} />
-          <WardMap elders={elders} selectedId={selected} onSelect={setSelected} />
+        </div>
+        <div className="flex h-[55vh] min-h-0 flex-col border-t border-line lg:col-start-1 lg:row-start-1 lg:h-auto lg:border-t-0">
+          <WardMap elders={elders} selectedId={selected} onSelect={setSelected} calling={summary.round_no !== null} />
+        </div>
+        <div className="flex max-h-72 min-h-0 flex-col lg:col-start-1 lg:row-start-2 lg:max-h-[11.5rem]">
+          <ActivityFeed events={events} onSelect={setSelected} />
         </div>
       </main>
       {selected !== null && <CaseDrawer elderId={selected} refreshKey={drawerKey} now={now} onClose={closeDrawer} />}

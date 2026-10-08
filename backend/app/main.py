@@ -7,7 +7,7 @@ from sqlmodel import Session
 
 from app.config import get_settings
 from app.db import create_tables, engine
-from app.routes import audio, cases, elders, recordings, sim, stream, summary, voice
+from app.routes import audio, cases, elders, phone, recordings, sim, stream, summary, voice
 from app.runs import start_new_run
 from app.scheduler import run_scheduler
 
@@ -29,7 +29,7 @@ app = FastAPI(title="Neralu", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
-for module in (summary, stream, sim, voice, recordings, elders, cases, audio):
+for module in (summary, stream, sim, voice, phone, recordings, elders, cases, audio):
     app.include_router(module.router)
 
 

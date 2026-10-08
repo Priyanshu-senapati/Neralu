@@ -1,44 +1,87 @@
 import 'leaflet/dist/leaflet.css'
+import { memo, useEffect, useState } from 'react'
 import { AttributionControl, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet'
 import { elderStatus, TONE_HEX } from '../status'
 import type { ElderListItem } from '../types'
 
 const CENTER: [number, number] = [12.925, 77.5838]
+const INK = '#1B1D1A'
+
+type View = 'risk' | 'status'
+
+/** Heat-risk bands from the vulnerability score (same cut-offs as the resident profile). */
+const RISK = [
+  { min: 60, label: 'High risk', fill: '#B63D0B' },
+  { min: 35, label: 'Medium risk', fill: '#E08A4F' },
+  { min: 0, label: 'Lower risk', fill: '#B9B4A6' },
+]
+const riskOf = (score: number) => RISK.find((r) => score >= r.min)!
 
 interface Props {
   elders: ElderListItem[]
   selectedId: number | null
   onSelect: (id: number) => void
+  /** True once a call round has started; the map then defaults to today's checks. */
+  calling: boolean
 }
 
-export function WardMap({ elders, selectedId, onSelect }: Props) {
-  // Draw calm dots first so coloured statuses sit on top.
-  const ordered = [...elders].sort((a, b) => rank(a) - rank(b))
+// Memoised: the dashboard re-renders every 500 ms for the scenario clock; the map only needs to
+// redraw its ~400 markers when residents, the selection or the view change.
+export const WardMap = memo(function WardMap({ elders, selectedId, onSelect, calling }: Props) {
+  const [view, setView] = useState<View>(calling ? 'status' : 'risk')
+  const [touched, setTouched] = useState(false)
+  // Follow the round (risk before calls, checks during them) until the officer picks a view.
+  useEffect(() => {
+    if (!touched) setView(calling ? 'status' : 'risk')
+  }, [calling, touched])
+
+  const ordered = [...elders].sort((a, b) => rank(a, view) - rank(b, view))
   return (
-    <section className="relative isolate min-h-0 overflow-hidden rounded-ui border border-line bg-surface">
+    <section aria-label="Ward map" className="relative isolate min-h-0 flex-1 overflow-hidden bg-[#ecebe6]">
       <MapContainer center={CENTER} zoom={15} zoomControl={false} className="h-full w-full" attributionControl={false}>
         <AttributionControl position="bottomleft" prefix={false} />
-        {/* CARTO basemaps now require an API key; OSM tiles are desaturated in CSS to stay quiet. */}
+        {/* Esri Light Gray Canvas: no POI icons, faint labels. Muted further in CSS. */}
         <TileLayer
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+          attribution="Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors"
           className="neralu-tiles"
-          maxZoom={19}
+          maxZoom={16}
         />
         {ordered.map((e) => {
-          const s = elderStatus(e)
           const selected = e.id === selectedId
           const real = !e.is_simulated
+          if (view === 'risk') {
+            const r = riskOf(e.risk_score)
+            return (
+              <CircleMarker
+                key={e.id}
+                center={[e.lat, e.lng]}
+                radius={selected ? 9 : real ? 7.5 : 2.5 + e.risk_score / 22}
+                pathOptions={{
+                  color: selected || real ? INK : '#ffffff',
+                  weight: selected || real ? 2 : 0.8,
+                  fillColor: r.fill,
+                  fillOpacity: r.min === 0 ? 0.7 : 0.9,
+                }}
+                eventHandlers={{ click: () => onSelect(e.id) }}
+              >
+                <Tooltip direction="top" offset={[0, -4]}>
+                  {e.name} · {r.label} ({e.risk_score})
+                </Tooltip>
+              </CircleMarker>
+            )
+          }
+          const s = elderStatus(e)
           return (
             <CircleMarker
               key={e.id}
               center={[e.lat, e.lng]}
-              radius={selected ? 9 : real ? 7 : s.tone === 'neutral' || s.tone === 'ok' ? 3.5 : 5.5}
+              radius={selected ? 9 : real ? 7.5 : s.tone === 'neutral' || s.tone === 'ok' ? 3.5 : 6}
               pathOptions={{
-                color: selected || real ? '#1C1C1A' : TONE_HEX[s.tone],
-                weight: selected || real ? 2 : 1,
+                color: selected || real ? INK : '#ffffff',
+                weight: selected || real ? 2 : 0.8,
                 fillColor: TONE_HEX[s.tone],
-                fillOpacity: s.tone === 'neutral' ? 0.45 : 0.85,
+                fillOpacity: s.tone === 'neutral' ? 0.55 : 0.92,
               }}
               eventHandlers={{ click: () => onSelect(e.id) }}
             >
@@ -48,35 +91,79 @@ export function WardMap({ elders, selectedId, onSelect }: Props) {
             </CircleMarker>
           )
         })}
+        {/* Unaccepted RED cases breathe: someone is waiting and nobody has said "I'm going" yet. */}
+        {view === 'status' &&
+          elders
+            .filter((e) => e.open_case?.level === 'red' && e.open_case.state === 'open')
+            .map((e) => (
+              <CircleMarker
+                key={`pulse-${e.id}`}
+                center={[e.lat, e.lng]}
+                radius={12}
+                interactive={false}
+                pathOptions={{ color: TONE_HEX.alert, weight: 2, fill: false, className: 'neralu-pulse' }}
+              />
+            ))}
       </MapContainer>
-      <Legend />
+
+      <div className="pointer-events-none absolute inset-x-3 top-3 z-[400] flex flex-wrap items-start justify-between gap-2">
+        <div role="radiogroup" aria-label="Map shows" className="pointer-events-auto inline-flex rounded-[5px] border border-line-strong bg-surface p-0.5 text-sm shadow-[0_1px_2px_rgba(27,29,26,0.06)]">
+          {(
+            [
+              ['risk', 'Heat risk'],
+              ['status', "Today's checks"],
+            ] as const
+          ).map(([v, label]) => (
+            <button
+              key={v}
+              role="radio"
+              aria-checked={view === v}
+              onClick={() => {
+                setTouched(true)
+                setView(v)
+              }}
+              className={`rounded-[3px] px-3 py-1 transition-colors ${view === v ? 'bg-ink font-semibold text-paper' : 'text-muted hover:text-ink'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <Legend view={view} />
+      </div>
     </section>
   )
-}
+})
 
-function rank(e: ElderListItem) {
-  if (!e.is_simulated) return 5
+function rank(e: ElderListItem, view: View) {
+  if (!e.is_simulated) return 9
+  if (view === 'risk') return e.risk_score
   const t = elderStatus(e).tone
   return t === 'neutral' ? 0 : t === 'ok' ? 1 : t === 'support' ? 2 : t === 'watch' ? 3 : 4
 }
 
-function Legend() {
-  const items: [string, string][] = [
-    [TONE_HEX.ok, 'Fine'],
-    [TONE_HEX.watch, 'Follow-up'],
-    [TONE_HEX.support, 'Needs support'],
-    [TONE_HEX.alert, 'RED'],
-    [TONE_HEX.neutral, 'Not reached yet'],
-    ['#1C1C1A', 'Real phone (outlined)'],
-  ]
+function Legend({ view }: { view: View }) {
+  const items: [string, string][] =
+    view === 'risk'
+      ? RISK.map((r) => [r.fill, r.label])
+      : [
+          [TONE_HEX.ok, 'Fine'],
+          [TONE_HEX.watch, 'Follow-up'],
+          [TONE_HEX.support, 'Needs support'],
+          [TONE_HEX.alert, 'RED'],
+          [TONE_HEX.neutral, 'Not reached yet'],
+        ]
   return (
-    <div className="absolute left-2 top-2 z-[400] flex gap-3 rounded-ui border border-line bg-surface/95 px-2.5 py-1.5 text-[11px]">
+    <div className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[5px] border border-line bg-surface/95 px-2.5 py-1.5 text-xs shadow-[0_1px_2px_rgba(27,29,26,0.06)]">
       {items.map(([c, l]) => (
-        <span key={l} className="flex items-center gap-1.5">
+        <span key={l} className="inline-flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full" style={{ background: c }} />
           {l}
         </span>
       ))}
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-full border-2 border-ink" />
+        Real phone
+      </span>
     </div>
   )
 }

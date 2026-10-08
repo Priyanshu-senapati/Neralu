@@ -10,7 +10,7 @@ const TONE_CLASS: Record<Tone, string> = {
 
 export function StatusPill({ tone, label }: { tone: Tone; label: string }) {
   return (
-    <span className={`inline-flex items-center whitespace-nowrap rounded-ui px-2 py-0.5 text-xs font-semibold ${TONE_CLASS[tone]}`}>
+    <span className={`status-pill inline-flex items-center whitespace-nowrap rounded-ui px-2 py-0.5 text-xs font-semibold ${TONE_CLASS[tone]}`}>
       {label}
     </span>
   )

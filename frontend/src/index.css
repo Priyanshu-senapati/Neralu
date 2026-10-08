@@ -3,6 +3,11 @@
 
 @theme {
   --color-paper: var(--paper);
+  --color-sunken: var(--sunken);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-tint: var(--brand-tint);
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-ink: var(--ink);
@@ -19,6 +24,8 @@
   --radius-ui: var(--radius);
   --font-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-kn: "Noto Sans Kannada", "Public Sans", sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
 }
 
 html,
@@ -27,14 +34,145 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   font-weight: 400;
+  font-feature-settings: "tnum" 0;
   -webkit-font-smoothing: antialiased;
+  caret-color: var(--brand);
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.kn {
+  font-family: var(--font-kn);
+}
+
+/* Editorial display voice for the story page: a newspaper's calm, not a startup's shout. */
+.display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* Data: numbers align in columns everywhere they are compared. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .neralu-tiles {
-  filter: grayscale(1) contrast(0.85) brightness(1.08);
-  opacity: 0.55;
+  filter: grayscale(1) sepia(0.12) contrast(0.85) brightness(1.04);
+  opacity: 0.62;
 }
 .leaflet-container {
-  background: var(--paper);
+  background: #ecebe6;
   font-family: var(--font-sans);
+}
+.leaflet-tooltip {
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(27, 29, 26, 0.08);
+  color: var(--ink);
+  font-size: 12px;
+  padding: 3px 7px;
+}
+.leaflet-control-attribution {
+  background: rgba(247, 246, 241, 0.85) !important;
+  font-size: 10px;
+}
+
+/* Keyboard focus: visible on every control, never on mouse click. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Feel native on phones: no grey tap flash, no 300 ms double-tap delay. */
+button,
+a,
+label,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Press feedback: the interface heard the tap. */
+.press {
+  transition: transform 140ms var(--ease-out), background-color 150ms ease, color 150ms ease;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Status pills change colour in place as a case moves GREEN -> AMBER -> RED. */
+.status-pill {
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Case drawer slides in from the edge it lives on. Exit is instant (faster than enter). */
+.drawer-enter {
+  transition: transform 260ms var(--ease-drawer), opacity 200ms var(--ease-out);
+  @starting-style {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+/* A newly arrived volunteer case rises in, so the phone's buzz has something to point at. */
+.card-enter {
+  transition: transform 240ms var(--ease-out), opacity 200ms var(--ease-out);
+  @starting-style {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+  .drawer-enter,
+  .card-enter {
+    transition: opacity 150ms ease;
+    @starting-style {
+      transform: none;
+      opacity: 0;
+    }
+  }
+}
+
+/* Map ring around an unaccepted RED case. Stops as soon as a volunteer accepts. */
+.neralu-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: neralu-pulse 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+}
+@keyframes neralu-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .neralu-pulse {
+    animation: none;
+    opacity: 0.8;
+  }
 }

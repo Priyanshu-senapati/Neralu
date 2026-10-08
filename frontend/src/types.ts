@@ -27,7 +27,9 @@ export interface Summary {
     escalated: number
     unreached_now: number
     support: number
+    calls_active: number
   }
+  impact: { checks_completed: number; people_checked: number; people_helped: number }
 }
 
 export interface Latest {
@@ -117,6 +119,7 @@ export interface CheckInOut {
   is_simulated: boolean
   at_scenario: string | null
   classified: boolean
+  rule_explanation?: string | null
 }
 
 export interface RiskDetail {

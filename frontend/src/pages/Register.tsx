@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { api, ApiError } from '../api'
+import { AnimatedNumber, DrawnCheck } from '../components/Motion'
 import type { ElderDetail } from '../types'
 
 const CODE_WORDS = ['mallige', 'sampige', 'sevanthige', 'tulasi', 'maavu', 'bevu', 'kaveri', 'chandra', 'nakshatra', 'gulabi']
@@ -66,17 +67,18 @@ export default function Register() {
   if (done) {
     return (
       <Page>
+        <DrawnCheck className="mb-3 h-10 w-10 text-ok" />
         <h1 className="text-xl font-semibold">{done.name} is registered</h1>
         <p className="mt-2 text-sm">
           On hot days Neralu will call {done.name.split(' ')[0]} and play the code word <span className="font-semibold">{cap(done.code_word)}</span> at the start of every call.
         </p>
         <p className="mt-2 text-sm">Neralu will never ask for money, OTP, Aadhaar or bank details.</p>
         <div className="mt-4 rounded-ui border border-line bg-surface p-3 text-sm">
-          <div className="flex justify-between"><span>Heat-risk score</span><span className="font-mono">{done.risk_score}</span></div>
+          <div className="flex justify-between"><span>Heat-risk score</span><AnimatedNumber value={done.risk_score} from={0} className="font-mono" /></div>
           <div className="flex justify-between"><span>Personal heat threshold</span><span className="font-mono">{done.threshold_c.toFixed(1)} °C</span></div>
           <p className="mt-1 text-xs text-muted">Thresholds are starting values to be calibrated in a pilot.</p>
         </div>
-        <button onClick={() => { setF(EMPTY); setDone(null) }} className="mt-5 w-full rounded-ui border border-line py-3">
+        <button onClick={() => { setF(EMPTY); setDone(null) }} className="press mt-5 w-full rounded-ui border border-line py-3">
           Register another person
         </button>
       </Page>
@@ -110,13 +112,13 @@ export default function Register() {
         </Section>
         <Section title="Code word">
           <p className="text-sm text-muted">Every Neralu call starts with this word, so they know the call is genuine. Tell them the word.</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div role="radiogroup" aria-label="Code word" className="grid grid-cols-2 gap-2">
             {CODE_WORDS.map((w) => (
               <div key={w} className={`flex items-center rounded-ui border ${f.code_word === w ? 'border-ink bg-surface' : 'border-line'}`}>
-                <button type="button" onClick={() => set('code_word', w)} className="flex-1 px-3 py-2.5 text-left">
+                <button type="button" role="radio" aria-checked={f.code_word === w} onClick={() => set('code_word', w)} className="press min-h-11 flex-1 px-3 py-2.5 text-left">
                   {cap(w)}
                 </button>
-                <button type="button" onClick={() => play(w)} className="border-l border-line px-2.5 py-2.5 text-xs text-muted" aria-label={`Play ${w}`}>
+                <button type="button" onClick={() => play(w)} className="min-h-11 border-l border-line px-3 text-xs text-muted" aria-label={`Play ${w}`}>
                   Play
                 </button>
               </div>
@@ -130,7 +132,7 @@ export default function Register() {
         {error && <p className="rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
         {missing.length > 0 && <p className="text-xs text-muted">Still needed: {missing.join(', ')}</p>}
         <button type="submit" disabled={busy || missing.length > 0 || !f.consent}
-          className="w-full rounded-ui bg-ink py-4 text-base font-semibold text-paper disabled:opacity-40">
+          className="press w-full rounded-ui bg-ink py-4 text-base font-semibold text-paper disabled:opacity-40">
           {busy ? 'Registering…' : 'Register'}
         </button>
       </form>
@@ -140,7 +142,7 @@ export default function Register() {
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto min-h-screen max-w-[430px] bg-paper px-4 py-5">
+    <div className="mx-auto min-h-dvh max-w-[430px] bg-paper px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
       <div className="mb-4 flex items-baseline justify-between">
         <span className="text-lg font-semibold">Neralu</span>
         <span className="text-sm text-muted">Ward 47 · demo ward</span>
@@ -173,11 +175,11 @@ function Text({ label, value, onChange, inputMode, hint }: { label: string; valu
 function Choice({ label, value, options, onChange }: { label: string; value: string; options: [string, string][]; onChange: (v: string) => void }) {
   return (
     <div>
-      <div className="text-sm">{label}</div>
-      <div className="mt-1 flex flex-wrap gap-2">
+      <div className="text-sm" id={`choice-${label}`}>{label}</div>
+      <div role="radiogroup" aria-labelledby={`choice-${label}`} className="mt-1 flex flex-wrap gap-2">
         {options.map(([k, l]) => (
-          <button key={k} type="button" onClick={() => onChange(k)}
-            className={`rounded-ui border px-3 py-2 text-sm ${value === k ? 'border-ink bg-ink text-paper' : 'border-line bg-surface'}`}>
+          <button key={k} type="button" role="radio" aria-checked={value === k} onClick={() => onChange(k)}
+            className={`press min-h-11 rounded-ui border px-3 py-2 text-sm ${value === k ? 'border-ink bg-ink text-paper' : 'border-line bg-surface'}`}>
             {l}
           </button>
         ))}
@@ -190,11 +192,11 @@ function YesNo({ label, value, onChange, hint }: { label: string; value: boolean
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm">{label}</span>
-        <div className="flex shrink-0 gap-1.5">
+        <span className="text-sm" id={`yesno-${label}`}>{label}</span>
+        <div role="radiogroup" aria-labelledby={`yesno-${label}`} className="flex shrink-0 gap-1.5">
           {([[true, 'Yes'], [false, 'No']] as const).map(([v, l]) => (
-            <button key={l} type="button" onClick={() => onChange(v)}
-              className={`w-14 rounded-ui border py-2 text-sm ${value === v ? 'border-ink bg-ink text-paper' : 'border-line bg-surface'}`}>
+            <button key={l} type="button" role="radio" aria-checked={value === v} onClick={() => onChange(v)}
+              className={`press min-h-11 w-14 rounded-ui border py-2 text-sm ${value === v ? 'border-ink bg-ink text-paper' : 'border-line bg-surface'}`}>
               {l}
             </button>
           ))}

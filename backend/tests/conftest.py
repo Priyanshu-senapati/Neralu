@@ -15,6 +15,16 @@ os.environ.update({
     "ORIENTATION_MODE": "voice",
     "ACK_TIMEOUT_MIN": "15",
     "MAX_ATTEMPTS": "2",
+    # Pin everything a local backend/.env might change, so tests behave the same on every machine.
+    "TELEPHONY_MODE": "twilio",
+    "DEMO_SPEED": "60",
+    "RING_TIMEOUT_S": "15",
+    "RETRY_GAP_MIN": "15",
+    "ACK_TIMEOUT_MIN": "15",
+    "AMBER_RECALL_MIN": "30",
+    "VOLUNTEER_DEMO_TOKEN": "priya-demo",
+    "STT_PROVIDER": "sarvam",
+    "SARVAM_API_KEY": "",
 })
 
 import pytest  # noqa: E402

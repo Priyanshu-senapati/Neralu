@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./neralu.db"
     public_base_url: str = "http://localhost:8000"
 
+    # twilio: real calls. browser: calls ring the /phone page instead (demo fallback, same rules).
+    telephony_mode: str = "twilio"
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api'
+import { DrawnCheck } from '../components/Motion'
 import { StatusPill } from '../components/StatusPill'
 import { WaitingTimer } from '../components/WaitingTimer'
 import { TIER_LABEL } from '../status'
@@ -83,7 +84,7 @@ export default function Volunteer() {
             navigator.vibrate?.(50)
             setOnDuty(true)
           }}
-          className="w-full rounded-ui bg-ink py-4 text-base font-semibold text-paper"
+          className="press w-full rounded-ui bg-ink py-4 text-base font-semibold text-paper"
         >
           Go on duty
         </button>
@@ -97,12 +98,18 @@ export default function Volunteer() {
   return (
     <Shell name={me?.volunteer.name}>
       {error && <p className="mb-3 rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
-      {notice && <p className="mb-3 rounded-ui border border-line bg-surface px-3 py-2 text-sm">{notice}</p>}
+      {notice && (
+        <p key={notice} className="card-enter mb-3 flex items-center gap-2 rounded-ui border border-line bg-surface px-3 py-2 text-sm">
+          {notice.startsWith('Recorded') && <DrawnCheck className="h-5 w-5 shrink-0 text-ok" />}
+          {notice}
+        </p>
+      )}
       {!me && !error && <div className="h-40 animate-pulse rounded-ui bg-line" />}
       {me && cases.length === 0 && (
         <p className="py-16 text-center text-sm text-muted">On duty · no cases near you right now</p>
       )}
-      <div className="space-y-3">
+      {/* Screen readers announce a new or changed case, not just the vibration. */}
+      <div className="space-y-3" aria-live="polite">
         {mine ? (
           <AssignedCase c={mine} token={token} now={now} onDone={(msg) => { setNotice(msg); load() }} />
         ) : (
@@ -125,7 +132,7 @@ export default function Volunteer() {
 
 function Shell({ children, name }: { children: React.ReactNode; name?: string }) {
   return (
-    <div className="mx-auto min-h-screen max-w-[430px] bg-paper px-4 py-4">
+    <div className="mx-auto min-h-dvh max-w-[430px] bg-paper px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <header className="mb-5 flex items-baseline justify-between">
         <span className="text-lg font-semibold">Neralu</span>
         <span className="text-sm text-muted">{name ? `${name} · on duty` : 'Volunteer'}</span>
@@ -181,17 +188,17 @@ function OpenCase({ c, token, now, onAccepted, onTaken, onDismiss }: OpenProps) 
     }
   }
   return (
-    <article className="rounded-ui border border-line bg-surface p-4">
+    <article className="card-enter rounded-ui border border-line bg-surface p-4">
       <CaseHeader c={c} now={now} />
       <p className="mt-3 text-xs text-muted">
         Address shown after you accept · {TIER_LABEL[c.tier]} tier{c.overdue ? ' · ward officer alerted' : ''}
       </p>
       {failed && <p className="mt-2 text-sm text-alert">Could not accept · check your connection and try again</p>}
       <div className="mt-4 grid grid-cols-[2fr_1fr] gap-2">
-        <button onClick={accept} disabled={busy} className="rounded-ui bg-ink py-3.5 text-base font-semibold text-paper disabled:opacity-60">
+        <button onClick={accept} disabled={busy} className="press rounded-ui bg-ink py-3.5 text-base font-semibold text-paper disabled:opacity-60">
           {busy ? 'Accepting…' : 'Accept'}
         </button>
-        <button onClick={onDismiss} className="rounded-ui border border-line py-3.5 text-base">
+        <button onClick={onDismiss} className="press rounded-ui border border-line py-3.5 text-base">
           Can't go
         </button>
       </div>
@@ -219,7 +226,7 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
   }
 
   return (
-    <article className="rounded-ui border border-line bg-surface p-4">
+    <article className="card-enter rounded-ui border border-line bg-surface p-4">
       <CaseHeader c={c} now={now} />
       <div className="mt-4 rounded-ui bg-paper px-3 py-2.5">
         <div className="text-xs text-muted">Address</div>
@@ -227,14 +234,14 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {c.elder.phone ? (
-          <a href={`tel:${c.elder.phone}`} className="rounded-ui border border-line py-3 text-center text-base font-semibold">
+          <a href={`tel:${c.elder.phone}`} className="press rounded-ui border border-line py-3 text-center text-base font-semibold">
             Call {first}
           </a>
         ) : (
           <span className="rounded-ui border border-line py-3 text-center text-sm text-muted">No phone on file</span>
         )}
         {c.elder.maps_url && (
-          <a href={c.elder.maps_url} target="_blank" rel="noreferrer" className="rounded-ui border border-line py-3 text-center text-base font-semibold">
+          <a href={c.elder.maps_url} target="_blank" rel="noreferrer" className="press rounded-ui border border-line py-3 text-center text-base font-semibold">
             Open in Maps
           </a>
         )}
@@ -245,6 +252,7 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
         onChange={(e) => setNote(e.target.value)}
         maxLength={300}
         placeholder="Note (optional)"
+        aria-label="Note about this visit (optional)"
         className="mt-2 w-full rounded-ui border border-line bg-surface px-3 py-2 text-base"
         rows={2}
       />
@@ -255,7 +263,7 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
             key={r.key}
             onClick={() => resolve(r.key, r.label)}
             disabled={busy !== null}
-            className={`w-full rounded-ui border py-3.5 text-left px-3 text-base ${r.key === 'safe_in_person' ? 'border-ok bg-ok-bg text-ok font-semibold' : r.key === 'called_108' ? 'border-alert text-alert' : 'border-line'}`}
+            className={`press w-full rounded-ui border py-3.5 text-left px-3 text-base ${r.key === 'safe_in_person' ? 'border-ok bg-ok-bg text-ok font-semibold' : r.key === 'called_108' ? 'border-alert text-alert' : 'border-line'}`}
           >
             {busy === r.key ? 'Saving…' : r.label}
           </button>

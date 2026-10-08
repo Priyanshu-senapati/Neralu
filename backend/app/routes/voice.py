@@ -126,7 +126,13 @@ async def orientation(request: Request, checkin_id: int, empty: int = 0) -> Resp
 
 async def _score_orientation(checkin_id: int, recording_url: str, lang: str) -> None:
     audio = await fetch_recording(recording_url)
-    transcript = await transcribe(audio, lang) if audio else None
+    await score_audio(checkin_id, audio, lang)
+
+
+async def score_audio(checkin_id: int, audio: bytes | None, lang: str,
+                      filename: str = "answer.wav", mime: str = "audio/wav") -> None:
+    """Transcribe a spoken day and store the orientation score. Unclear audio is never 'fine'."""
+    transcript = await transcribe(audio, lang, filename, mime) if audio else None
     today = state.clock.scenario_now().date()
     value = score_orientation(transcript, today)
     if transcript is None:

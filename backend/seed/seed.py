@@ -36,9 +36,18 @@ def _age(rng: random.Random) -> int:
     return max(60, min(92, round(rng.triangular(60, 92, 72))))
 
 
+def _kamala_phone() -> str | None:
+    """Her real number for Twilio. In browser mode no SIM is dialled, so a placeholder still
+    lets her be called (the call rings the /phone page)."""
+    s = get_settings()
+    if s.kamala_phone:
+        return s.kamala_phone
+    return FICTIONAL_PHONE if s.telephony_mode == "browser" else None
+
+
 def kamala(run_id: str) -> Elder:
     return Elder(
-        run_id=run_id, name="Kamala R.", age=74, phone=get_settings().kamala_phone or None,
+        run_id=run_id, name="Kamala R.", age=74, phone=_kamala_phone(),
         language="kn", lives_alone=True, roof_type="sheet", has_fan=True,
         heat_sensitive_meds=True, hearing_difficulty=False, cognitive_flag=False,
         neighbour_phone=None, family_phone=FICTIONAL_PHONE, family_name="Suresh (son)",

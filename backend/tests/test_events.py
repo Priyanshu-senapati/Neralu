@@ -62,3 +62,16 @@ def test_unknown_event_kind_rejected(session):
     import pytest
     with pytest.raises(ValueError):
         log_event(session, "called_ambulance", "x", actor="system")
+
+
+def test_create_tables_rebuilds_an_out_of_date_schema(session):
+    from sqlalchemy import inspect, text
+
+    from app.db import create_tables, engine
+
+    with engine.begin() as conn:  # simulate a neralu.db from before a column existed
+        conn.execute(text("DROP TABLE checkin"))
+        conn.execute(text("CREATE TABLE checkin (id INTEGER PRIMARY KEY, run_id VARCHAR)"))
+    create_tables()
+    cols = {c["name"] for c in inspect(engine).get_columns("checkin")}
+    assert {"placed_real", "ring_timed_out", "answers"} <= cols
