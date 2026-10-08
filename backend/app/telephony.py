@@ -16,6 +16,7 @@ AUDIO_DIR = Path(__file__).resolve().parent.parent / "static" / "audio" / "kn"
 STEPS = {"water": "water", "symptoms": "symptoms", "room": "room_hot", "fan": "fan_working"}
 STEP_ORDER = list(STEPS)
 PROMPTS = {"water": "q_water", "symptoms": "q_symptoms", "room": "q_room", "fan": "q_fan",
+           "day": "q_day_keypad",
            "help": "q_help"}
 
 _client: Client | None = None
@@ -110,6 +111,9 @@ def gather_twiml(step: str, checkin_id: int, *, reprompt: bool) -> str:
 
 def orientation_twiml(checkin_id: int) -> str:
     resp = VoiceResponse()
+    if get_settings().orientation_mode == "keypad":
+        keypad_gather(resp, "day", checkin_id, reprompt=False)
+        return str(resp)
     resp.play(audio("q_orientation"))
     resp.record(max_length=5, timeout=3, play_beep=False, method="POST",
                 action=url("/voice/orientation", checkin_id=checkin_id))

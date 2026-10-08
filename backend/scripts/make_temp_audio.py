@@ -24,6 +24,8 @@ LINES = {
     "q_room": "Is your room very hot right now? Press 1 for yes, 2 for no.",
     "q_fan": "Is your fan or cooler working? Press 1 for yes, 2 for no.",
     "q_orientation": "Please tell me, what day is it today?",
+    "q_day_keypad": "Which day is it today? Press 1 for Monday, 2 for Tuesday, 3 for Wednesday, "
+                    "4 for Thursday, 5 for Friday, 6 for Saturday, 7 for Sunday.",
     "q_help": "If you need help now, press 2. If you are okay, press 1.",
     "reprompt": "Sorry, I didn't catch that.",
     "advice": "Please drink a glass of water now and stay in the coolest part of your home.",

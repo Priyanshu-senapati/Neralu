@@ -269,3 +269,54 @@ def test_unsigned_request_rejected_if_twilio_does_not_know_the_call(client, monk
     cid = start_kamala_call(client)
     r = client.post(f"/voice/answer?checkin_id={cid}", data={"CallSid": checkin(cid).call_sid})
     assert r.status_code == 403
+
+
+@pytest.fixture
+def keypad_mode(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "orientation_mode", "keypad")
+
+
+def keypad_call(client, day=None, retry_day=None):
+    """Answer everything fine, then the day question by keypad (None = no press)."""
+    cid = start_kamala_call(client)
+    post(client, f"/voice/answer?checkin_id={cid}")
+    for step, digit in [("water", "1"), ("symptoms", "2"), ("room", "2")]:
+        post(client, f"/voice/gather/{step}?checkin_id={cid}", Digits=digit)
+    twiml = post(client, f"/voice/gather/fan?checkin_id={cid}", Digits="1")
+    assert "q_day_keypad.mp3" in twiml and "<Record" not in twiml
+    form = {"Digits": day} if day else {}
+    twiml = post(client, f"/voice/gather/day?checkin_id={cid}", **form)
+    if "reprompt.mp3" in twiml:
+        form = {"Digits": retry_day} if retry_day else {}
+        twiml = post(client, f"/voice/gather/day?checkin_id={cid}&r=1", **form)
+    assert "q_help.mp3" in twiml
+    post(client, f"/voice/gather/help?checkin_id={cid}", Digits="1")
+    end_call(client, cid)
+    return checkin(cid)
+
+
+def test_keypad_day_correct_is_green(client, keypad_mode):
+    c = keypad_call(client, day="5")  # scenario day is Friday
+    assert c.answers["orientation"] == "correct" and c.answers["orientation_via"] == "keypad"
+    assert (c.outcome, c.rule_id) == ("GREEN", "R9")
+
+
+def test_keypad_wrong_day_is_amber_r5(client, keypad_mode):
+    c = keypad_call(client, day="4")
+    assert (c.answers["orientation"], c.rule_id) == ("wrong", "R5")
+
+
+def test_keypad_no_press_after_reprompt_is_none_r7(client, keypad_mode):
+    c = keypad_call(client)
+    assert (c.answers["orientation"], c.rule_id) == ("none", "R7")
+
+
+def test_keypad_invalid_key_twice_is_uncertain(client, keypad_mode):
+    c = keypad_call(client, day="9", retry_day="0")
+    assert (c.answers["orientation"], c.rule_id) == ("uncertain", "R7")
+
+
+def test_keypad_reprompt_then_correct(client, keypad_mode):
+    c = keypad_call(client, day="9", retry_day="5")
+    assert (c.answers["orientation"], c.outcome) == ("correct", "GREEN")

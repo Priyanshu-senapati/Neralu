@@ -32,7 +32,9 @@ export function AnswerTable({ c }: { c: CheckInOut }) {
               <td className={`py-1.5 pr-2 font-semibold ${concern ? 'text-alert' : v === 'none' || !v ? 'text-muted' : ''}`}>
                 {v ? VALUE[v] ?? v : c.classified ? 'No answer' : '…'}
               </td>
-              <td className="py-1.5 text-right text-xs text-muted">{v ? `via ${r.via}` : ''}</td>
+              <td className="py-1.5 text-right text-xs text-muted">
+                {v ? `via ${r.key === 'orientation' ? c.answers.orientation_via ?? r.via : r.via}` : ''}
+              </td>
             </tr>
           )
         })}
