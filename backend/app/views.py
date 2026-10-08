@@ -212,7 +212,8 @@ def summary(session: Session) -> dict[str, Any]:
     elders = run_elders(session)
     latest, cases, resolved = latest_checkins(session), active_cases(session), last_resolutions(session)
     counts = {"registered": len(elders), "due_today": 0, "fine": 0, "follow_up": 0,
-              "escalated": 0, "unreached_now": 0, "support": 0}
+              "escalated": 0, "unreached_now": 0, "support": 0,
+              "calls_active": sum(1 for c in pending_checkins(session).values() if c.started)}
     for e in elders:
         if due_count(e) > 0:
             counts["due_today"] += 1

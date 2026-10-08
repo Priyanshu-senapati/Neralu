@@ -196,3 +196,11 @@ def test_case_detail_and_rule_book_explain_the_rule(client):
     assert "not by AI" in d["decided_by"]
     book = client.get("/api/rules").json()
     assert {r["id"] for r in book["rules"]} >= {"R0", "R3", "R9", "S1", "E1", "E3"}
+
+
+def test_ward_events_feed_is_newest_first_and_leaves_out_routine_simulation(client):
+    client.post("/api/sim/heat", json=HEATWAVE)
+    client.post("/api/sim/round", json={"round_no": 1})
+    feed = client.get("/api/events?limit=5").json()
+    assert feed and feed[0]["kind"] == "round_started"
+    assert all(not e["simulated"] or e["kind"].startswith(("case_", "tier_")) for e in feed)
