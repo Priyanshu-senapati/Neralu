@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     twilio_auth_token: str = ""
     twilio_from_number: str = ""
     validate_twilio_signature: bool = True
+    # simulated: family/neighbour messages are logged only. twilio: registered people's contacts get a
+    # real SMS from twilio_from_number (simulated residents never do).
+    family_sms: str = "simulated"
 
     stt_provider: str = "sarvam"
     sarvam_api_key: str = ""

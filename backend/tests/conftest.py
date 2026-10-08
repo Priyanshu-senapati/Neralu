@@ -26,6 +26,7 @@ os.environ.update({
     "STT_PROVIDER": "sarvam",
     "SARVAM_API_KEY": "",
     "FRONTEND_DIST": "/nonexistent-neralu-dist",
+    "FAMILY_SMS": "simulated",
 })
 
 import pytest  # noqa: E402
