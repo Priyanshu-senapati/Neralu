@@ -29,8 +29,10 @@ SCENARIOS = {  # name: (weight %, answers or None for no answer)
 }
 
 
-def _rng(c: CheckIn) -> random.Random:
-    return random.Random(f"{c.run_id}-{c.id}")
+def _rng(c: CheckIn, stream: str = "answers") -> random.Random:
+    # Separate streams: sharing one seed made the outcome and the resolve time use the same first
+    # draw, so every non-green outcome landed in the last few minutes of the round.
+    return random.Random(f"{c.run_id}-{c.id}-{stream}")
 
 
 def _answers_for(c: CheckIn) -> dict | None:
@@ -52,7 +54,7 @@ def _start_due(session: Session, now) -> None:
         c.started = True
         c.call_status = "queued"
         lo, hi = RESOLVE_WINDOW_MIN if c.attempt == 1 and not c.is_recall else (1.0, 5.0)
-        c.sim_resolve_at_real = now + state.clock.real_delta(_rng(c).uniform(lo, hi))
+        c.sim_resolve_at_real = now + state.clock.real_delta(_rng(c, "timing").uniform(lo, hi))
 
 
 def _resolve_due(session: Session, now) -> None:
