@@ -3,6 +3,11 @@
 
 @theme {
   --color-paper: var(--paper);
+  --color-sunken: var(--sunken);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-tint: var(--brand-tint);
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-ink: var(--ink);
@@ -19,6 +24,7 @@
   --radius-ui: var(--radius);
   --font-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-kn: "Noto Sans Kannada", "Public Sans", sans-serif;
 }
 
 html,
@@ -27,12 +33,39 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   font-weight: 400;
+  font-feature-settings: "tnum" 0;
   -webkit-font-smoothing: antialiased;
+  caret-color: var(--brand);
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.kn {
+  font-family: var(--font-kn);
+}
+
+/* Data: numbers align in columns everywhere they are compared. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .neralu-tiles {
-  filter: grayscale(1) contrast(0.85) brightness(1.08);
-  opacity: 0.55;
+  filter: grayscale(1) contrast(0.8) brightness(1.1);
+  opacity: 0.42;
 }
 .leaflet-container {
   background: var(--paper);
