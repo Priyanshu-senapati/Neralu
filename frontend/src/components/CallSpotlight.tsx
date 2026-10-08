@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
-import { closedLoop } from '../loop'
+import { closedLoop, episode } from '../loop'
 import { useRuleBook } from '../rules'
 import { fmtTime } from '../time'
 import type { CheckInOut, ElderDetail, ElderListItem, NeraluEvent } from '../types'
@@ -190,16 +190,24 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
             </p>
           </div>
 
-          {verdict && (
-            <div className={`mt-4 rounded-ui px-4 py-3 ${tint(verdict.outcome)}`}>
-              <div className="text-xs font-semibold tracking-wide">DECISION</div>
-              <div className="mt-0.5 text-xl font-semibold">
-                {verdict.outcome} · <span className="num">Rule {verdict.rule_id}</span>
+          {verdict && (() => {
+            // An escalation rule (E1 no answer twice, E3 second concerning call) is what sent a
+            // person, so it is the decision to show, not the last call's own rule.
+            const escalated = detail ? escalationOf(detail.events) : null
+            const outcome = escalated ? 'RED' : verdict.outcome
+            const rule = escalated?.rule ?? verdict.rule_id ?? ''
+            return (
+              <div className={`mt-4 rounded-ui px-4 py-3 ${tint(outcome)}`}>
+                <div className="text-xs font-semibold tracking-wide">DECISION</div>
+                <div className="mt-0.5 text-xl font-semibold">
+                  {outcome} · <span className="num">{escalated ? `Escalated by ${rule}` : `Rule ${rule}`}</span>
+                  {escalated && <span className="font-normal"> · {escalated.reason}</span>}
+                </div>
+                <p className="mt-1 text-sm text-ink">{book?.explain[rule] ?? verdict.reason}</p>
+                <p className="mt-1.5 text-xs text-muted">{book?.decided_by}</p>
               </div>
-              <p className="mt-1 text-sm text-ink">{book?.explain[verdict.rule_id ?? ''] ?? verdict.reason}</p>
-              <p className="mt-1.5 text-xs text-muted">{book?.decided_by}</p>
-            </div>
-          )}
+            )
+          })()}
         </div>
 
         {/* What is said, what she pressed, what happens next */}
@@ -247,6 +255,13 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
       </section>
     </div>
   )
+}
+
+/** The escalation-rule case (E1, E3) opened in this episode, if any. */
+function escalationOf(events: NeraluEvent[]): { rule: string; reason: string } | null {
+  const opened = episode(events).filter((e) => e.kind === 'case_opened' && e.data.level === 'red').at(-1)
+  const rule = opened ? String(opened.data.rule_id ?? '') : ''
+  return opened && rule.startsWith('E') ? { rule, reason: String(opened.data.reason ?? '') } : null
 }
 
 function phaseLabel(p: Phase) {
