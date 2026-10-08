@@ -22,6 +22,15 @@ from app.db import engine, set_run_id  # noqa: E402
 from app.state import reset_state  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def no_real_twilio(monkeypatch):
+    """No test may reach the real Twilio API."""
+    from app import calls
+    cancelled = []
+    monkeypatch.setattr(calls, "cancel_call", lambda sid: cancelled.append(sid) or True)
+    return cancelled
+
+
 @pytest.fixture
 def session():
     SQLModel.metadata.drop_all(engine)

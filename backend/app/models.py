@@ -61,6 +61,8 @@ class CheckIn(SQLModel, table=True):
     scheduled_for_real: datetime = Field(default_factory=utcnow)
     started: bool = False
     call_sid: str | None = Field(default=None, index=True)
+    placed_real: datetime | None = None
+    ring_timed_out: bool = False  # we hung up after RING_TIMEOUT_S: counts as no answer
     call_status: str | None = None
     answers: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     recording_url: str | None = None

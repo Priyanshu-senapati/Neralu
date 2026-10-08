@@ -206,3 +206,66 @@ def test_signature_required_when_enabled(client, monkeypatch):
     monkeypatch.setattr(get_settings(), "validate_twilio_signature", True)
     r = client.post("/voice/status?checkin_id=1", data={"CallStatus": "completed"})
     assert r.status_code == 403
+
+
+def test_unanswered_call_is_hung_up_after_ring_timeout_and_counts_as_no_answer(client, no_real_twilio, monkeypatch):
+    from app.escalation import sync_tick
+    from app.state import state
+    cid = start_kamala_call(client)
+    post(client, f"/voice/status?checkin_id={cid}", CallStatus="ringing")
+    t = [state.clock.real_now()]
+    monkeypatch.setattr(state.clock, "_now", lambda: t[0])
+    t[0] += __import__("datetime").timedelta(seconds=10)
+    with Session(engine) as s:
+        sync_tick(s)
+    assert no_real_twilio == []  # still within RING_TIMEOUT_S
+    t[0] += __import__("datetime").timedelta(seconds=6)
+    with Session(engine) as s:
+        sync_tick(s)
+    assert no_real_twilio == [f"CA{cid:032d}"]
+    end_call(client, cid, "canceled")
+    c = checkin(cid)
+    assert (c.call_status, c.outcome) == ("no-answer", "UNREACHED")
+    with Session(engine) as s:
+        ev = s.exec(select(Event).where(Event.kind == "attempt_failed", Event.checkin_id == cid)).one()
+    assert ev.message == "Attempt 1 failed · no answer"
+
+
+def test_answered_call_is_never_hung_up(client, no_real_twilio, monkeypatch):
+    from datetime import timedelta
+    from app.escalation import sync_tick
+    from app.state import state
+    cid = start_kamala_call(client)
+    post(client, f"/voice/status?checkin_id={cid}", CallStatus="in-progress")
+    t = [state.clock.real_now() + timedelta(seconds=60)]
+    monkeypatch.setattr(state.clock, "_now", lambda: t[0])
+    with Session(engine) as s:
+        sync_tick(s)
+    assert no_real_twilio == []
+
+
+def test_unsigned_trial_gateway_request_needs_our_live_call(client, monkeypatch):
+    from app import telephony
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "validate_twilio_signature", True)
+    asked = []
+    monkeypatch.setattr(telephony, "_call_is_ours", lambda sid: asked.append(sid) or True)
+    cid = start_kamala_call(client)
+    sid = checkin(cid).call_sid
+    ok = client.post(f"/voice/answer?checkin_id={cid}", data={"CallSid": sid, "CallStatus": "in-progress"})
+    assert ok.status_code == 200 and "greet.mp3" in ok.text
+    wrong = client.post(f"/voice/answer?checkin_id={cid}", data={"CallSid": "CAforged", "CallStatus": "in-progress"})
+    assert wrong.status_code == 403
+    missing = client.post(f"/voice/answer?checkin_id={cid}", data={"CallStatus": "in-progress"})
+    assert missing.status_code == 403
+    assert asked == [sid]  # Twilio is only asked about the CallSid that matches our check-in
+
+
+def test_unsigned_request_rejected_if_twilio_does_not_know_the_call(client, monkeypatch):
+    from app import telephony
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "validate_twilio_signature", True)
+    monkeypatch.setattr(telephony, "_call_is_ours", lambda sid: False)
+    cid = start_kamala_call(client)
+    r = client.post(f"/voice/answer?checkin_id={cid}", data={"CallSid": checkin(cid).call_sid})
+    assert r.status_code == 403

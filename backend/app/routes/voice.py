@@ -144,6 +144,8 @@ async def status(request: Request, checkin_id: int) -> Response:
                               elder_id=c.elder_id, checkin_id=c.id)
                 session.commit()
             return Response(status_code=204)
+        if call_status == "canceled" and c.ring_timed_out:
+            call_status = "no-answer"  # we hung up after RING_TIMEOUT_S of ringing
     await _await_orientation(checkin_id)
     with Session(engine) as session:
         handle_call_ended(session, checkin_id, call_status)
