@@ -324,7 +324,7 @@ def test_keypad_reprompt_then_correct(client, keypad_mode):
 
 def test_audio_route_falls_back_to_english(client):
     hi = client.get("/audio/hi/greet.mp3")
-    kn = client.get("/audio/kn/greet.mp3")  # no Kannada recordings yet
+    kn = client.get("/audio/ta/greet.mp3")  # no Tamil recordings yet: falls back to English
     en = client.get("/audio/en/greet.mp3")
     assert hi.status_code == kn.status_code == en.status_code == 200
     assert hi.headers["content-type"] == "audio/mpeg"
@@ -393,3 +393,51 @@ def test_call_stuck_ringing_without_final_update_counts_as_no_answer(client, mon
     with Session(engine) as s:
         sync_tick(s)
     assert (checkin(cid).processed, checkin(cid).outcome) == (True, "UNREACHED")
+
+
+
+@pytest.fixture
+def menu_on(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "language_menu", True)
+
+
+def test_language_menu_offers_each_language_in_its_own_voice(client, menu_on):
+    cid = start_kamala_call(client)
+    twiml = post(client, f"/voice/answer?checkin_id={cid}")
+    assert "/audio/kn/lang_menu.mp3" in twiml and "/audio/hi/lang_menu.mp3" in twiml
+    assert "/audio/en/lang_menu.mp3" in twiml and "greet.mp3" not in twiml
+    assert f"/voice/language?checkin_id={cid}" in twiml
+
+
+def test_pressing_3_continues_the_whole_call_in_english(client, menu_on, stt):
+    cid = start_kamala_call(client)
+    post(client, f"/voice/answer?checkin_id={cid}")
+    twiml = post(client, f"/voice/language?checkin_id={cid}", Digits="3")
+    assert "/audio/en/greet.mp3" in twiml and "/audio/en/q_water.mp3" in twiml
+    twiml = post(client, f"/voice/gather/water?checkin_id={cid}", Digits="1")
+    assert "/audio/en/q_symptoms.mp3" in twiml
+    assert checkin(cid).language == "en"
+    with Session(engine) as s:
+        ev = s.exec(select(Event).where(Event.kind == "language_chosen")).one()
+    assert ev.message == "Language: English · pressed 3"
+
+
+def test_no_key_at_the_menu_keeps_the_registered_language(client, menu_on):
+    cid = start_kamala_call(client)
+    post(client, f"/voice/answer?checkin_id={cid}")
+    twiml = post(client, f"/voice/language?checkin_id={cid}&timeout=1")
+    assert "/audio/kn/greet.mp3" in twiml  # Kamala is registered as Kannada
+    assert checkin(cid).language == "kn"
+
+
+def test_other_key_at_the_menu_keeps_the_registered_language(client, menu_on):
+    cid = start_kamala_call(client)
+    post(client, f"/voice/answer?checkin_id={cid}")
+    twiml = post(client, f"/voice/language?checkin_id={cid}", Digits="7")
+    assert "/audio/kn/greet.mp3" in twiml
+
+
+def test_kannada_prompts_are_real_kannada_clips_now(client):
+    kn, en = client.get("/audio/kn/greet.mp3"), client.get("/audio/en/greet.mp3")
+    assert kn.status_code == en.status_code == 200 and kn.content != en.content

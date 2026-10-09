@@ -147,7 +147,7 @@ def checkin_out(c: CheckIn) -> dict[str, Any]:
             "recording_url": f"/api/recordings/{c.id}" if c.recording_url else None,
             "outcome": c.outcome, "rule_id": c.rule_id, "reason": c.reason,
             "rule_explanation": explain(c.rule_id),
-            "needs_support": c.needs_support, "is_simulated": c.is_simulated,
+            "needs_support": c.needs_support, "is_simulated": c.is_simulated, "language": c.language,
             "at_scenario": _scenario(c.classified_real or c.scheduled_for_real),
             "classified": c.processed}
 

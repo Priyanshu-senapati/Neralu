@@ -105,6 +105,22 @@ def keypad_gather(resp: VoiceResponse, step: str, checkin_id: int, *, reprompt: 
     resp.redirect(url(f"/voice/gather/{step}", **params, timeout=1), method="POST")
 
 
+# Language menu, each option spoken in its own language: 1 Kannada, 2 Hindi, 3 English.
+LANGUAGE_KEYS = {"1": "kn", "2": "hi", "3": "en"}
+
+
+def language_menu_twiml(checkin_id: int) -> str:
+    """Ask which language to continue in; with no key the call goes on in the registered one."""
+    resp = VoiceResponse()
+    g = Gather(input="dtmf", num_digits=1, timeout=4, action=url("/voice/language", checkin_id=checkin_id),
+               method="POST")
+    for lang in LANGUAGE_KEYS.values():
+        g.play(audio("lang_menu", lang))
+    resp.append(g)
+    resp.redirect(url("/voice/language", checkin_id=checkin_id, timeout=1), method="POST")
+    return str(resp)
+
+
 def answer_twiml(checkin_id: int, first_name: str, code_word: str, lang: str) -> str:
     resp = VoiceResponse()
     resp.play(audio("greet", lang))

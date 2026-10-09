@@ -141,6 +141,7 @@ export interface CheckInOut {
   is_simulated: boolean
   at_scenario: string | null
   classified: boolean
+  language?: string | null
   rule_explanation?: string | null
 }
 

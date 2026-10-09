@@ -63,6 +63,17 @@ const SCRIPT: ScriptLine[] = [
 ]
 const QUESTION_KEYS = SCRIPT.filter((s) => s.answer).map((s) => s.key)
 
+/** Shown first when the call began with the language menu (1 Kannada, 2 Hindi, 3 English). */
+const LANG_LINE: ScriptLine = {
+  key: 'language', caption: 'Language: 1 Kannada · 2 Hindi · 3 English',
+  answer: (c, ev) => {
+    if (!c.language) return null
+    const chosen = ev.filter((e) => e.kind === 'language_chosen' && e.checkin_id === c.id).at(-1)
+    const pressed = chosen?.data.pressed
+    return { text: `${pressed ? `Pressed ${pressed}` : 'No key'} · ${LANG[c.language] ?? c.language}`, concern: false }
+  },
+}
+
 type Phase = 'ringing' | 'connected' | 'between' | 'done'
 
 interface Props {
@@ -131,8 +142,12 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
     )
   }
 
+  // The language line appears once the caller has chosen (or the menu timed out).
+  const lines = call?.language ? [LANG_LINE, ...SCRIPT] : SCRIPT
+  const firstQuestion = lines.findIndex((l) => l.answer && l.key !== 'language')
   const answeredCount = call ? QUESTION_KEYS.filter((k) => call.answers[k]).length : 0
-  const currentIdx = phase === 'connected' ? (answeredCount === 0 ? 3 : 3 + answeredCount) : -1
+  const currentIdx = phase === 'connected' ? firstQuestion + answeredCount : -1
+  const spoken = LANG[call?.language ?? resident.language] ?? resident.language
   const verdict = phase === 'done' && call?.classified ? call : null
   const nextAt = cur && !cur.started ? cur.scheduled_scenario : null
   const nextIn = nextAt && now ? Math.max(0, Math.round((new Date(nextAt).getTime() - now.getTime()) / speed / 1000)) : null
@@ -227,10 +242,10 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
             <>
               <h3 className="flex items-baseline justify-between text-sm font-semibold">
                 On the call
-                <span className="text-xs font-normal text-muted">Recorded prompts</span>
+                <span className="text-xs font-normal text-muted">Recorded prompts · {spoken}</span>
               </h3>
               <ol className="mt-3 divide-y divide-line border-y border-line">
-                {SCRIPT.map((line, i) => {
+                {lines.map((line, i) => {
                   const ans = call && line.answer ? line.answer(call, detail?.events ?? []) : null
                   const played = phase === 'connected' && (i < currentIdx || (line.answer && ans))
                   const isNow = i === currentIdx && !ans

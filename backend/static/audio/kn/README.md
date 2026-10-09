@@ -1,8 +1,7 @@
-Kannada prompts go here, one MP3 per prompt, with the same file names as `../en/`.
+Kannada call prompts, generated with Sarvam's Kannada voice (chaitra_kn_conversation) from the
+KN texts in scripts/prompts.py.
 
-Until a file exists here, Kannada callers hear the English clip of the same name (see
-`app/audio.py`). Per plan §7.3 a native Kannada speaker writes and records these lines
-(mono, normalised, each under about 6 s; `q_day_keypad.mp3` may run longer). Do not
-machine-translate them. Sarvam has Kannada voices (`chaitra_kn_conversation`) if a
-generated stopgap is needed from native-written text: add a `KN` table to
-`scripts/prompts.py` and an entry in `scripts/make_audio.py`.
+Before the demo a native Kannada speaker must listen to these and check the wording (plan §7.3).
+To replace a clip with a human recording, save an MP3 here with the same file name
+(mono, normalised, each under about 6 s). To regenerate after editing KN:
+    .venv/Scripts/python.exe scripts/make_audio.py kn --force [--only=greet,q_water]

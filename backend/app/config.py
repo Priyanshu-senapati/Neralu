@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     stt_timeout_s: float = 6
     # "voice": spoken day recorded + transcribed. "keypad": press 1-7 (Twilio trials cannot record).
     orientation_mode: str = "voice"
+    # Start each call with "1 Kannada · 2 Hindi · 3 English"; no key keeps the registered language.
+    language_menu: bool = True
 
     demo_speed: int = 60
     max_attempts: int = 2

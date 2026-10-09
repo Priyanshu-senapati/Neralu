@@ -18,7 +18,7 @@ EVENT_KINDS = (
     "call_answered", "answer_recorded", "call_ended", "attempt_failed", "retry_scheduled",
     "checkin_classified", "recall_scheduled", "case_opened", "tier_alerted", "tier_skipped",
     "tier_overdue", "case_accepted", "case_resolved", "family_notified", "elder_registered",
-    "elder_deleted",
+    "elder_deleted", "language_chosen",
 )
 
 
@@ -63,6 +63,7 @@ class CheckIn(SQLModel, table=True):
     started: bool = False
     call_sid: str | None = Field(default=None, index=True)
     placed_real: datetime | None = None
+    language: str | None = None  # chosen on the call from the language menu; else the elder's
     ring_timed_out: bool = False  # we hung up after RING_TIMEOUT_S: counts as no answer
     call_status: str | None = None
     answers: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))

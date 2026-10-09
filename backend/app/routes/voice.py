@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice")
 
 KEYPAD = {"1": "yes", "2": "no"}
+LANGUAGE_NAME = {"kn": "Kannada", "hi": "Hindi", "en": "English", "ta": "Tamil", "te": "Telugu", "ur": "Urdu"}
 HELP_KEYPAD = {"1": "ok", "2": "help"}
 
 # checkin_id -> running orientation transcription, awaited (bounded) before classification
@@ -38,7 +39,8 @@ def _live_checkin(session: Session, checkin_id: int) -> CheckIn | None:
 
 
 def _lang(session: Session, c: CheckIn) -> str:
-    return session.get(Elder, c.elder_id).language
+    """The call's language: chosen on the call from the menu, else the elder's registered one."""
+    return c.language or session.get(Elder, c.elder_id).language
 
 
 def _store(session: Session, c: CheckIn, field: str, value: str, via: str, **extra) -> None:
@@ -58,7 +60,30 @@ async def answer(request: Request, checkin_id: int) -> Response:
         if c is None:
             return twiml(tw.hangup_twiml())
         elder = session.get(Elder, c.elder_id)
+        if get_settings().language_menu:
+            return twiml(tw.language_menu_twiml(c.id))
         return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, elder.language))
+
+
+@router.post("/language")
+async def language(request: Request, checkin_id: int) -> Response:
+    """The key pressed at the language menu; no key (or another key) keeps the registered language."""
+    await tw.validate_signature(request)
+    digits = (await request.form()).get("Digits")
+    with Session(engine) as session:
+        c = _live_checkin(session, checkin_id)
+        if c is None:
+            return twiml(tw.hangup_twiml())
+        elder = session.get(Elder, c.elder_id)
+        chosen = tw.LANGUAGE_KEYS.get(digits or "")
+        c.language = chosen or elder.language
+        log_event(session, "language_chosen",
+                  f"Language: {LANGUAGE_NAME.get(c.language, c.language)}"
+                  + (f" · pressed {digits}" if chosen else " · registered language, no key pressed"),
+                  actor="twilio", elder_id=c.elder_id, checkin_id=c.id,
+                  data={"language": c.language, "pressed": digits if chosen else None})
+        session.commit()
+        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, c.language))
 
 
 @router.post("/gather/{step}")
@@ -117,7 +142,7 @@ async def orientation(request: Request, checkin_id: int, empty: int = 0) -> Resp
             if not c.recording_url:
                 c.recording_url = recording_url
                 orientation_tasks[c.id] = asyncio.create_task(
-                    _score_orientation(c.id, recording_url, session.get(Elder, c.elder_id).language))
+                    _score_orientation(c.id, recording_url, _lang(session, c)))
         elif "orientation" not in (c.answers or {}) and not c.recording_url:
             _store(session, c, "orientation", "none", "voice", transcript=None)
         session.commit()

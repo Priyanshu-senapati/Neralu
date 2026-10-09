@@ -68,7 +68,7 @@ def answer(checkin_id: int) -> dict:
         bp.answer(session, call)
         session.commit()
         elder = session.get(Elder, c.elder_id)
-        lang, first = elder.language, elder.name.split()[0].lower()
+        lang, first = c.language or elder.language, elder.name.split()[0].lower()
         intro = ["greet"] + ([f"name_{first}"] if tw.has_audio(f"name_{first}", lang) else []) \
             + ["code_intro", f"code_{elder.code_word}", "safety"]
         return {
@@ -98,7 +98,7 @@ def key(checkin_id: int, body: KeyIn) -> dict:
             advice = (c.answers or {}).get("water") == "no"
             session.commit()
             closing = (["advice"] if advice else []) + ["close_help" if value == "help" else "close_ok"]
-            lang = session.get(Elder, c.elder_id).language
+            lang = c.language or session.get(Elder, c.elder_id).language
             return {"closing": [_audio(n, lang) for n in closing]}
         if body.step not in tw.STEPS:
             raise HTTPException(422, "Unknown step")
@@ -132,7 +132,7 @@ async def orientation(checkin_id: int, audio: UploadFile | None = File(None),
         name = f"{c.run_id}-{c.id}{MIME_EXT.get(mime, '.webm')}"
         (RECORDINGS_DIR / name).write_bytes(data)
         c.recording_url = f"local:{name}"
-        lang = session.get(Elder, c.elder_id).language
+        lang = c.language or session.get(Elder, c.elder_id).language
         session.commit()
     orientation_tasks[checkin_id] = asyncio.create_task(score_audio(checkin_id, data, lang, name, mime))
     return {"ok": True}

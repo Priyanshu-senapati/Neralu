@@ -1,4 +1,4 @@
-"""Generate call prompt MP3s with Sarvam (Bulbul): Indian-English and Hindi voices.
+"""Generate call prompt MP3s with Sarvam (Bulbul): Indian-English, Hindi and Kannada voices.
 Kokoro (American English) remains available: run with `en --kokoro`.
 
 Sarvam voices need only Python and SARVAM_API_KEY in backend/.env:
@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from prompts import EN, HI, en  # noqa: E402
+from prompts import EN, HI, KN, en  # noqa: E402
 
 BACKEND = Path(__file__).resolve().parent.parent
 AUDIO = BACKEND / "static" / "audio"
@@ -28,6 +28,7 @@ SARVAM_MODEL = "bulbul:v4-flash"
 SARVAM_VOICES = {                # (BCP-47 language, speaker, pace); slower pace for elderly listeners
     "en": ("en-IN", "ritu_en_medical", 0.8),
     "hi": ("hi-IN", "ritu_hi_customer_warm", 0.9),
+    "kn": ("kn-IN", "chaitra_kn_conversation", 0.85),
 }
 PACE = 0.9
 
@@ -82,7 +83,7 @@ class Sarvam:
             return base64.b64decode(json.load(r)["audios"][0])
 
 
-LANGS = {"en": EN, "hi": HI}
+LANGS = {"en": EN, "hi": HI, "kn": KN}
 
 
 def main() -> None:

@@ -3,8 +3,11 @@
 English and Hindi use Sarvam's Indian voices, which say Indian words correctly as written.
 If English is generated with Kokoro instead (--kokoro), en() pins pronunciations with
 [word](/phonemes/), since Kokoro would otherwise say e.g. Mallige as "malij".
-Kannada lines are to be written and recorded by a native speaker (plan §7.3), not generated here.
+Kannada uses Sarvam's Kannada voice as a stopgap. Plan §7.3 wants native-speaker recordings: a native
+Kannada speaker must review KN below (and ideally record it, same file names) before the demo.
 Have a native speaker review every non-English line before the demo.
+
+"lang_menu" is the language menu at the start of each call; every language says its own option.
 """
 
 EN_WORDS = {
@@ -39,6 +42,7 @@ EN = {
     "advice": "Please drink a glass of water now, and stay in the coolest part of your home.",
     "close_ok": "Thank you. We will check on you again later today.",
     "close_help": "Thank you. Someone from your area is being informed now.",
+    "lang_menu": "For English, press 3.",
     "code_mallige": "Mallige.", "code_sampige": "Sampige.", "code_sevanthige": "Sevanthige.",
     "code_tulasi": "Tulasi.", "code_maavu": "Maavu.", "code_bevu": "Bevu.",
     "code_kaveri": "Kaveri.", "code_chandra": "Chandra.", "code_nakshatra": "Nakshatra.",
@@ -62,8 +66,34 @@ HI = {
     "advice": "कृपया अभी एक गिलास पानी पीजिए, और घर की सबसे ठंडी जगह में रहिए।",
     "close_ok": "धन्यवाद। हम आज बाद में फिर से आपका हाल पूछेंगे।",
     "close_help": "धन्यवाद। आपके इलाके के किसी व्यक्ति को अभी सूचना दी जा रही है।",
+    "lang_menu": "हिंदी के लिए 2 दबाइए।",
     "code_mallige": "मल्लिगे।", "code_sampige": "संपिगे।", "code_sevanthige": "सेवंतिगे।",
     "code_tulasi": "तुलसी।", "code_maavu": "मावु।", "code_bevu": "बेवु।",
     "code_kaveri": "कावेरी।", "code_chandra": "चंद्र।", "code_nakshatra": "नक्षत्र।",
     "code_gulabi": "गुलाबी।",
+}
+
+# Needs native Kannada review before the demo (plan §7.3).
+KN = {
+    "greet": "ನಮಸ್ಕಾರ. ಇದು ನೆರಳು, ನಿಮ್ಮ ವಾರ್ಡ್ ಕಚೇರಿಯ ಬಿಸಿಗಾಳಿ ಆರೈಕೆ ಸೇವೆ.",
+    "name_kamala": "ಕಮಲ ಅವರೇ,",
+    "code_intro": "ನಿಮ್ಮ ಮನೆಯವರು ಆರಿಸಿದ ಸಂಕೇತ ಪದ:",
+    "safety": "ನೆರಳು ಯಾವತ್ತೂ ಹಣ, ಓಟಿಪಿ, ಆಧಾರ್ ಅಥವಾ ಬ್ಯಾಂಕ್ ವಿವರಗಳನ್ನು ಕೇಳುವುದಿಲ್ಲ.",
+    "q_water": "ಕಳೆದ ಒಂದು ಗಂಟೆಯಲ್ಲಿ ನೀರು ಕುಡಿದಿದ್ದೀರಾ? ಹೌದು ಎಂದರೆ 1 ಒತ್ತಿ, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_symptoms": "ನಿಮಗೆ ತಲೆ ಸುತ್ತು, ಸುಸ್ತು ಅಥವಾ ಗೊಂದಲ ಆಗುತ್ತಿದೆಯಾ? ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_room": "ಈಗ ನಿಮ್ಮ ಕೋಣೆ ತುಂಬಾ ಬಿಸಿಯಾಗಿದೆಯಾ? ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_fan": "ನಿಮ್ಮ ಫ್ಯಾನ್ ಅಥವಾ ಕೂಲರ್ ಕೆಲಸ ಮಾಡುತ್ತಿದೆಯಾ? ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_orientation": "ದಯವಿಟ್ಟು ಹೇಳಿ, ಇವತ್ತು ಯಾವ ವಾರ?",
+    "q_day_keypad": "ಇವತ್ತು ಯಾವ ವಾರ? ಸೋಮವಾರ 1, ಮಂಗಳವಾರ 2, ಬುಧವಾರ 3, ಗುರುವಾರ 4, "
+                    "ಶುಕ್ರವಾರ 5, ಶನಿವಾರ 6, ಭಾನುವಾರ 7 ಒತ್ತಿ.",
+    "q_help": "ನಿಮಗೆ ಈಗಲೇ ಸಹಾಯ ಬೇಕಿದ್ದರೆ 2 ಒತ್ತಿ. ನೀವು ಚೆನ್ನಾಗಿದ್ದರೆ 1 ಒತ್ತಿ.",
+    "reprompt": "ಕ್ಷಮಿಸಿ, ನನಗೆ ಸರಿಯಾಗಿ ಕೇಳಿಸಲಿಲ್ಲ.",
+    "advice": "ದಯವಿಟ್ಟು ಈಗಲೇ ಒಂದು ಲೋಟ ನೀರು ಕುಡಿಯಿರಿ, ಮತ್ತು ಮನೆಯ ತಣ್ಣಗಿರುವ ಜಾಗದಲ್ಲಿ ಇರಿ.",
+    "close_ok": "ಧನ್ಯವಾದಗಳು. ಇವತ್ತು ಮತ್ತೆ ನಿಮ್ಮನ್ನು ವಿಚಾರಿಸುತ್ತೇವೆ.",
+    "close_help": "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ಹತ್ತಿರದ ಒಬ್ಬರಿಗೆ ಈಗಲೇ ತಿಳಿಸುತ್ತಿದ್ದೇವೆ.",
+    "lang_menu": "ಕನ್ನಡಕ್ಕಾಗಿ 1 ಒತ್ತಿ.",
+    "code_mallige": "ಮಲ್ಲಿಗೆ.", "code_sampige": "ಸಂಪಿಗೆ.", "code_sevanthige": "ಸೇವಂತಿಗೆ.",
+    "code_tulasi": "ತುಳಸಿ.", "code_maavu": "ಮಾವು.", "code_bevu": "ಬೇವು.",
+    "code_kaveri": "ಕಾವೇರಿ.", "code_chandra": "ಚಂದ್ರ.", "code_nakshatra": "ನಕ್ಷತ್ರ.",
+    "code_gulabi": "ಗುಲಾಬಿ.",
 }
