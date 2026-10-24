@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from app.db import engine
 from app.escalation import sync_tick
+from app.status import mark_tick
 
 log = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ log = logging.getLogger(__name__)
 def _tick_once() -> None:
     with Session(engine) as session:
         sync_tick(session)
+    mark_tick()
 
 
 async def run_scheduler(interval_s: float = 1.0) -> None:

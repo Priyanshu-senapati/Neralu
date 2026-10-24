@@ -114,6 +114,19 @@ Twilio trial accounts also need **India** ticked under Voice → Settings → Ge
 
 ## 6. Run it
 
+### On stage · one command, everything (recommended for the demo)
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\stage.ps1            # real calls: server + ngrok
+powershell -ExecutionPolicy Bypass -File scripts\stage.ps1 -Browser   # no telecom: calls ring /phone
+powershell -ExecutionPolicy Bypass -File scripts\stage-stop.ps1       # stop everything
+```
+
+It builds the website, starts the server and ngrok in their own windows (they keep running if the
+terminal closes), waits until both answer, prints a **go / no-go** check and every link. Priya's
+link goes through ngrok, so it works on any network. Add `-SkipBuild` for a faster restart.
+The ward console shows the same checks live in a strip under the top bar ("Ready for live calls").
+
 ### Option A · one command (demo laptop, uses less memory)
 
 From the repo root:
@@ -192,7 +205,9 @@ large install (PyTorch); see the top of `backend/scripts/make_audio.py`.
 | "Port 8000 / 5180 already in use" | an old server is still running: close it, or in PowerShell `Get-NetTCPConnection -LocalPort 8000 \| % { Stop-Process -Id $_.OwningProcess -Force }` |
 | Call rings, then "application error" / "can't reach server" | ngrok is not running, or `PUBLIC_BASE_URL` does not match the ngrok address exactly |
 | Call fails immediately | Twilio trial: number not verified, or India not enabled in Geo permissions |
-| Servers stop by themselves | the laptop is low on memory: close other apps and browser tabs, prefer Option A |
+| Servers stop by themselves | the laptop is low on memory: close other apps and browser tabs, use `scripts\stage.ps1` |
+| Status strip is red | it names the fix (e.g. "start ngrok"); press Recheck after fixing |
+| Phone shows "You are about to visit … ngrok" | normal on ngrok's free plan: tap **Visit Site** once |
 | Dashboard says "Reconnecting" | the backend stopped; restart it, the page recovers on its own |
 | Phone cannot open the volunteer page | the phone must be on the same Wi-Fi, and the laptop's address changes per network |
 | Tests fail after editing `.env` | they should not (tests pin their own settings); run `pytest -q` from `backend/` |

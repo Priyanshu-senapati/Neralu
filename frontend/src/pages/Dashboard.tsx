@@ -6,6 +6,7 @@ import { CaseDrawer } from '../components/CaseDrawer'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { LiveCall } from '../components/LiveCall'
 import { SituationBar } from '../components/SituationBar'
+import { StatusStrip } from '../components/StatusStrip'
 import { DemoControls } from '../components/DemoControls'
 import { TopBar } from '../components/TopBar'
 import { WardPanel } from '../components/WardPanel'
@@ -84,6 +85,7 @@ export default function Dashboard() {
     <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
       <h1 className="sr-only">Ward 47 heat welfare console</h1>
       <TopBar summary={summary} now={now} stream={stream} />
+      <StatusStrip />
       {stream !== 'live' && (
         <div role="status" className="bg-watch-bg px-5 py-1 text-xs text-watch">
           Live updates interrupted. Reconnecting; the ward refreshes when the connection is back.

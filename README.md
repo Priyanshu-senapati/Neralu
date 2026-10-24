@@ -8,6 +8,7 @@ Deterministic rules decide every outcome; the system never calls 108 itself.
 Full spec, decisions and build order: [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md).
 Rules for working in this repo: [CLAUDE.md](CLAUDE.md).
 
+**On stage:** `powershell -ExecutionPolicy Bypass -File scripts\stage.ps1` starts everything and prints a go / no-go check.
 **New laptop? Start with [SETUP.md](SETUP.md)**: everything to install, the settings, how to run it and fixes for common problems.
 
 ## One command (demo laptop)
