@@ -15,6 +15,13 @@ def get_summary(session: Session = Depends(get_session)) -> dict:
     return summary(session)
 
 
+@router.get("/impact")
+def get_impact(session: Session = Depends(get_session)) -> dict:
+    """Broadcast alert against Neralu for today's run, counted from check-ins, cases and events."""
+    from app.impact import impact
+    return impact(session)
+
+
 @router.get("/rules")
 def get_rules() -> dict:
     """The full published rule book, so the dashboard can show why any outcome happened."""

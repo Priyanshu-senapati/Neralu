@@ -213,6 +213,14 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Impact: a heat alert against Neralu
+
+On the console, **Impact** puts the same day in two columns. A broadcast alert tells everyone and
+confirms nothing. Neralu shows who was called, confirmed safe, known to need a person and reached at
+the door, plus what a pilot would measure: confirmed safe by noon, time from a RED case to a person at
+the door, repeat-risk residents and volunteer load. Every number is counted live from the run's
+check-ins, cases and events; the panel says how each one is counted.
+
 ### Responders: availability and live reassignment
 
 Volunteers go on and off duty from their page. **Can't go** tells Neralu, which asks the next nearest

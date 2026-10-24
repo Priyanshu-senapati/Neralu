@@ -116,13 +116,19 @@ the line still stands on its own.
   holding cases forever. Tests: `backend/tests/test_reassign.py` (including a randomized check that
   an open case always has someone asked or is with the officer).
 
-**R2-4 · Impact panel: broadcast vs Neralu** · SDG impact, presentation · 1.5 h
+**R2-4 · Impact panel: broadcast vs Neralu** · SDG impact, presentation · 1.5 h · **done**
 - Same heatwave, two columns. Broadcast: "401 alerted · 0 confirmed safe · unknown who needs help".
   Neralu, for example from one demo round: "387 called · 374 confirmed safe · 7 needed a person ·
   median 8 min to a volunteer accepting". Always computed from the round's data, never typed in.
 - Pilot metrics we would measure: % confirmed safe by noon, time from RED to a person at the door,
   repeat-risk residents, volunteer load.
 - *Done when:* the panel updates live during a round and every number traces to the event log.
+- *Built:* console top bar → **Impact**. Broadcast vs Neralu (reached, confirmed safe, known to need a
+  person, reached at the door), where everyone called stands now, median minutes to accept and to a
+  recorded visit, and the four pilot measures. "How each number is counted" lists the rule for every
+  figure. A heatwave demo round ends near: 387 called · 386 confirmed safe · 28 needed a person ·
+  27 reached at the door · 96 % confirmed safe by 12:00. `GET /api/impact`, `backend/app/impact.py`,
+  tests in `backend/tests/test_impact.py`.
 
 **R2-5 · Family status link** · impact, responsible tech · 1.5 h
 - Registration gives the family a private link: "**Amma answered at 11:02 · all fine**" / "a

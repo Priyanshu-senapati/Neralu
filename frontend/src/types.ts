@@ -232,6 +232,38 @@ export interface CaseDetail {
   declined_by_you?: boolean
 }
 
+/** GET /api/impact: the same day as a broadcast alert would leave it, and as Neralu leaves it. */
+export interface Impact {
+  as_of_scenario: string
+  weather: Weather
+  residents: number
+  due: number
+  round_started: boolean
+  broadcast: { alerted: number; confirmed_safe: number; known_need_help: number; reached_in_person: number }
+  neralu: {
+    called: number
+    called_real: number
+    confirmed_safe: number
+    follow_up: number
+    not_reached: number
+    in_progress: number
+    needed_person: number
+    reached_in_person: number
+    waiting_for_person: number
+    caregiver_route: number
+    accept_median_min: number | null
+    door_median_min: number | null
+  }
+  pilot: {
+    safe_by_noon: { n: number; of: number }
+    red_to_door_median_min: number | null
+    repeat_risk: number
+    volunteer_load: { responders: number; max: number; visits: number }
+  }
+  trace: Record<string, string>
+  simulated_note: string
+}
+
 export interface ResponderCase {
   case_id: number
   elder_id: number

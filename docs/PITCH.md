@@ -97,7 +97,12 @@ Then Priya taps **I can go after all** (the case stays at the bottom of her list
 "What happened to Kamala today", the plain-English record.
 > **"From heat alert to a person at her door, and her son told, with every step on record."**
 
-**5:30 – 7:00 · Responsible design, impact, ask.** As in the 3-minute pitch, then:
+**5:30 · Impact (20 s).** Top bar → **Impact**.
+> **"Same heatwave, two columns. A broadcast told 401 people and confirmed no one. Neralu called 387,
+> confirmed [read the number] safe, found [n] who needed a person and got someone to [n] of their doors.
+> None of these numbers is typed in: each is counted from the log, and the panel says how."**
+
+**5:50 – 7:00 · Responsible design, impact, ask.** As in the 3-minute pitch, then:
 > **"What you saw was real: a real call, real keypad answers, real rules, a real volunteer on a real
 > phone. What's simulated, the ward's other 400 residents and the weather, is labelled on screen."**
 
@@ -110,7 +115,7 @@ Then Priya taps **I can go after all** (the case stays at the bottom of her list
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 172 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 176 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 

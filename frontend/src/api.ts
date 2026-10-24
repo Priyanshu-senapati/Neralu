@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, RoundSummary, Summary, VolunteerMe, WhatIf, Responder } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -50,6 +50,7 @@ export const api = {
   decline: (id: number, token: string) => post<CaseDetail>(`/api/cases/${id}/decline`, { volunteer_token: token }),
   duty: (token: string, on_duty: boolean) => post<VolunteerMe>('/api/volunteer/duty', { volunteer_token: token, on_duty }),
   responders: () => request<Responder[]>('/api/responders'),
+  impact: () => request<Impact>('/api/impact'),
   resolve: (id: number, token: string, resolution: string, note?: string) =>
     post<CaseDetail>(`/api/cases/${id}/resolve`, { volunteer_token: token, resolution, note }),
   register: (body: unknown) => post<ElderDetail>('/api/elders', body),

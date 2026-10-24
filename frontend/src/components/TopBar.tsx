@@ -39,9 +39,10 @@ interface Props {
   stream: StreamStatus
   onPlan: () => void
   onResponders: () => void
+  onImpact: () => void
 }
 
-export function TopBar({ summary, now, stream, onPlan, onResponders }: Props) {
+export function TopBar({ summary, now, stream, onPlan, onResponders, onImpact }: Props) {
   const live = stream === 'live'
   const theme = useTheme()
   return (
@@ -74,6 +75,13 @@ export function TopBar({ summary, now, stream, onPlan, onResponders }: Props) {
           title="Volunteers and ASHA workers: who is on duty, on a visit, or being asked"
         >
           Responders
+        </button>
+        <button
+          onClick={onImpact}
+          className="press rounded-[3px] border border-line-strong px-2 py-0.5 text-xs hover:bg-paper"
+          title="Today against a broadcast heat alert: who was called, confirmed safe, and reached at the door"
+        >
+          Impact
         </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
