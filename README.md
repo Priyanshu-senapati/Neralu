@@ -8,6 +8,8 @@ Deterministic rules decide every outcome; the system never calls 108 itself.
 Full spec, decisions and build order: [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md).
 Rules for working in this repo: [CLAUDE.md](CLAUDE.md).
 
+**New laptop? Start with [SETUP.md](SETUP.md)**: everything to install, the settings, how to run it and fixes for common problems.
+
 ## One command (demo laptop)
 
 Builds the website and serves everything (site, API, call audio) on one port, :8000, and prints
