@@ -16,6 +16,7 @@ export const OrbitTooltip = forwardRef<HTMLDivElement, { household: Household | 
     return (
       <div
         ref={ref}
+        data-ui
         role={announce ? 'status' : undefined}
         className="pointer-events-none absolute left-0 top-0 z-10 w-[15.5rem] rounded-[6px] border border-line-strong bg-surface px-3.5 py-3 text-sm text-ink shadow-[0_18px_40px_-18px_rgba(0,0,0,0.6)] transition-opacity duration-150"
         style={{ opacity: h ? 1 : 0, visibility: h ? 'visible' : 'hidden' }}
@@ -25,9 +26,9 @@ export const OrbitTooltip = forwardRef<HTMLDivElement, { household: Household | 
             <div className="flex items-center justify-between gap-2">
               <span className="truncate font-semibold">{h.name}</span>
               {h.kamala ? (
-                <span className="shrink-0 rounded-ui border border-line px-1 font-mono text-xs text-muted">demo persona</span>
+                <span className="shrink-0 text-[0.8125rem] text-muted">demo persona</span>
               ) : example ? (
-                <span className="shrink-0 rounded-ui border border-line px-1 font-mono text-xs text-muted">example</span>
+                <span className="shrink-0 text-[0.8125rem] text-muted">example</span>
               ) : (
                 h.simulated && <SimTag />
               )}
@@ -48,7 +49,7 @@ export const OrbitTooltip = forwardRef<HTMLDivElement, { household: Household | 
                 'Not called: below their threshold'
               )}
             </div>
-            {h.kamala && <div className="mt-1.5 text-xs text-muted">Her call plays further down this page.</div>}
+            {h.kamala && <div className="mt-1.5 text-[0.8125rem] text-muted">Her call plays further down this page.</div>}
           </>
         )}
       </div>

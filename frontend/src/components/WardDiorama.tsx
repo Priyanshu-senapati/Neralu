@@ -248,7 +248,8 @@ export default function WardDiorama({ elders, heat, className = '' }: Props) {
       <div
         ref={label}
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded-[4px] bg-paper px-2.5 py-1.5 text-xs text-ink opacity-0 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.6)]"
+        data-ui
+        className="pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded-[4px] bg-paper px-2.5 py-1.5 text-[0.8125rem] text-ink opacity-0 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.6)]"
       >
         <span className="font-semibold">Kamala R., 74</span>{' '}
         <span className="text-muted">{kamalaCalled ? '· gets a call today' : '· below her threshold today'}</span>

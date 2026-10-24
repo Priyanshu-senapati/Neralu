@@ -20,7 +20,7 @@ const face: CSSProperties = { position: 'absolute', inset: 0, borderRadius: 34 }
 
 export default function KeypadPhone3D({ className = '' }: { className?: string }) {
   return (
-    <div className={`relative h-[440px] w-[216px] [transform-style:preserve-3d] ${className}`} data-phone>
+    <div className={`relative h-[440px] w-[216px] [transform-style:preserve-3d] ${className}`} data-phone data-ui>
       {/* The edge: layers stepping back give the body depth with its rounded corners intact. */}
       {Array.from({ length: LAYERS }, (_, i) => (
         <div
@@ -30,7 +30,6 @@ export default function KeypadPhone3D({ className = '' }: { className?: string }
             ...face,
             transform: `translateZ(${-((i + 1) * DEPTH) / LAYERS}px)`,
             background: 'var(--phone-edge)',
-            boxShadow: i === LAYERS - 1 ? '0 40px 80px -30px rgba(0,0,0,0.65)' : undefined,
           }}
         />
       ))}
