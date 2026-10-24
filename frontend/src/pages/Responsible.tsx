@@ -18,8 +18,8 @@ const STORE: [string, string][] = [
 const WHO: [string, string][] = [
   ['Ward officer (console)', 'Every registered person, their risk factors, call answers, decisions and cases. The address only once a volunteer has accepted a visit.'],
   ['Volunteer or ASHA worker', 'Why someone needs a visit and roughly how far away they are. Address and phone appear only after they accept that one case.'],
-  ['Family', 'A private link with that one person\'s status today. Nothing about anyone else, and no address or code word.'],
-  ['Nobody', 'The erasure code: it is shown once to the family and kept only in a scrambled form (a hash).'],
+  ['Family', 'A private link with that one person\'s status today. Nothing about anyone else, and no address, code word or volunteer\'s name. They can replace the link or turn it off.'],
+  ['Nobody', 'The erasure code and the family link\'s secret: each is shown once to the family and kept only in a scrambled form (a hash).'],
 ]
 
 const DPDP: [string, string][] = [
@@ -27,7 +27,7 @@ const DPDP: [string, string][] = [
   ['Purpose limitation', 'The data is used for one thing: checking on that person during heat.'],
   ['Data minimisation', 'Only what the check needs (see above). The spoken day is reduced to one word; recordings are not kept beyond 7 days.'],
   ['Right to erasure', 'The family can delete the person and everything recorded about them at any time with their erasure code, from the confirmation screen or the status link.'],
-  ['Security', 'Random, unguessable family links and erasure codes; addresses hidden until needed; the erasure code stored only as a hash.'],
+  ['Security', 'Random, unguessable family links and erasure codes, both stored only as hashes; the link\'s secret is kept out of server logs; addresses hidden until needed.'],
 ]
 
 const ACCESS: string[] = [

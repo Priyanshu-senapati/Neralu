@@ -61,6 +61,20 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
               </FlowButton>
             ))}
           </div>
+          <Btn busy={busy === 'family'} onClick={() => run('family', async () => {
+            // Opened before the request so the browser does not treat it as a pop-up.
+            const tab = window.open('', '_blank')
+            try {
+              const { family_token } = await api.demoFamilyLink()
+              if (tab) tab.location.href = `/family#${family_token}`
+            } catch (err) {
+              tab?.close()
+              throw err
+            }
+            return 'Kamala’s family view opened in a new tab (a new link; the old one stops working)'
+          })}>
+            Kamala’s family view
+          </Btn>
           {confirmReset ? (
             <div className="grid grid-cols-2 gap-1.5">
               <Btn busy={busy === 'reset'} onClick={() => { setConfirmReset(false); run('reset', async () => void (await api.reset())) }}>

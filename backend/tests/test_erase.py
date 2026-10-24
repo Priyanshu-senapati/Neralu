@@ -51,10 +51,18 @@ def test_the_code_is_random_shown_once_and_stored_only_as_a_hash(client):
 
 def test_family_can_erase_from_their_status_link(client):
     r = client.post("/api/elders", json=REGISTRATION).json()
-    token = r["family_link"].split("t=")[1]
-    assert client.request("DELETE", "/api/family", json={"t": token, "code": "AAAA-AAAA"}).status_code == 403
-    assert client.request("DELETE", "/api/family", json={"t": token, "code": r["erasure_code"]}).status_code == 200
-    assert client.get("/api/family", params={"t": token}).status_code == 404
+    head = {"X-Family-Token": r["family_token"]}
+    assert client.post("/api/family/erase", headers=head, json={"code": "AAAA-AAAA"}).status_code == 403
+    assert client.post("/api/family/erase", headers={"X-Family-Token": "wrong"},
+                       json={"code": r["erasure_code"]}).status_code == 403
+    assert client.post("/api/family/erase", headers=head, json={"code": r["erasure_code"]}).status_code == 200
+    assert client.get("/api/family/status", headers=head).status_code == 404
+
+
+def test_demo_persona_cannot_be_erased_from_her_family_link(client):
+    token = client.post("/api/sim/family-link").json()["family_token"]
+    r = client.post("/api/family/erase", headers={"X-Family-Token": token}, json={"code": "AAAA-AAAA"})
+    assert r.status_code == 403  # she has no erasure code at all
 
 
 def test_demo_persona_and_simulated_residents_cannot_be_removed(client):

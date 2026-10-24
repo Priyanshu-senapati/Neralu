@@ -135,8 +135,10 @@ the line still stands on its own.
   volunteer is on the way" / "checked in person at 11:40". Optional real SMS (already built, off by default).
 - *Done when:* the family link updates live through a call and an escalation; it shows no data about
   anyone else.
-- *Built:* registration returns a private random link (`/family?t=…`, shown once on the confirmation
-  screen with Open / Copy); Kamala's demo link is `/family?t=kamala-family` (printed by stage.ps1).
+- *Built:* two versions were built in parallel; the merged one is Gourab's (PR #19): a random link
+  (`/family#…`, shown once at registration, only its hash stored, the secret sent in a header so it
+  stays out of logs), replace or turn off from the page, and Demo controls open Kamala's family view.
+  Kept from the other version: erasure with the erasure code from the family page.
   One plain status line plus today's timeline, polled every 5 s for this person only (never the
   ward's live stream); no address, code word or phone numbers; the link dies with an erasure. With
   FAMILY_SMS=twilio the family's SMS carries the link. Tests: `backend/tests/test_family.py`.

@@ -1,27 +1,220 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import { Wordmark } from '../components/Brand'
 import type { FamilyStatus } from '../types'
 
+/**
+ * The family's private view of one person: how today's checks went, in plain words. Read-only.
+ * The link's secret lives in the #fragment (never sent to the server in the page request) and goes
+ * to the API in a header. Shows no address, phone, code word, volunteer name or anyone else.
+ */
+
+const TONE: Record<FamilyStatus['tone'], { card: string; text: string; dot: string }> = {
+  ok: { card: 'border-ok/40 bg-ok-bg', text: 'text-ok', dot: 'bg-ok' },
+  watch: { card: 'border-watch/40 bg-watch-bg', text: 'text-watch', dot: 'bg-watch' },
+  alert: { card: 'border-alert/50 bg-alert-bg', text: 'text-alert', dot: 'bg-alert' },
+  neutral: { card: 'border-line bg-surface', text: '', dot: 'bg-ink/40' },
+}
+const NEXT: Record<NonNullable<FamilyStatus['next_call']>['kind'], string> = {
+  check: 'check call', retry: 'another try', 'follow-up': 'follow-up call', 'after-care': 'after-care call',
+}
 const POLL_MS = 5000
-const TONE: Record<string, { box: string; dot: string }> = {
-  ok: { box: 'border-ok bg-ok-bg', dot: 'bg-ok' },
-  watch: { box: 'border-watch bg-watch-bg', dot: 'bg-watch' },
-  alert: { box: 'border-alert bg-alert-bg', dot: 'bg-alert' },
-  neutral: { box: 'border-line-strong bg-surface', dot: 'bg-muted' },
-  muted: { box: 'border-line bg-surface', dot: 'bg-line-strong' },
+
+export default function Family() {
+  const { hash } = useLocation()
+  const navigate = useNavigate()
+  const token = hash.slice(1)
+  const [d, setD] = useState<FamilyStatus | null>(null)
+  const [loaded, setState] = useState<'loading' | 'ok' | 'inactive' | 'offline' | 'removed'>('loading')
+  const state = token ? loaded : 'inactive' // no secret in the address: nothing to ask the server
+  const [note, setNote] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    if (!token || loaded === 'removed') return
+    try {
+      setD(await api.family.status(token))
+      setState('ok')
+    } catch (err) {
+      setState(err instanceof ApiError && err.status === 404 ? 'inactive' : 'offline')
+    }
+  }, [token, loaded])
+
+  useEffect(() => {
+    load()
+    const id = window.setInterval(load, POLL_MS)
+    return () => window.clearInterval(id)
+  }, [load])
+
+  const renew = async () => {
+    const { family_token } = await api.family.renew(token)
+    navigate(`/family#${family_token}`, { replace: true })
+    setNote('New link made: the old one no longer works. Save this page’s address and share it only with family.')
+  }
+  const revoke = async () => {
+    await api.family.revoke(token)
+    setNote(null)
+    setState('inactive')
+  }
+
+  return (
+    <div className="min-h-dvh bg-paper text-ink">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <div className="mb-8 flex items-center justify-between">
+          <Wordmark size="sm" />
+          <span className="text-xs text-muted">Family view · private</span>
+        </div>
+
+        {state === 'loading' && <div className="h-40 animate-pulse rounded-[10px] bg-line" />}
+        {state === 'inactive' && <Inactive />}
+        {state === 'removed' && (
+          <p role="status" className="rounded-[8px] border border-line bg-surface px-4 py-3 text-sm">
+            The registration and everything Neralu recorded about them has been deleted. Neralu will not call again.
+          </p>
+        )}
+        {state === 'offline' && !d && <p className="text-sm text-muted">Cannot reach Neralu right now · retrying</p>}
+        {d && state !== 'inactive' && state !== 'removed' && (
+          <Status d={d} offline={state === 'offline'} note={note} onRenew={renew} onRevoke={revoke} />
+        )}
+        {d && d.registered && (state === 'ok' || state === 'offline') && (
+          <RemoveRegistration token={token} first={d.first_name} onRemoved={() => setState('removed')} />
+        )}
+        <p className="mt-4 text-xs text-muted">
+          <a href="/responsible" className="underline underline-offset-2 hover:text-ink">How Neralu handles your family's data</a>
+        </p>
+      </div>
+    </div>
+  )
 }
 
-/** Right to erasure from the status page: the erasure code shown once at registration. */
-function RemoveRegistration({ token, name, onRemoved }: { token: string; name: string; onRemoved: () => void }) {
+function Status({ d, offline, note, onRenew, onRevoke }: {
+  d: FamilyStatus; offline: boolean; note: string | null; onRenew: () => Promise<void>; onRevoke: () => Promise<void>
+}) {
+  const t = TONE[d.tone]
+  const first = d.first_name
+  return (
+    <>
+      <p className="text-sm text-muted">Heat checks for</p>
+      <h1 className="display text-[2rem] font-medium leading-tight">{d.name}</h1>
+
+      <section aria-live="polite" className={`mt-5 rounded-[10px] border px-5 py-4 ${t.card}`}>
+        <div className="text-xs text-muted">Now · <span className="num">{d.as_of}</span>{offline && ' · reconnecting'}</div>
+        <p className={`mt-1 text-[1.35rem] font-semibold leading-snug ${t.text}`}>{d.headline}</p>
+        {(d.last_check || d.next_call) && (
+          <dl className="mt-3 space-y-1 border-t border-ink/10 pt-3 text-sm">
+            {d.last_check && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Last check</dt>
+                <dd className="text-right"><span className="num">{d.last_check.at}</span> · {d.last_check.text}{d.last_check.by_caregiver && ' (caregiver)'}</dd>
+              </div>
+            )}
+            {d.next_call && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Next</dt>
+                <dd className="text-right">
+                  {NEXT[d.next_call.kind]}{d.next_call.to_caregiver && ' to the caregiver'} at <span className="num">{d.next_call.at}</span>
+                </dd>
+              </div>
+            )}
+          </dl>
+        )}
+      </section>
+
+      <p className="mt-4 text-sm leading-relaxed text-ink/80">
+        Today's heat index is <span className="num">{d.heat.heat_index_c.toFixed(1)} °C</span>
+        {d.heat.source !== 'open-meteo' && ' (simulated)'}.{' '}
+        {d.heat.above_threshold
+          ? <>That is above {first}'s personal threshold of <span className="num">{d.heat.threshold_c.toFixed(0)} °C</span>, so Neralu checks on {first}{d.through_caregiver ? ' through their caregiver' : ''}.</>
+          : <>That is below {first}'s personal threshold of <span className="num">{d.heat.threshold_c.toFixed(0)} °C</span>.</>}
+      </p>
+
+      {d.today.length > 0 && (
+        <section className="mt-7">
+          <h2 className="text-sm font-semibold">Today</h2>
+          <ol className="mt-2 divide-y divide-line border-y border-line">
+            {[...d.today].reverse().map((line, i) => (
+              <li key={`${line.at}-${i}`} className="grid grid-cols-[3rem_0.75rem_minmax(0,1fr)] items-baseline gap-x-2 py-2 text-sm">
+                <span className="num text-muted">{line.at}</span>
+                <span className={`h-2 w-2 rounded-full ${TONE[line.tone].dot}`} aria-hidden="true" />
+                <span>{line.text}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      <p className="mt-7 rounded-[8px] border border-line bg-surface px-4 py-3 text-sm">
+        Neralu never asks for money, OTP, Aadhaar or bank details. Every Neralu call starts with your family's code word.
+      </p>
+      {(!d.pilot || !d.registered) && (
+        <p className="mt-3 text-xs text-muted">
+          {!d.registered ? `${first} is the demo's fictional resident. ` : ''}
+          {!d.pilot ? 'Demo: times follow the demo clock, and the ward’s other residents are simulated.' : ''}
+        </p>
+      )}
+
+      <div className="flex-1" />
+      <LinkControls first={first} note={note} onRenew={onRenew} onRevoke={onRevoke} />
+    </>
+  )
+}
+
+function LinkControls({ first, note, onRenew, onRevoke }: {
+  first: string; note: string | null; onRenew: () => Promise<void>; onRevoke: () => Promise<void>
+}) {
+  const [confirm, setConfirm] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const act = async (fn: () => Promise<void>) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await fn()
+      setConfirm(false)
+    } catch {
+      setError('That did not work. Check your connection and try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="mt-10 border-t border-line pt-4 text-sm">
+      <p className="text-muted">Keep this link private: anyone who has it can see this page. If it was shared by mistake, replace it.</p>
+      {note && <p role="status" className="mt-2 font-semibold">{note}</p>}
+      {error && <p role="alert" className="mt-2 text-alert">{error}</p>}
+      {confirm ? (
+        <div className="mt-3 rounded-[8px] border border-alert/50 bg-alert-bg px-4 py-3">
+          <p>Turn off this link? This page stops working. Neralu keeps checking on {first}.</p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" disabled={busy} onClick={() => act(onRevoke)} className="press min-h-11 rounded-full bg-alert px-4 font-semibold text-paper disabled:opacity-60">
+              Turn off
+            </button>
+            <button type="button" onClick={() => setConfirm(false)} className="press min-h-11 rounded-full border border-line-strong px-4">Keep it</button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" disabled={busy} onClick={() => act(onRenew)} className="press min-h-11 rounded-full border border-line-strong px-4 disabled:opacity-60">
+            Get a new link
+          </button>
+          <button type="button" onClick={() => setConfirm(true)} className="press min-h-11 rounded-full px-4 text-muted hover:text-alert">
+            Turn off this link
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+/** Right to erasure from this page: the erasure code shown once at registration. */
+function RemoveRegistration({ token, first, onRemoved }: { token: string; first: string; onRemoved: () => void }) {
   const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   if (!open)
     return (
-      <button type="button" onClick={() => setOpen(true)} className="underline underline-offset-2 hover:text-alert">
+      <button type="button" onClick={() => setOpen(true)} className="mt-4 self-start text-sm text-muted underline underline-offset-2 hover:text-alert">
         Remove this registration
       </button>
     )
@@ -29,7 +222,7 @@ function RemoveRegistration({ token, name, onRemoved }: { token: string; name: s
     setBusy(true)
     setError(null)
     try {
-      await api.removeFromFamilyLink(token, code)
+      await api.family.erase(token, code)
       onRemoved()
     } catch (e) {
       setError(e instanceof ApiError && e.status === 403
@@ -40,9 +233,9 @@ function RemoveRegistration({ token, name, onRemoved }: { token: string; name: s
     }
   }
   return (
-    <div className="mt-2 rounded-ui border border-alert/50 bg-alert-bg px-3 py-3 text-sm text-ink">
+    <div className="mt-4 rounded-[8px] border border-alert/50 bg-alert-bg px-4 py-3 text-sm">
       <label htmlFor="erasure-code" className="block">
-        Delete {name} from Neralu? Their details and call history are erased and Neralu stops calling. Enter the
+        Delete {first} from Neralu? Their details and call history are erased and Neralu stops calling. Enter the
         erasure code you were given at registration.
       </label>
       <input
@@ -66,93 +259,14 @@ function RemoveRegistration({ token, name, onRemoved }: { token: string; name: s
   )
 }
 
-/*
- * A family's private view of one person's heat check today. It asks only for this person's status
- * (never the ward's live stream), so nothing about anyone else ever reaches this phone.
- */
-export default function Family() {
-  const [params] = useSearchParams()
-  const token = params.get('t') ?? ''
-  const [d, setD] = useState<FamilyStatus | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [removed, setRemoved] = useState(false)
-
-  const load = useCallback(async () => {
-    try {
-      setD(await api.family(token))
-      setError(null)
-    } catch (e) {
-      setError(e instanceof ApiError && e.status === 404
-        ? 'This link is not valid, or the registration was removed.'
-        : 'Cannot reach Neralu right now. Retrying.')
-    }
-  }, [token])
-
-  useEffect(() => {
-    if (removed) return
-    load()
-    const id = window.setInterval(() => document.visibilityState === 'visible' && load(), POLL_MS)
-    return () => window.clearInterval(id)
-  }, [load, removed])
-
-  const first = d?.name.split(' ')[0]
-  const tone = TONE[d?.tone ?? 'neutral'] ?? TONE.neutral
-
+function Inactive() {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-paper text-ink">
-      <header className="flex items-center justify-between border-b border-line bg-surface px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <Wordmark size="sm" />
-        <span className="text-sm text-muted">Family view</span>
-      </header>
-      <main className="flex flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
-        {removed && (
-          <p role="status" className="rounded-ui border border-line bg-surface px-4 py-3 text-sm">
-            The registration and everything Neralu recorded about them has been deleted. Neralu will not call again.
-          </p>
-        )}
-        {!removed && !d && !error && <div className="h-40 animate-pulse rounded-ui bg-line" />}
-        {error && !d && <p role="alert" className="rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
-        {d && !removed && (
-          <>
-            <h1 className="display text-[1.7rem] font-medium leading-tight">{first}'s heat check today</h1>
-            <section aria-live="polite" className={`mt-4 rounded-ui border-l-4 px-4 py-4 ${tone.box}`}>
-              <p className="text-[1.125rem] font-semibold leading-snug">{d.headline}</p>
-            </section>
-            <p className="mt-2 text-sm text-muted">
-              Heat index <span className="num whitespace-nowrap">{d.heat_index_c.toFixed(1)} °C</span>
-              {d.weather_simulated ? ' (simulated)' : ''} · {first}'s own threshold{' '}
-              <span className="num whitespace-nowrap">{d.threshold_c.toFixed(0)} °C</span>
-            </p>
-            {error && <p className="mt-2 text-xs text-watch">{error}</p>}
-
-            <h2 className="mt-7 text-sm font-semibold">Today</h2>
-            {d.timeline.length === 0 ? (
-              <p className="mt-2 text-sm text-muted">Nothing yet today.</p>
-            ) : (
-              <ol className="mt-2 border-l border-line-strong">
-                {d.timeline.map((x, i) => (
-                  <li key={i} className="relative grid grid-cols-[3.25rem_minmax(0,1fr)] gap-x-2 py-1.5 pl-4 text-sm">
-                    <span className={`absolute -left-[5px] top-[0.7rem] h-2.5 w-2.5 rounded-full ${(TONE[x.tone] ?? TONE.muted).dot}`} aria-hidden="true" />
-                    <span className="num text-muted">{x.time}</span>
-                    <span>{x.text}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            <div className="flex-1" />
-            <footer className="mt-10 space-y-1.5 border-t border-line pt-4 text-xs text-muted">
-              <p>This page updates by itself. The link is private to your family: please do not share it.</p>
-              <p>Neralu never asks for money, OTP, Aadhaar or bank details. Neralu never calls an ambulance itself; a person decides that.</p>
-              {d.demo_clock && <p>Demo: times on this page run faster than real time.</p>}
-              <p>
-                <a href="/responsible" className="underline underline-offset-2 hover:text-ink">How Neralu handles your family's data</a>
-              </p>
-              <RemoveRegistration token={token} name={first ?? ''} onRemoved={() => setRemoved(true)} />
-            </footer>
-          </>
-        )}
-      </main>
+    <div className="py-10">
+      <h1 className="display text-[1.8rem] font-medium leading-tight">This link is not active.</h1>
+      <p className="mt-3 text-sm leading-relaxed text-ink/80">
+        It may have been turned off or replaced by a newer link. Neralu still checks on everyone registered;
+        only this page is off.
+      </p>
     </div>
   )
 }

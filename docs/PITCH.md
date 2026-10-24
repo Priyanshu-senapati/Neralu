@@ -62,6 +62,10 @@ Same story, with the live demo between 1:15 and 5:30.
 4. Priya's phone: the ngrok volunteer link (printed by the script) → Visit Site → **Go on duty**.
    Optional: a third screen on Kamala's family link (also printed).
 5. Kamala's phone: ringer on, not silent, not Do Not Disturb, charged.
+6. Decide on the after-care call (rule E7): about **one minute after Priya taps Safe**, Kamala's phone
+   rings again. Keep it as the 5:00 beat below, or switch it off before running the script with
+   `AFTERCARE_MIN=0` in `backend\.env`. Never decline it on stage: two missed after-care calls send a
+   person again (E3) and Priya's phone buzzes.
 
 **1:15 · Normal day.** Point at the heat index (31.7 °C) and "1 of 401 residents over their own threshold".
 > **"On a normal day almost nobody needs a call."**
@@ -103,6 +107,10 @@ person: safe".
 "What happened to Kamala today", the plain-English record.
 > **"From heat alert to a person at her door, and her son told, with every step on record."**
 
+**~5:00 · Kamala's phone rings again (after-care, rule E7).** The judge answers, everything fine.
+> **"An hour later, Neralu calls her back to make sure she's still okay. If she isn't, or doesn't
+> answer, a person goes again."** The loop's last step turns to *Checked again later · Safe*.
+
 **5:30 · Impact (20 s).** Top bar → **Impact**.
 > **"Same heatwave, two columns. A broadcast told 401 people and confirmed no one. Neralu called 387,
 > confirmed [read the number] safe, found [n] who needed a person and got someone to [n] of their doors.
@@ -121,7 +129,7 @@ person: safe".
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 225 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 229 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 
@@ -155,6 +163,10 @@ delete everything with a random code shown once (stored only as a hash). Recordi
 
 **"What if the volunteer doesn't go?"** Every tier has a timer: neighbour, then volunteer, then ASHA
 worker, then the ward officer. A case never just sits.
+
+**"What about people with dementia, who can't answer reliably?"** They are checked through their
+caregiver: Neralu calls the family contact about them (seen in the last hour, water, more confused or
+drowsy than usual, hot room, help), with its own published rules, C0 to C6. Nobody is skipped.
 
 **"Why does the call start with a Twilio message?"** It's a trial account; production would use an
 Indian number, ideally the ward office's own.

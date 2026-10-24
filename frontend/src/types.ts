@@ -175,6 +175,22 @@ export interface NeraluEvent {
   simulated: boolean
 }
 
+/** The private family view of one person (GET /api/family/status). Never an address, phone or code word. */
+export interface FamilyStatus {
+  name: string
+  first_name: string
+  headline: string
+  tone: 'ok' | 'watch' | 'alert' | 'neutral'
+  last_check: { at: string; text: string; outcome: Outcome | null; by_caregiver: boolean } | null
+  next_call: { at: string; kind: 'check' | 'retry' | 'follow-up' | 'after-care'; to_caregiver: boolean } | null
+  through_caregiver: boolean
+  heat: { heat_index_c: number; threshold_c: number; above_threshold: boolean; source: string }
+  today: { at: string; text: string; tone: 'ok' | 'watch' | 'alert' | 'neutral' }[]
+  as_of: string
+  pilot: boolean
+  registered: boolean
+}
+
 /** caregiver: a person with memory difficulty is checked through their caregiver (the family contact). */
 export type Callee = 'elder' | 'caregiver'
 
@@ -246,25 +262,12 @@ export interface CaseRecord {
   family_told: NeraluEvent[]
 }
 
-/** GET /api/family?t=…: one person's check today, for their family only. */
-export interface FamilyStatus {
-  name: string
-  as_of_scenario: string
-  headline: string
-  tone: 'ok' | 'watch' | 'alert' | 'neutral'
-  timeline: { time: string; text: string; tone: string }[]
-  heat_index_c: number
-  weather_simulated: boolean
-  threshold_c: number
-  demo_clock: boolean
-}
-
 export interface ElderDetail extends ElderListItem, RiskDetail {
   address: string | null
   code_word: string
   family_name: string | null
-  /** only in the registration response: the family's private status link */
-  family_link?: string
+  /** only in the registration response, shown once: the secret of the family's private status link */
+  family_token?: string
   /** only in the registration response, shown once: the code that deletes this registration */
   erasure_code?: string
   checkins: CheckInOut[]

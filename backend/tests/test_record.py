@@ -2,10 +2,36 @@
 printable case record (trigger, calls, rule, escalation, acceptance, closure, family told)."""
 from sqlmodel import Session, select
 
+from app.calls import handle_call_ended
 from app.db import current_run_id, engine
 from app.escalation import accept_case, resolve_case
-from app.models import Case, Elder, Volunteer
-from tests.test_family import FINE, HEATWAVE, REGISTER, end_call, kamala_checkin
+from app.models import Case, CheckIn, Elder, Volunteer
+
+HEATWAVE = {"temp_c": 38, "humidity_pct": 40, "night_min_c": 27}
+FINE = {"water": "yes", "symptoms": "no", "room_hot": "no", "fan_working": "yes",
+        "orientation": "correct", "self_report": "ok"}
+REGISTER = {
+    "name": "Gowri Bai", "age": 79, "phone": "+919845011111", "language": "kn", "lives_alone": True,
+    "roof_type": "sheet", "has_fan": True, "heat_sensitive_meds": False, "hearing_difficulty": False,
+    "cognitive_flag": False, "address": "#9, 3rd Cross, Ward 47", "family_name": "Ravi",
+    "family_phone": "+919845022222", "code_word": "mallige", "consent": True,
+}
+
+
+def end_call(checkin_id: int, answers: dict | None):
+    with Session(engine, expire_on_commit=False) as s:
+        c = s.get(CheckIn, checkin_id)
+        c.started, c.answers = True, answers
+        handle_call_ended(s, c.id, "completed" if answers else "no-answer")
+        s.commit()
+
+
+def kamala_checkin() -> int:
+    with Session(engine, expire_on_commit=False) as s:
+        k = s.exec(select(Elder).where(Elder.run_id == current_run_id(), Elder.name == "Kamala R.")).one()
+        return s.exec(select(CheckIn).where(CheckIn.elder_id == k.id, CheckIn.processed == False)  # noqa: E712
+                      .order_by(CheckIn.id)).first().id
+
 
 
 def kamala_red_case(client) -> int:

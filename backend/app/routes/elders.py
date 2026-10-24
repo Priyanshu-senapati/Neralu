@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from sqlmodel import Session, select
 
+from app import family
 from app.db import current_run_id, get_session
 from app.erase import erase_elder
 from app.events import log_event
-from app.family import find, link, new_token, status
 from app.privacy import code_matches, hash_code, new_erasure_code
 from app.models import CODE_WORDS, LANGUAGES, ROOF_TYPES, Elder, Event
 from app.risk import vulnerability_score
@@ -104,10 +104,6 @@ class DeleteIn(BaseModel):
     code: str = Field(max_length=20)  # the erasure code shown once to the family at registration
 
 
-class FamilyDeleteIn(DeleteIn):
-    t: str = Field(max_length=64)
-
-
 @router.delete("/elders/{elder_id}")
 def delete_elder(elder_id: int, body: DeleteIn, session: Session = Depends(get_session)) -> dict:
     """Right to erasure: removes a person registered through the app and everything about them."""
@@ -120,19 +116,10 @@ def delete_elder(elder_id: int, body: DeleteIn, session: Session = Depends(get_s
         raise HTTPException(409, "Only people registered through Neralu can be removed here")
     if not code_matches(e.erasure_hash, body.code):
         raise HTTPException(403, "The erasure code does not match")
-    return _erase(session, e)
+    return erase_registration(session, e)
 
 
-@router.delete("/family")
-def delete_from_family_link(body: FamilyDeleteIn, session: Session = Depends(get_session)) -> dict:
-    """The same right to erasure from the family's status page: their link plus the erasure code."""
-    e = find(session, body.t)
-    if e is None or not code_matches(e.erasure_hash, body.code):
-        raise HTTPException(403, "The link or the erasure code does not match")
-    return _erase(session, e)
-
-
-def _erase(session: Session, e: Elder) -> dict:
+def erase_registration(session: Session, e: Elder) -> dict:
     removed = erase_elder(session, e)
     log_event(session, "elder_deleted", "A registration was removed at the family's request · all their data deleted",
               actor="family", data=removed)
@@ -148,10 +135,11 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
     rng = random.Random(body.phone)
     data = body.model_dump(exclude={"consent"})
     erasure_code = new_erasure_code()
-    e = Elder(run_id=current_run_id(), is_simulated=False, family_token=new_token(),
+    e = Elder(run_id=current_run_id(), is_simulated=False,
               erasure_hash=hash_code(erasure_code),
               lat=round(CENTER_LAT + rng.uniform(-HALF_LAT, HALF_LAT) * 0.6, 6),
               lng=round(CENTER_LNG + rng.uniform(-HALF_LNG, HALF_LNG) * 0.6, 6), **data)
+    token = family.issue(e)  # shown once, on the confirmation screen; only its hash is kept
     session.add(e)
     session.flush()
     score, _ = vulnerability_score(e)
@@ -160,14 +148,6 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
               actor="family", elder_id=e.id, data={"risk_score": score})
     session.commit()
     session.refresh(e)
-    # The family link is shown once, here, to the person who registered; nowhere else returns it.
-    return {**elder_detail(session, e), "family_link": link(e.family_token), "erasure_code": erasure_code}
-
-
-@router.get("/family")
-def family(t: str, session: Session = Depends(get_session)) -> dict:
-    """A family's private view of one person's check today. Nothing about anyone else."""
-    e = find(session, t)
-    if e is None:
-        raise HTTPException(404, "This family link is not valid, or the registration was removed")
-    return status(session, e)
+    # The family link and the erasure code are shown once, here, to the person who registered; only
+    # their hashes are kept, so nothing can show them again.
+    return {**elder_detail(session, e), "family_token": token, "erasure_code": erasure_code}

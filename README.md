@@ -27,7 +27,9 @@ within a single ward, so "it's fine today" for the city can be wrong for one hou
    After a person has checked on them, Neralu **calls again an hour later** (E7) to make sure they are
    still okay; a worrying or missed after-care call sends a person again.
 6. **The family is told**, and the ward console shows who is fine, who needs follow-up and who is
-   waiting for a person, with the full record of every step.
+   waiting for a person, with the full record of every step. Families also get a **private status
+   link** at registration ("answered at 11:02 · all fine", "a volunteer is on the way"): read-only,
+   one person only, no address or phone numbers, and they can replace it or turn it off.
 
 ## SDGs
 
@@ -235,10 +237,12 @@ is kept from a spoken answer; addresses appear only to the volunteer who accepts
 
 ### Family status link
 
-Registering gives the family a private link that shows that one person's checks today in plain words:
-"Kamala answered at 11:02 · all fine", "Priya, a volunteer, is on the way to Kamala", "Kamala was checked
-in person at 11:29: safe". It updates by itself, shows nothing about anyone else (no address, no code
-word, no other residents) and stops working if the registration is removed. Demo: `/family?t=kamala-family`.
+Registering gives the family a private link, shown once, that shows that one person's checks today in
+plain words: "Kamala answered at 11:02 · all fine", "A volunteer is on the way", "Checked in person at
+11:29 · safe". It updates by itself and shows nothing about anyone else (no address, no code word, no
+volunteer's name). Only a hash of the link is stored, and its secret stays out of server logs. From the
+page the family can replace the link, turn it off, or delete the registration with their erasure code.
+Demo: console > Demo controls > "Kamala's family view".
 
 ### Impact: a heat alert against Neralu
 

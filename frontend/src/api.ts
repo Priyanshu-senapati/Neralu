@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, CaseRecord, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact, FamilyStatus } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, FamilyStatus, NeraluEvent, CaseRecord, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -38,6 +38,7 @@ export const api = {
   setLiveHeat: () => post<Summary>('/api/sim/heat/live', {}),
   startRound: (round_no: number) => post<{ created: number }>('/api/sim/round', { round_no }),
   reset: () => post<{ run_id: string }>('/api/sim/reset', {}),
+  demoFamilyLink: () => post<{ family_token: string }>('/api/sim/family-link', {}),
   whatIf: (
     q: { temp_c: number; humidity_pct: number; night_min_c: number; responders?: number } | { forecast: 'tomorrow'; responders?: number },
     signal?: AbortSignal,
@@ -52,14 +53,22 @@ export const api = {
   duty: (token: string, on_duty: boolean) => post<VolunteerMe>('/api/volunteer/duty', { volunteer_token: token, on_duty }),
   responders: () => request<Responder[]>('/api/responders'),
   impact: () => request<Impact>('/api/impact'),
-  family: (token: string) => request<FamilyStatus>(`/api/family?t=${encodeURIComponent(token)}`),
   resolve: (id: number, token: string, resolution: string, note?: string) =>
     post<CaseDetail>(`/api/cases/${id}/resolve`, { volunteer_token: token, resolution, note }),
-  register: (body: unknown) => post<ElderDetail>('/api/elders', body),
+  register: (body: unknown) => post<ElderDetail & { family_token: string }>('/api/elders', body),
   removeRegistration: (id: number, code: string) =>
     request<{ deleted: true }>(`/api/elders/${id}`, { method: 'DELETE', body: JSON.stringify({ code }) }),
-  removeFromFamilyLink: (t: string, code: string) =>
-    request<{ deleted: true }>('/api/family', { method: 'DELETE', body: JSON.stringify({ t, code }) }),
+  // The family link's secret goes in a header, never in a URL (it stays out of server and tunnel logs).
+  family: {
+    status: (token: string) => request<FamilyStatus>('/api/family/status', { headers: { 'X-Family-Token': token } }),
+    renew: (token: string) =>
+      request<{ family_token: string }>('/api/family/renew', { method: 'POST', headers: { 'X-Family-Token': token } }),
+    revoke: (token: string) =>
+      request<{ revoked: true }>('/api/family/revoke', { method: 'POST', headers: { 'X-Family-Token': token } }),
+    /** Right to erasure from the family page: the link plus the erasure code shown at registration. */
+    erase: (token: string, code: string) =>
+      request<{ deleted: true }>('/api/family/erase', { method: 'POST', headers: { 'X-Family-Token': token }, body: JSON.stringify({ code }) }),
+  },
   phone: {
     current: () => request<{ call: PhoneCall | null }>('/api/phone/current'),
     answer: (id: number) => post<PhoneScript>(`/api/phone/calls/${id}/answer`, {}),

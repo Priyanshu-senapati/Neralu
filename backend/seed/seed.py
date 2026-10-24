@@ -51,7 +51,6 @@ def kamala(run_id: str) -> Elder:
         language="kn", lives_alone=True, roof_type="sheet", has_fan=True,
         heat_sensitive_meds=True, hearing_difficulty=False, cognitive_flag=False,
         neighbour_phone=None, family_phone=FICTIONAL_PHONE, family_name="Suresh (son)",
-        family_token=get_settings().family_demo_token,
         code_word="mallige", address="#18, 4 Cross, 2 Main, Ward 47 (demo)",
         lat=12.9262, lng=77.5851, is_simulated=False,
     )

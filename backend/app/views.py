@@ -104,7 +104,7 @@ def data_source(e: Elder) -> dict[str, str]:
     """Where a person's risk factors came from, so the console never passes off made-up data as real."""
     if e.is_simulated:
         return {"kind": "simulated", "label": "Simulated resident: generated for the demo ward"}
-    if e.family_token and e.family_token == get_settings().family_demo_token:
+    if e.name == "Kamala R." and e.address.endswith("(demo)"):  # the seeded demo persona (seed.kamala)
         return {"kind": "demo", "label": "Demo persona: details written for the demo, real phone"}
     return {"kind": "family", "label": "Family registration form"}
 
