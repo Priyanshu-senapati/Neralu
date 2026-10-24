@@ -139,9 +139,9 @@ export default function SunOrbits({ households, className = '' }: { households: 
       canvas.height = Math.round(height * dpr)
       narrow = width < 768
       R = Math.min(width, height)
-      // The host is the hero's picture area (beside the copy, or under it on a phone): centre the sun in it.
-      cx = width * 0.5
-      cy = height * (narrow ? 0.5 : 0.52)
+      // Phone: the sun sits low and the copy above it. Wider: the sun to the right of the copy.
+      cx = width * (narrow ? 0.5 : 0.7)
+      cy = height * (narrow ? 0.78 : 0.54)
       const rMin = R_MIN_F * R
       for (let i = 0; i < n; i++) {
         const period = TAU / omegaAt(aF[i] * R, rMin)
@@ -337,7 +337,7 @@ export default function SunOrbits({ households, className = '' }: { households: 
       dots(true)
 
       // Kamala, the demo persona: a ring and her name, so the call further down has a face here.
-      ctx.font = '500 13px "Public Sans", system-ui, sans-serif'
+      ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'
       if (kamala >= 0) {
         const s = rad[kamala] * dotScale(dep[kamala]) + 4
         ctx.lineWidth = 1.25
@@ -359,11 +359,18 @@ export default function SunOrbits({ households, className = '' }: { households: 
       }
       // The front's own label, at its right-hand edge (a phone has no room; the counter shows it).
       if (!narrow) {
-        ctx.font = '500 13px "IBM Plex Mono", ui-monospace, monospace' // a figure: the brand's face for numbers
         ctx.fillStyle = rgba(c.heat, 0.9)
         const lx = Math.min(cx + front * Math.cos(0.45) + 8, width - 72)
         ctx.fillText(`${H.toFixed(1)} °C`, lx, cy + front * Math.sin(0.45) * COS_TILT + 4)
       }
+
+      // A veil over the copy's side, so the text stays readable over the system.
+      const veil = narrow ? ctx.createLinearGradient(0, 0, 0, height * 0.62) : ctx.createLinearGradient(0, 0, width * 0.62, 0)
+      veil.addColorStop(0, rgba(c.paper, 0.9))
+      veil.addColorStop(0.55, rgba(c.paper, 0.55))
+      veil.addColorStop(1, rgba(c.paper, 0))
+      ctx.fillStyle = veil
+      ctx.fillRect(0, 0, width, height)
 
       // The open card follows its dot.
       const sel = selectedRef.current
@@ -527,7 +534,7 @@ export default function SunOrbits({ households, className = '' }: { households: 
         onKeyDown={onStepKey}
         onBlur={() => stepping && stopStepping()}
         aria-pressed={stepping}
-        className="absolute bottom-4 right-4 z-10 rounded-full bg-surface px-4 py-2.5 text-[0.875rem] text-muted transition-colors duration-150 hover:text-ink focus-visible:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:bottom-6 sm:right-6"
+        className="absolute bottom-4 right-4 z-10 rounded-full border border-line-strong bg-surface px-3.5 py-2 text-xs text-muted hover:text-ink focus-visible:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:bottom-6 sm:right-6"
       >
         {stepping ? 'Use arrow keys · Esc to stop' : 'Step through households'}
       </button>
