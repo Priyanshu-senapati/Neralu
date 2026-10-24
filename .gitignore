@@ -15,3 +15,9 @@ dist/
 # Browser-phone recordings (demo fallback)
 backend/recordings/
 .venv-tts/
+
+# Local AI-tool and design-skill folders (never part of the project)
+.agents/
+.codex/
+.taste-skill/
+skills-lock.json
