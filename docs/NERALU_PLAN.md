@@ -387,8 +387,8 @@ Weather `level`: `severe_for_vulnerable` if HI ≥ 37, `caution` if HI ≥ 33, e
 
 | ID | Condition | Outcome | Reason (UI copy) |
 |---|---|---|---|
-| R0 | all four keypad answers are `none` | UNREACHED | No valid answer on the call |
 | R1 | `self_report == "help"` | RED | Asked for help |
+| R0 | all four keypad answers are `none` | UNREACHED | No valid answer on the call |
 | R2 | `symptoms == "yes"` and `orientation in ("wrong","uncertain")` | RED | Symptoms with possible confusion |
 | R3 | `symptoms == "yes"` and `water == "no"` | RED | Symptoms and no water |
 | R4 | `symptoms == "yes"` | AMBER | Reported dizziness, weakness or confusion |
@@ -398,7 +398,8 @@ Weather `level`: `severe_for_vulnerable` if HI ≥ 37, `caution` if HI ≥ 33, e
 | R8 | two or more of the four keypad answers are `none` | AMBER | Several questions unanswered |
 | R9 | otherwise | GREEN | All checks fine |
 
-`self_report == "ok"` never overrides anything.
+`self_report == "ok"` never overrides anything. R1 is checked before R0: a key pressed for help proves the
+person was reached (and the call has told them someone is being informed), so it is never a retry.
 
 **Escalation rules** (`escalation.py`, `calls.py`):
 - **E1** UNREACHED: schedule retry after `RETRY_GAP_MIN` until `MAX_ATTEMPTS`; after the last failed attempt → open RED case, reason "No answer ×N".
