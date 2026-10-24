@@ -106,6 +106,7 @@ Write-Host ""
 Write-Host "  Ward console      http://localhost:8000/ward"
 Write-Host "  Priya (volunteer) $phoneBase/volunteer?token=priya-demo"
 Write-Host "  Registration      $phoneBase/register"
+Write-Host "  Kamala's family   $phoneBase/family?t=kamala-family   (her son's live status page)"
 if ($Browser) { Write-Host "  Kamala's phone    $phoneBase/phone   (open on the phone the judge holds)" }
 Write-Host "  Story page        http://localhost:8000/"
 if ($useNgrok) { Write-Host "  (Phones opening the ngrok link may see ngrok's notice once: tap 'Visit Site'.)" -ForegroundColor DarkGray }

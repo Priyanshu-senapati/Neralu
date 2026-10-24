@@ -459,6 +459,8 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
           <p className="mt-1 text-sm text-ink/80">Every Neralu call starts with it. A call without it is not from Neralu.</p>
         </motion.div>
 
+        {done.family_link && <FamilyLink link={done.family_link} name={dn} />}
+
         <motion.h2 {...item(2)} className="display mt-10 text-[1.6rem] font-medium">What happens next</motion.h2>
         <ol className="mt-4">
           {[
@@ -484,6 +486,36 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
           </FlowButton>
         </div>
         <RemoveRegistration done={done} onRemoved={onAnother} />
+      </div>
+    </div>
+  )
+}
+
+/** The family's private status link, shown once, right after registering. */
+function FamilyLink({ link, name }: { link: string; name: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+  return (
+    <div className="mt-6 rounded-[10px] border border-line-strong bg-surface px-5 py-4">
+      <div className="text-sm font-semibold">Follow {name}'s checks live</div>
+      <p className="mt-1 text-sm text-ink/80">
+        This private link shows today's calls and visits for {name} only. Keep it in your family; anyone with it can see the status.
+      </p>
+      <p className="mt-2 break-all font-mono text-xs text-muted">{link}</p>
+      <div className="mt-3 flex gap-2">
+        <a href={link} target="_blank" rel="noreferrer" className="press inline-flex min-h-11 items-center rounded-full bg-brand px-4 font-semibold text-brand-ink">
+          Open
+        </a>
+        <button type="button" onClick={copy} className="press min-h-11 rounded-full border border-line-strong px-4">
+          {copied ? 'Copied' : 'Copy link'}
+        </button>
       </div>
     </div>
   )

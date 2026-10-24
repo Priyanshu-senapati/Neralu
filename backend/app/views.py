@@ -58,8 +58,11 @@ def resolution_out(c: Case | None) -> dict[str, Any] | None:
 
 def resolved_after_latest(resolved: Case | None, latest: CheckIn | None) -> bool:
     """A human resolution newer than the last classified call supersedes that call's outcome."""
-    return resolved is not None and (latest is None or latest.classified_real is None
-                                     or resolved.resolved_real >= latest.classified_real)
+    # resolved_real can be missing on an object loaded earlier in the same request while the scheduler
+    # resolved the case in between (the session keeps its first copy); treat it as not yet resolved.
+    if resolved is None or resolved.resolved_real is None:
+        return False
+    return latest is None or latest.classified_real is None or resolved.resolved_real >= latest.classified_real
 
 
 def due_count(elder: Elder) -> int:

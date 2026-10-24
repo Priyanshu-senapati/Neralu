@@ -130,11 +130,16 @@ the line still stands on its own.
   27 reached at the door · 96 % confirmed safe by 12:00. `GET /api/impact`, `backend/app/impact.py`,
   tests in `backend/tests/test_impact.py`.
 
-**R2-5 · Family status link** · impact, responsible tech · 1.5 h
+**R2-5 · Family status link** · impact, responsible tech · 1.5 h · **done**
 - Registration gives the family a private link: "**Amma answered at 11:02 · all fine**" / "a
   volunteer is on the way" / "checked in person at 11:40". Optional real SMS (already built, off by default).
 - *Done when:* the family link updates live through a call and an escalation; it shows no data about
   anyone else.
+- *Built:* registration returns a private random link (`/family?t=…`, shown once on the confirmation
+  screen with Open / Copy); Kamala's demo link is `/family?t=kamala-family` (printed by stage.ps1).
+  One plain status line plus today's timeline, polled every 5 s for this person only (never the
+  ward's live stream); no address, code word or phone numbers; the link dies with an erasure. With
+  FAMILY_SMS=twilio the family's SMS carries the link. Tests: `backend/tests/test_family.py`.
 
 **R2-6 · Responsible-tech hardening** · responsible tech · 1.5 h
 - Erasure with a random secret shown once to the family (replaces the guessable number).

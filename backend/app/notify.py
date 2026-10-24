@@ -51,7 +51,11 @@ class TwilioSmsNotifier:
     def notify(self, to: str, message: str) -> None:
         from app.telephony import _twilio  # twilio client is only needed when SMS is on
 
-        body = f"Neralu: {message} Neralu never asks for money, OTP or bank details."
+        status = ""
+        if self.recipient == "family" and self.elder.family_token:
+            from app.family import link
+            status = f" Live status: {link(self.elder.family_token)}"
+        body = f"Neralu: {message}{status} Neralu never asks for money, OTP or bank details."
         try:
             sid = _twilio().messages.create(to=to, from_=get_settings().twilio_from_number, body=body).sid
         except Exception as exc:  # network, trial-unverified number, bad credentials: fall back, never stall

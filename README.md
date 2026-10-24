@@ -216,6 +216,13 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Family status link
+
+Registering gives the family a private link that shows that one person's checks today in plain words:
+"Kamala answered at 11:02 · all fine", "Priya, a volunteer, is on the way to Kamala", "Kamala was checked
+in person at 11:29: safe". It updates by itself, shows nothing about anyone else (no address, no code
+word, no other residents) and stops working if the registration is removed. Demo: `/family?t=kamala-family`.
+
 ### Impact: a heat alert against Neralu
 
 On the console, **Impact** puts the same day in two columns. A broadcast alert tells everyone and

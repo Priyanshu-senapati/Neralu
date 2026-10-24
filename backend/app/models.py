@@ -44,6 +44,7 @@ class Elder(SQLModel, table=True):
     neighbour_phone: str | None = None
     family_phone: str | None = None
     family_name: str | None = None
+    family_token: str | None = Field(default=None, index=True)  # private family status link (random)
     code_word: str = "mallige"
     address: str = ""
     lat: float = 0.0

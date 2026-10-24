@@ -200,10 +200,25 @@ export interface RiskDetail {
   night_min_c: number
 }
 
+/** GET /api/family?t=…: one person's check today, for their family only. */
+export interface FamilyStatus {
+  name: string
+  as_of_scenario: string
+  headline: string
+  tone: 'ok' | 'watch' | 'alert' | 'neutral'
+  timeline: { time: string; text: string; tone: string }[]
+  heat_index_c: number
+  weather_simulated: boolean
+  threshold_c: number
+  demo_clock: boolean
+}
+
 export interface ElderDetail extends ElderListItem, RiskDetail {
   address: string | null
   code_word: string
   family_name: string | null
+  /** only in the registration response: the family's private status link */
+  family_link?: string
   checkins: CheckInOut[]
   events: NeraluEvent[]
 }

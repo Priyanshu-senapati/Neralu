@@ -60,6 +60,7 @@ Same story, with the live demo between 1:15 and 5:30.
 2. Console open at http://localhost:8000/ward, light mode if the projector is weak, other tabs closed.
 3. Demo controls → **Reset run** → Confirm. Weather stays "Normal day".
 4. Priya's phone: the ngrok volunteer link (printed by the script) → Visit Site → **Go on duty**.
+   Optional: a third screen on Kamala's family link (also printed).
 5. Kamala's phone: ringer on, not silent, not Do Not Disturb, charged.
 
 **1:15 · Normal day.** Point at the heat index (31.7 °C) and "1 of 401 residents over their own threshold".
@@ -93,6 +94,11 @@ Priya taps **Accept · I'll go**, shows the address, then **Safe, confirmed in p
 > if nobody can, it climbs to the ASHA worker and then the ward officer. A case is never left alone."**
 Then Priya taps **I can go after all** (the case stays at the bottom of her list) and the demo carries on.
 
+*Family view (optional, 15 s):* a third phone, or a laptop tab, on the "Kamala's family" link that
+stage.ps1 prints. It moved by itself from "asking a volunteer" to "Priya is on the way" to "checked in
+person: safe".
+> **"Her son doesn't get a scary forward. He gets this: what happened, who is going, and when it's done."**
+
 **4:45 · The loop closes.** Console: the spotlight shows every step ticked. Open the profile:
 "What happened to Kamala today", the plain-English record.
 > **"From heat alert to a person at her door, and her son told, with every step on record."**
@@ -115,7 +121,7 @@ Then Priya taps **I can go after all** (the case stays at the bottom of her list
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 207 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 214 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 

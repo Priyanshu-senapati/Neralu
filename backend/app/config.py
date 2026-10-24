@@ -53,6 +53,7 @@ class Settings(BaseSettings):
 
     kamala_phone: str = ""
     volunteer_demo_token: str = "priya-demo"
+    family_demo_token: str = "kamala-family"  # Kamala's family status link in the demo
 
 
 @lru_cache
