@@ -12,7 +12,6 @@ certifi==2026.7.22
 charset-normalizer==3.5.2
 click==8.5.0
 colorama==0.4.6
-en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
 fastapi==0.143.0
 frozenlist==1.8.0
 h11==0.16.0

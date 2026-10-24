@@ -11,7 +11,7 @@ Everything a teammate needs to install and run Neralu, start to finish. Commands
 |---|---|---|---|
 | **Git** | any recent | clone and push the code | https://git-scm.com |
 | **Python** | **3.11, 3.12 or 3.13** (3.11 is what we test on) | backend | https://www.python.org/downloads/ · tick "Add python.exe to PATH" |
-| **Node.js** | **20 or newer** (we use 24) · comes with npm | website | https://nodejs.org (LTS) |
+| **Node.js** | **20.19+ or 22.12+** (we use 24) · comes with npm | website | https://nodejs.org (LTS) |
 | **ngrok** | 3.x, kept up to date | lets Twilio reach your laptop for real calls | `winget install ngrok.ngrok` · or https://ngrok.com/download |
 | uv *(optional)* | any | faster Python installs | `winget install astral-sh.uv` |
 
@@ -20,7 +20,7 @@ Check them:
 ```
 git --version
 python --version      # must say 3.11, 3.12 or 3.13
-node --version        # v20 or newer
+node --version        # v20.19+ or v22.12+ (Vite 8 needs this)
 npm --version
 ```
 
@@ -124,6 +124,12 @@ powershell -ExecutionPolicy Bypass -File scripts\demo.ps1
 
 macOS/Linux: `scripts/demo.sh`. It builds the website and serves everything on
 **http://localhost:8000**, and prints the address for phones on the same Wi-Fi.
+
+On a fresh laptop the script also does steps 3 and 4 for you: it creates `backend\.venv`,
+installs the exact versions from `requirements.txt` and `package-lock.json`, and creates
+`backend\.env` from the example. After that it reinstalls only when those files change, so later
+runs work without internet. It stops straight away, with a message, if Node is too old or
+port 8000 is already in use.
 
 ### Option B · two servers (development, live reload of the website)
 
