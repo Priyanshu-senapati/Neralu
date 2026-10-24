@@ -33,9 +33,18 @@ const ANSWER: Record<string, Record<string, string>> = {
   orientation: { correct: 'knew what day it is', wrong: 'named the wrong day', uncertain: 'gave an unclear day', none: 'did not say what day it is' },
   self_report: { ok: 'said they are okay', help: 'pressed for help', none: 'did not answer the last question' },
 }
+// A caregiver answering about a person with memory difficulty: the sentence is still about the person.
+const CAREGIVER_ANSWER: Record<string, Record<string, string>> = {
+  seen: { yes: 'was seen by their caregiver in the last hour', no: 'had not been seen by their caregiver in the last hour', none: 'was not confirmed seen by their caregiver in the last hour' },
+  water: ANSWER.water,
+  unwell: { yes: 'seems more confused, drowsy or unwell than usual, says their caregiver', no: 'seems their usual self, says their caregiver' },
+  room_no_cooling: { yes: 'is in a very hot room with no fan or cooler working', no: 'is not in a hot room without cooling' },
+  self_report: { ok: 'is okay, says their caregiver', help: 'needs help now, says their caregiver', none: 'had no answer from their caregiver on the last question' },
+}
 const CONCERN: Record<string, string[]> = {
   water: ['no'], symptoms: ['yes'], room_hot: ['yes'], fan_working: ['no'],
   orientation: ['wrong', 'uncertain'], self_report: ['help'],
+  seen: ['no', 'none'], unwell: ['yes'], room_no_cooling: ['yes'],
 }
 const OUTCOME_TONE: Record<string, LoopStep['tone']> = { GREEN: 'ok', AMBER: 'watch', RED: 'alert', UNREACHED: 'alert' }
 const OUTCOME_WORD: Record<string, string> = {
@@ -45,7 +54,7 @@ const OUTCOME_WORD: Record<string, string> = {
 /** What a call found, as plain phrases, worrying answers first. */
 export function callFindings(answers: Record<string, string>): { text: string; concern: boolean }[] {
   const out: { text: string; concern: boolean }[] = []
-  for (const [step, phrases] of Object.entries(ANSWER)) {
+  for (const [step, phrases] of Object.entries('seen' in answers ? CAREGIVER_ANSWER : ANSWER)) {
     const v = answers[step]
     if (v && phrases[v]) out.push({ text: phrases[v], concern: CONCERN[step]?.includes(v) ?? false })
   }
@@ -169,21 +178,25 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
   const lines: StoryLine[] = []
   const add = (e: NeraluEvent, text: string, tone?: StoryLine['tone']) =>
     lines.push({ id: e.id, at: e.ts_scenario, text, tone, simulated: e.simulated })
+  let caregiver = false // the call in progress is to their caregiver (memory difficulty)
   for (const e of episode(all)) {
     const d = e.data
     switch (e.kind) {
-      case 'call_placed':
+      case 'call_placed': {
+        if (!String(e.message).startsWith('Call failed')) caregiver = String(e.message).includes('caregiver')
+        const callee = caregiver ? `${firstName}'s caregiver` : firstName
         add(e, String(e.message).startsWith('Recall')
-          ? `Neralu made a follow-up call to ${firstName}.`
+          ? `Neralu made a follow-up call to ${callee}.`
           : String(e.message).startsWith('Call failed')
-            ? `The call to ${firstName} could not be placed.`
-            : `Neralu called ${firstName}${Number(d.attempt) > 1 ? ` again (attempt ${d.attempt})` : ''}.`)
+            ? `The call to ${callee} could not be placed.`
+            : `Neralu called ${callee}${Number(d.attempt) > 1 ? ` again (attempt ${d.attempt})` : ''}.`)
         break
+      }
       case 'call_answered':
-        add(e, `${firstName} picked up and heard the family code word.`)
+        add(e, `${caregiver ? `${firstName}'s caregiver` : firstName} picked up and heard the family code word.`)
         break
       case 'answer_recorded': {
-        const text = ANSWER[String(d.step)]?.[String(d.value)]
+        const text = (caregiver ? CAREGIVER_ANSWER : ANSWER)[String(d.step)]?.[String(d.value)]
         if (text) add(e, `${firstName} ${text}.`, CONCERN[String(d.step)]?.includes(String(d.value)) ? 'alert' : undefined)
         break
       }

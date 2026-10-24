@@ -11,7 +11,7 @@ from app.escalation import open_case
 from app.events import log_event
 from app.models import CheckIn, Elder
 from app.notify import notify_family
-from app.rules import Outcome, Signals, classify
+from app.rules import CaregiverSignals, Outcome, Signals, classify, classify_caregiver
 from app.state import state
 from app.telephony import cancel_call, place_call
 from app.views import due_count
@@ -29,6 +29,18 @@ def _hhmm(real_ts) -> str:
     return state.clock.to_scenario(real_ts).strftime("%H:%M")
 
 
+def callee_for(elder: Elder) -> str:
+    """People with memory difficulty are checked through their caregiver (the family contact):
+    their own answer to "what day is it?" cannot tell heat confusion from their usual memory
+    difficulty. With no caregiver on file they are called themselves, never skipped."""
+    return "caregiver" if elder.cognitive_flag and elder.family_phone else "elder"
+
+
+def callee_phone(elder: Elder, checkin: CheckIn) -> str | None:
+    phone = elder.family_phone if checkin.callee == "caregiver" else elder.phone
+    return phone.replace(" ", "") if phone else None
+
+
 def start_round(session: Session, round_no: int) -> int:
     """Create check-ins for every elder due a call this round. Returns how many were created."""
     state.round_no = round_no
@@ -40,17 +52,16 @@ def start_round(session: Session, round_no: int) -> int:
     for e in elders:
         if due_count(e) < round_no or e.id in already:
             continue
-        if e.cognitive_flag:
-            caregiver += 1  # caregiver route: counted as due, not called directly in the MVP
+        callee = callee_for(e)
+        if not e.is_simulated and not (e.family_phone if callee == "caregiver" else e.phone):
             continue
-        if not e.is_simulated and not e.phone:
-            continue
-        session.add(CheckIn(run_id=current_run_id(), elder_id=e.id, round_no=round_no,
+        session.add(CheckIn(run_id=current_run_id(), elder_id=e.id, round_no=round_no, callee=callee,
                             scheduled_for_real=now, is_simulated=e.is_simulated))
         created += 1
+        caregiver += callee == "caregiver"
     log_event(session, "round_started",
               f"Round {round_no} started · {created} calls" +
-              (f" · {caregiver} on caregiver route" if caregiver else ""),
+              (f" · {caregiver} to caregivers" if caregiver else ""),
               actor="officer", data={"round_no": round_no, "created": created,
                                      "caregiver_route": caregiver})
     session.commit()
@@ -70,7 +81,7 @@ def dispatch_due_calls(session: Session) -> None:
         c.started = True
         session.commit()
         try:
-            c.call_sid = place_call(elder.phone, c.id)
+            c.call_sid = place_call(callee_phone(elder, c), c.id)
         except Exception as exc:
             log.warning("Placing call failed: %r", exc)
             log_event(session, "call_placed", "Call failed · number unreachable",
@@ -82,6 +93,8 @@ def dispatch_due_calls(session: Session) -> None:
         c.call_status = "queued"
         c.placed_real = state.clock.real_now()
         what = "Recall" if c.is_recall else "Calling"
+        if c.callee == "caregiver":
+            what += " caregiver"
         log_event(session, "call_placed", f"{what} · attempt {c.attempt}", actor="system",
                   elder_id=elder.id, checkin_id=c.id,
                   data={"attempt": c.attempt, "round_no": c.round_no, "call_sid": c.call_sid})
@@ -133,7 +146,7 @@ def schedule_retry(session: Session, checkin: CheckIn) -> CheckIn | None:
     if checkin.attempt >= s.max_attempts:
         return None
     retry = CheckIn(run_id=checkin.run_id, elder_id=checkin.elder_id, round_no=checkin.round_no,
-                    attempt=checkin.attempt + 1, is_recall=checkin.is_recall,
+                    attempt=checkin.attempt + 1, is_recall=checkin.is_recall, callee=checkin.callee,
                     is_simulated=checkin.is_simulated,
                     scheduled_for_real=state.clock.real_now() + state.clock.real_delta(s.retry_gap_min))
     session.add(retry)
@@ -148,7 +161,7 @@ def schedule_retry(session: Session, checkin: CheckIn) -> CheckIn | None:
 def schedule_recall(session: Session, checkin: CheckIn) -> CheckIn:
     s = get_settings()
     recall = CheckIn(run_id=checkin.run_id, elder_id=checkin.elder_id, round_no=checkin.round_no,
-                     attempt=1, is_recall=True, is_simulated=checkin.is_simulated,
+                     attempt=1, is_recall=True, callee=checkin.callee, is_simulated=checkin.is_simulated,
                      scheduled_for_real=state.clock.real_now() + state.clock.real_delta(s.amber_recall_min))
     session.add(recall)
     session.flush()
@@ -157,6 +170,14 @@ def schedule_recall(session: Session, checkin: CheckIn) -> CheckIn:
               actor="system", elder_id=recall.elder_id, checkin_id=recall.id,
               simulated=recall.is_simulated)
     return recall
+
+
+def caregiver_signals_for(checkin: CheckIn, call_status: str) -> CaregiverSignals:
+    a = (checkin.answers or {}) if call_status == "completed" else {}
+    return CaregiverSignals(seen=a.get("seen", "none"), water=a.get("water", "none"),
+                            unwell=a.get("unwell", "none"),
+                            room_no_cooling=a.get("room_no_cooling", "none"),
+                            self_report=a.get("self_report", "none"))
 
 
 def signals_for(checkin: CheckIn, call_status: str) -> Signals:
@@ -180,10 +201,14 @@ def handle_call_ended(session: Session, checkin_id: int, call_status: str) -> No
     c.processed = True
     c.call_status = call_status
     c.classified_real = state.clock.real_now()
-    signals = signals_for(c, call_status)
-    if signals.orientation != (c.answers or {}).get("orientation") and call_status == "completed":
-        c.answers = {**(c.answers or {}), "orientation": signals.orientation}
-    verdict = classify(signals)
+    if c.callee == "caregiver":
+        signals = caregiver_signals_for(c, call_status)
+        verdict = classify_caregiver(signals)
+    else:
+        signals = signals_for(c, call_status)
+        if signals.orientation != (c.answers or {}).get("orientation") and call_status == "completed":
+            c.answers = {**(c.answers or {}), "orientation": signals.orientation}
+        verdict = classify(signals)
     if call_status != "completed":  # nobody picked up: say what happened, not "no valid answer"
         verdict = replace(verdict, reason=MISSED_REASON.get(call_status, "Not answered"))
     c.outcome, c.rule_id, c.reason = verdict.outcome.value, verdict.rule_id, verdict.reason
@@ -197,7 +222,7 @@ def handle_call_ended(session: Session, checkin_id: int, call_status: str) -> No
               actor="rules", elder_id=elder.id, checkin_id=c.id,
               data={"outcome": verdict.outcome.value, "rule_id": verdict.rule_id,
                     "reason": verdict.reason, "needs_support": verdict.needs_support,
-                    "signals": signals.__dict__}, simulated=sim)
+                    "signals": signals.__dict__, "callee": c.callee}, simulated=sim)
     _apply_escalation(session, c, elder, verdict.outcome, verdict.rule_id, verdict.reason,
                       call_status)
     if verdict.needs_support:
@@ -222,6 +247,7 @@ def _apply_escalation(session, c: CheckIn, elder: Elder, outcome: Outcome, rule_
         if c.is_recall:
             open_case(session, elder.id, "red", "E3", "Second concerning check-in")
         else:
-            notify_family(session, elder, f"Today's check on {elder.name} needs follow-up "
-                          f"({reason}). Neralu will call again soon.")
+            if c.callee != "caregiver":  # a caregiver was on this call and has just heard why
+                notify_family(session, elder, f"Today's check on {elder.name} needs follow-up "
+                              f"({reason}). Neralu will call again soon.")
             schedule_recall(session, c)

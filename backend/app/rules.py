@@ -69,6 +69,39 @@ def classify(signals: Signals) -> Verdict:
     return Verdict(outcome, rule_id, reason, needs_support)
 
 
+@dataclass(frozen=True)
+class CaregiverSignals:
+    """A caregiver's answers about a person with memory difficulty, who is not asked directly:
+    the day question cannot tell heat confusion from their usual memory difficulty."""
+    seen: Answer             # with them now, or saw them in the last hour
+    water: Answer            # they had water in the last hour
+    unwell: Answer           # more confused, drowsy or unwell than usual
+    room_no_cooling: Answer  # room very hot with no fan or cooler working
+    self_report: SelfReport  # "they are okay" / "they need help now"
+
+
+def _caregiver_rule(s: CaregiverSignals) -> tuple[Outcome, str, str]:
+    keypad = [s.seen, s.water, s.unwell, s.room_no_cooling]
+    if keypad.count("none") == 4:
+        return Outcome.UNREACHED, "C0", "No valid answer from the caregiver"
+    if s.self_report == "help":
+        return Outcome.RED, "C1", "Caregiver asked for help"
+    if s.unwell == "yes":
+        return Outcome.RED, "C2", "More confused, drowsy or unwell than usual"
+    if s.seen != "yes":
+        return Outcome.AMBER, "C3", "Caregiver has not seen them in the last hour"
+    if s.water == "no":
+        return Outcome.AMBER, "C4", "No water in the last hour"
+    if s.unwell == "none" or keypad.count("none") >= 2:
+        return Outcome.AMBER, "C5", "Caregiver's check incomplete"
+    return Outcome.GREEN, "C6", "Caregiver confirms they are fine"
+
+
+def classify_caregiver(signals: CaregiverSignals) -> Verdict:
+    outcome, rule_id, reason = _caregiver_rule(signals)
+    return Verdict(outcome, rule_id, reason, needs_support=signals.room_no_cooling == "yes")
+
+
 # Plain-English explanation of every rule a judge, officer or family member may see (plan §7.2).
 # The single source for this wording: the dashboard reads it from GET /api/rules.
 EXPLANATIONS: dict[str, str] = {
@@ -93,6 +126,21 @@ EXPLANATIONS: dict[str, str] = {
           "in person.",
     "S1": "Their room is very hot and their fan or cooler is not working. A volunteer can bring water, "
           "ORS or a fan.",
+    # Caregiver check: people with memory difficulty are checked through their caregiver.
+    "C0": "The caregiver gave no keypad answers, so no one has confirmed this person is safe. This counts "
+          "as not reached, never as fine.",
+    "C1": "The caregiver pressed the key for \"they need help now\". This is escalated straight away.",
+    "C2": "The caregiver says they seem more confused, drowsy or unwell than usual. In someone with memory "
+          "difficulty, a change like this in the heat can be an early sign of heat illness, so a person "
+          "checks in person.",
+    "C3": "The caregiver has not seen them in the last hour, so the other answers cannot be relied on. The "
+          "caregiver is asked to go and see them now, and Neralu calls back.",
+    "C4": "They have not had water in the last hour. The caregiver is asked to give water now, and Neralu "
+          "calls back later.",
+    "C5": "The caregiver did not say whether they seem unwell, or two or more questions went unanswered, so "
+          "the check is incomplete.",
+    "C6": "The caregiver is with them or saw them in the last hour, and says they had water and seem their "
+          "usual selves.",
 }
 
 # Shown wherever an outcome is explained: the reason rules, not a model, decide.

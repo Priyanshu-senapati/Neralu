@@ -79,7 +79,7 @@ def latest_out(c: CheckIn | None) -> dict[str, Any]:
 def current_call_out(c: CheckIn | None) -> dict[str, Any] | None:
     if c is None:
         return None
-    return {"checkin_id": c.id, "attempt": c.attempt, "is_recall": c.is_recall,
+    return {"checkin_id": c.id, "attempt": c.attempt, "is_recall": c.is_recall, "callee": c.callee,
             "started": c.started, "call_status": c.call_status, "round_no": c.round_no,
             "scheduled_scenario": _scenario(c.scheduled_for_real)}
 
@@ -101,7 +101,7 @@ def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
         "lives_alone": e.lives_alone, "roof_type": e.roof_type, "risk_score": score,
         "risk_factors": [label for label, _ in breakdown],
         "threshold_c": personal_threshold_c(score, state.weather.night_min_c),
-        "caregiver_route": e.cognitive_flag, "due_calls": due_count(e),
+        "caregiver_route": e.cognitive_flag and bool(e.family_phone), "due_calls": due_count(e),
         "has_neighbour": e.neighbour_phone is not None,
         "lat": e.lat, "lng": e.lng, "is_simulated": e.is_simulated,
         "latest": latest_out(latest), "current_call": current_call_out(pending),
@@ -143,6 +143,7 @@ def risk_detail(e: Elder) -> dict[str, Any]:
 
 def checkin_out(c: CheckIn) -> dict[str, Any]:
     return {"id": c.id, "round_no": c.round_no, "attempt": c.attempt, "is_recall": c.is_recall,
+            "callee": c.callee,
             "call_status": c.call_status, "answers": c.answers or {}, "transcript": c.transcript,
             "recording_url": f"/api/recordings/{c.id}" if c.recording_url else None,
             "outcome": c.outcome, "rule_id": c.rule_id, "reason": c.reason,

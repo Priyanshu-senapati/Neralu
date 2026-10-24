@@ -27,6 +27,16 @@ SCENARIOS = {  # name: (weight %, answers or None for no answer)
     "unreached_then_answers": (4, None),
     "red": (1, {**FINE, "symptoms": "yes", "water": "no"}),
 }
+# A caregiver answering about a person with memory difficulty (simulation weights, not data)
+CG_FINE = {"seen": "yes", "water": "yes", "unwell": "no", "room_no_cooling": "no", "self_report": "ok"}
+CG_SCENARIOS = {
+    "green": (84, CG_FINE),
+    "not_seen": (5, {**CG_FINE, "seen": "no", "water": "none", "unwell": "none"}),
+    "no_water": (4, {**CG_FINE, "water": "no"}),
+    "support": (2, {**CG_FINE, "room_no_cooling": "yes"}),
+    "unreached_then_answers": (4, None),
+    "unwell": (1, {**CG_FINE, "unwell": "yes"}),
+}
 
 
 def _rng(c: CheckIn, stream: str = "answers") -> random.Random:
@@ -37,13 +47,14 @@ def _rng(c: CheckIn, stream: str = "answers") -> random.Random:
 
 def _answers_for(c: CheckIn) -> dict | None:
     rng = _rng(c)
+    fine, scenarios = (CG_FINE, CG_SCENARIOS) if c.callee == "caregiver" else (FINE, SCENARIOS)
     if c.is_recall:
-        return FINE if rng.random() < 0.8 else {**FINE, "water": "no"}
+        return fine if rng.random() < 0.8 else {**fine, "water": "no"}
     if c.attempt > 1:
-        return FINE  # "unreached, then answers" on the retry
-    names = list(SCENARIOS)
-    name = rng.choices(names, weights=[SCENARIOS[n][0] for n in names])[0]
-    return SCENARIOS[name][1]
+        return fine  # "unreached, then answers" on the retry
+    names = list(scenarios)
+    name = rng.choices(names, weights=[scenarios[n][0] for n in names])[0]
+    return scenarios[name][1]
 
 
 def _start_due(session: Session, now) -> None:
