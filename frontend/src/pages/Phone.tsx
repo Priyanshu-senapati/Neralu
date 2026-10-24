@@ -36,6 +36,7 @@ export default function Phone() {
   const ringTimer = useRef<number | undefined>(undefined)
   const finishClip = useRef<(() => void) | null>(null) // resolves the clip now playing
   const speech = useRef<PhoneSpeech>({}) // prompts with no recorded clip yet: spoken by the browser
+  const utterance = useRef<SpeechSynthesisUtterance | null>(null) // kept referenced: see play()
 
   const stopRing = () => {
     window.clearInterval(ringTimer.current)
@@ -123,7 +124,10 @@ export default function Phone() {
   const play = (src: string) =>
     new Promise<void>((resolve, reject) => {
       if (!live.current) return reject(new HungUp())
+      let finished = false
       const done = () => {
+        if (finished) return
+        finished = true
         finishClip.current = null
         resolve()
       }
@@ -133,8 +137,17 @@ export default function Phone() {
         const u = new SpeechSynthesisUtterance(say.text)
         u.lang = say.lang
         u.rate = 0.9
-        u.onend = done
-        u.onerror = done
+        // Chrome can drop onend (for one, when the utterance is garbage-collected mid-speech), which
+        // would stall the call: keep it referenced, and move on after a generous time for the text.
+        utterance.current = u
+        const guard = window.setTimeout(() => {
+          window.speechSynthesis.cancel()
+          done()
+        }, 3000 + say.text.length * 90)
+        u.onend = u.onerror = () => {
+          window.clearTimeout(guard)
+          done()
+        }
         window.speechSynthesis.speak(u)
         return
       }
