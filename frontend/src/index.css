@@ -297,3 +297,27 @@ section[id] {
     background: #fff !important;
   }
 }
+
+/* Story page only: the keypad phone's materials, mixed from the theme tokens. */
+:root {
+  --phone-body: color-mix(in oklab, var(--brand-tint), var(--ink) 7%);
+  --phone-edge: color-mix(in oklab, var(--brand-tint), #000 55%);
+  --phone-shine: color-mix(in oklab, var(--ink) 22%, transparent);
+  --phone-line: color-mix(in oklab, var(--ink) 13%, transparent);
+  --phone-screen: color-mix(in oklab, var(--brand-tint), #000 45%);
+  --phone-text: var(--brand);
+  --phone-key: color-mix(in oklab, var(--brand-tint), var(--ink) 12%);
+  --phone-key-shadow: color-mix(in oklab, var(--brand-tint), #000 60%);
+  --phone-key-text: var(--ink);
+}
+:root[data-theme='light'] {
+  --phone-body: var(--brand);
+  --phone-edge: color-mix(in oklab, var(--brand), #000 40%);
+  --phone-shine: color-mix(in oklab, #fff 25%, transparent);
+  --phone-line: color-mix(in oklab, #fff 14%, transparent);
+  --phone-screen: var(--paper);
+  --phone-text: var(--ink);
+  --phone-key: color-mix(in oklab, var(--brand), #fff 14%);
+  --phone-key-shadow: color-mix(in oklab, var(--brand), #000 35%);
+  --phone-key-text: var(--brand-ink);
+}

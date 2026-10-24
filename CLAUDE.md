@@ -8,6 +8,7 @@ Rules for working in this repo:
 - The system never calls 108/emergency services. Only a human records "called 108".
 - No placeholder UI. If a button exists, it works. If it doesn't work yet, it doesn't exist.
 - No emoji, no gradients, no glassmorphism, no "AI-powered" marketing copy. Follow §8 design rules.
+  Exception (team lead): the public story page (`/`) may use glow, radial gradients and an animated background; every other page keeps the plain civic style.
 - Everything simulated (weather, demo clock, the ~400 seeded residents' responses, family notifications) is labelled as simulated in data and UI.
 - Keep files small and single-purpose. Backend: FastAPI + SQLModel + SQLite. Frontend: Vite + React + TypeScript + Tailwind.
 

@@ -100,6 +100,11 @@ Exact versions: `backend/requirements.txt`, `frontend/package-lock.json`.
 FlowButton, the shader animation behind the story page's hero and the "wireframe dotted globe" (rebuilt
 in three.js); a Spline demo kept for reference only, not used.
 
+**Story page motion** (written for Neralu, no code copied): the orbit hero takes its idea of
+helical wakes behind a drifting sun from Yura Dubinin's *Orbital Hero Section* (MIT), and the
+scroll-played call its pacing from Hossain Jahed's *Cinematic Landing Hero*, both on 21st.dev. The
+heat haze uses Stefan Gustavson's public-domain simplex noise.
+
 **Fonts** (Google Fonts): Public Sans, IBM Plex Mono, Newsreader, Noto Sans Kannada.
 
 ---
