@@ -3,6 +3,8 @@ import { ArrowUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Wordmark } from '../components/Brand'
 import { FlowButton } from '@/components/ui/flow-button'
+import { AnimatedThemeToggle } from '@/components/ui/animated-theme-toggle'
+import { Spotlight } from '@/components/ui/spotlight'
 import { EASE, gsap, reducedMotion, ScrollTrigger } from '../motion'
 import { api } from '../api'
 import { Reveal, RevealLines } from '../components/Reveal'
@@ -43,7 +45,7 @@ export default function Story() {
   }, [])
   return (
     // isolate: the haze canvas paints above the page colour and below everything else.
-    <div id="top" ref={page} className="story relative isolate min-h-dvh bg-paper text-ink">
+    <div id="top" ref={page} className="skin relative isolate min-h-dvh bg-paper text-ink">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink">
         Skip to content
       </a>
@@ -137,6 +139,8 @@ function Hero({ households, example }: { households: Household[]; example: boole
           <Suspense fallback={null}>
             <HeroSpace households={households} className="h-full w-full" />
           </Suspense>
+          {/* The light that follows the cursor across the hero. */}
+          <Spotlight className="z-[1]" color="rgba(255, 200, 140, 0.14)" size={520} />
           {/* A shade over the copy's side, so the text reads over space and the sun. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,color-mix(in_srgb,var(--paper)_88%,transparent)_0%,color-mix(in_srgb,var(--paper)_55%,transparent)_38%,transparent_62%)] max-lg:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--paper)_85%,transparent)_0%,color-mix(in_srgb,var(--paper)_40%,transparent)_45%,transparent_70%)]" />
         </div>
@@ -147,6 +151,7 @@ function Hero({ households, example }: { households: Household[]; example: boole
             <a href="#rules" className="hover:text-ink hover:underline">The rules</a>
             <Link to="/responsible" className="hover:text-ink hover:underline">Responsible by design</Link>
             <Link to="/register" className="hover:text-ink hover:underline">Register someone</Link>
+            <AnimatedThemeToggle />
           </nav>
         </header>
 

@@ -1,6 +1,8 @@
 import { Check, Pencil, Volume2 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { lazy, Suspense, useRef, useState } from 'react'
+import { AnimatedThemeToggle } from '@/components/ui/animated-theme-toggle'
+import { Spotlight } from '@/components/ui/spotlight'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import { Wordmark } from '../components/Brand'
@@ -284,14 +286,18 @@ export default function Register() {
 
 function Shell({ side, children }: { side: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-paper text-ink lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+    <div className="skin relative min-h-dvh bg-paper text-ink lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <Spotlight color="rgba(94, 255, 200, 0.07)" size={560} />
       {side}
       <main className="flex min-h-dvh flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-10 lg:px-16 lg:py-14">
         <div className="mb-8 flex items-center justify-between lg:hidden">
           <Link to="/" aria-label="About Neralu">
             <Wordmark size="sm" />
           </Link>
-          <span className="text-sm text-muted">Ward 47 · demo</span>
+          <span className="flex items-center gap-3 text-sm text-muted">
+            Ward 47 · demo
+            <AnimatedThemeToggle />
+          </span>
         </div>
         <div className="mx-auto flex w-full max-w-[34rem] flex-1 flex-col">{children}</div>
       </main>
