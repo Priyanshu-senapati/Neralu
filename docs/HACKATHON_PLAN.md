@@ -36,7 +36,7 @@ Rules for the next 24 hours:
 ### Known weaknesses (what judges can poke at)
 | Weakness | Hurts |
 |---|---|
-| Runs only on one laptop through ngrok; servers die when memory is low | execution, feasibility |
+| Runs only on one laptop through ngrok (B1 makes it one command + live checks; a cloud host would remove it) | feasibility |
 | Everything is a demo run: ×60 clock, resets, no "real day" mode | feasibility |
 | No impact pathway on screen (what changes, for whom, how measured) | SDG impact |
 | Families hear nothing back after registering | impact, responsible tech |
@@ -55,7 +55,7 @@ the line still stands on its own.
 
 ### Before Round 1 (now → 3:30 PM): no new features, make what exists bulletproof
 
-**B1 · Stage-proof setup** · execution · 45 min
+**B1 · Stage-proof setup** · execution · 45 min · **DONE** (`scripts/stage.ps1`, console status strip)
 - One script on the demo laptop: builds the site, starts the server **and ngrok**, prints every link
   (console, Priya's page via the ngrok address so it works on any network), runs preflight.
 - A **System status** strip on the console: Twilio, ngrok, Sarvam, audio, scheduler: green or red.
@@ -83,13 +83,23 @@ the line still stands on its own.
 - *Done when:* with pilot mode on, the scheduler places the day's calls without anyone pressing a button.
 - *Risk:* low; it reuses the same rounds and rules. Demo mode stays the default for the stage.
 
-**R2-2 · Tomorrow's outlook and staffing** · originality, feasibility · 1.5 h
-- From tomorrow's forecast: "**214 residents cross their own threshold tomorrow; 31 are high risk
-  with no neighbour. Put at least 6 volunteers on duty between 11:00 and 16:00.**"
-- *Why it matters:* turns a heat alert into a ward work plan. No broadcast system does this.
-- *Done when:* the console shows tomorrow's numbers from the real forecast, with the simulated-residents label.
+**R2-2 · What-if simulator with volunteer workload (the wow moment)** · originality, feasibility · 2.5 h
+- On the console: drag temperature, humidity and night minimum (or load tomorrow's real forecast) and
+  watch, using the same risk rules as live calls: residents over their threshold, calls in each round,
+  expected follow-ups and escalations, **volunteer workload and shortfall**
+  ("At 41 °C: 214 calls, ~9 cases needing a person, 6 volunteers on duty → 3 short between 11:00 and 16:00").
+- Baseline vs scenario side by side. Every simulated input and output is labelled simulated.
+- *Why it matters:* turns a heat forecast into a ward work plan before the heat arrives.
+- *Done when:* moving the slider updates the numbers instantly and matches what a real round then does.
 
-**R2-3 · Impact panel: broadcast vs Neralu** · SDG impact, presentation · 2 h
+**R2-3 · Volunteer availability and live reassignment** · execution, feasibility · 2 h
+- Volunteers toggle **available / not available**. "Can't go" now tells the system: the case is offered
+  at once to the next nearest available volunteer, and the console shows who holds each case and each
+  volunteer's current load.
+- *Demo moment:* Priya taps "Can't go", and within seconds Ravi's phone buzzes with the case.
+- *Done when:* tests cover decline → next nearest, and no case is ever left with nobody alerted.
+
+**R2-4 · Impact panel: broadcast vs Neralu** · SDG impact, presentation · 1.5 h
 - Same heatwave, two columns. Broadcast: "401 alerted · 0 confirmed safe · unknown who needs help".
   Neralu, for example from one demo round: "387 called · 374 confirmed safe · 7 needed a person ·
   median 8 min to a volunteer accepting". Always computed from the round's data, never typed in.
@@ -97,13 +107,13 @@ the line still stands on its own.
   repeat-risk residents, volunteer load.
 - *Done when:* the panel updates live during a round and every number traces to the event log.
 
-**R2-4 · Family status link** · impact, responsible tech · 1.5 h
+**R2-5 · Family status link** · impact, responsible tech · 1.5 h
 - Registration gives the family a private link: "**Amma answered at 11:02 · all fine**" / "a
   volunteer is on the way" / "checked in person at 11:40". Optional real SMS (already built, off by default).
 - *Done when:* the family link updates live through a call and an escalation; it shows no data about
   anyone else.
 
-**R2-5 · Responsible-tech hardening** · responsible tech · 1.5 h
+**R2-6 · Responsible-tech hardening** · responsible tech · 1.5 h
 - Erasure with a random secret shown once to the family (replaces the guessable number).
 - Call recordings deleted automatically after 7 days; transcripts kept only as the day word.
 - A **Responsible by design** page: what we store, who sees what, consent, DPDP Act alignment,
@@ -111,15 +121,27 @@ the line still stands on its own.
   digital exclusion, scam impersonation, volunteer safety) and the mitigation for each.
 - *Done when:* tests cover the secret and the retention job; the page is linked from the console and story.
 
-**R2-6 · Missed-call check-in** *(stretch)* · originality · 1.5 h
-- An elder or family can **give a missed call** to the Neralu number: Neralu calls back at once and runs
-  the check. Pressing 2 for help on any call escalates immediately. Familiar in India, costs the elder nothing.
-- *Risk:* Twilio trial inbound calls carry the trial notice; test early, drop if it misbehaves.
+**R2-7 · Command-center polish** · execution, presentation · 1 h
+- Filters on the attention list: risk level, call status, assigned volunteer; an "assigned to" column.
+- Each risk factor shows its **data source** (family registration vs simulated resident).
+- A **case record** the ward office can print or save: trigger, calls, answers, rule, escalation,
+  acceptance, closure, family told.
 
-**R2-7 · Public deployment** *(parallel, needs a hosting account from the team)* · feasibility, execution · 1–2 h
-- Host the single server on a cloud service with a fixed public address: no laptop, no ngrok, judges
-  can open it themselves. The laptop setup stays as the fallback.
-- *Needs:* someone creates the hosting account (we cannot create accounts for you).
+**Stretch, only if everything above is solid**
+- **Missed-call check-in** · originality · 1.5 h: an elder or family gives a missed call to the Neralu
+  number and Neralu calls back at once. Familiar in India, costs nothing. Twilio trial inbound carries the
+  trial notice: test early, drop if it misbehaves.
+- **Public deployment** *(parallel, needs a hosting account from the team)* · feasibility · 1–2 h: one
+  server on a cloud host with a fixed address, no laptop or ngrok. The laptop setup stays as the fallback.
+
+### Considered and not building (and why)
+| Idea | Decision |
+|---|---|
+| Cooling-centre / water-point map | No verified local data; invented locations would break our honesty rule |
+| AI incident briefing for officers | Optional only: needs an API key, and the rule-based attention list already answers "what needs action"; an LLM must never decide outcomes |
+| Adaptive voice checks | Already built: three languages, language menu, one repeat on silence, keypad fallback, unclear answers escalate |
+| Heatwave digital twin | Merged into R2-2 (same idea, honest name: a what-if simulator) |
+| New command center / escalation engine | Already built and verified with real phones; only R2-7 polish needed |
 
 ### Round 3 (4:00 AM → 7:30 AM): freeze and rehearse
 - 4:00 freeze · 4:00–5:00 fix anything red on the status strip · two full rehearsals on the demo
@@ -132,7 +154,7 @@ the line still stands on its own.
 
 | Track | Owner |
 |---|---|
-| Backend, pilot mode, outlook, reliability, deployment (with Claude Code) | Priyanshu |
-| Console UI for impact panel, outlook, status strip; family status page | Gourab |
+| Backend: pilot mode, simulator engine, reassignment, hardening, deployment (with Claude Code) | Priyanshu |
+| Console UI: simulator, impact panel, filters, case record; family status page | Gourab |
 | Pitch, deck, demo script, Q&A, credits | |
 | Testing on real phones, rehearsal, backup video | |
