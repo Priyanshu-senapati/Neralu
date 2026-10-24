@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     ack_timeout_min: float = 15
     alert_nearest: int = 3  # volunteers/ASHAs alerted first, nearest to the person
     amber_recall_min: float = 30
+    aftercare_min: float = 60  # E7: call again this long after a person checked in person (0: off)
     scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")
 
     scheduler_enabled: bool = True

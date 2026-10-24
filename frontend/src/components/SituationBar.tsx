@@ -210,7 +210,7 @@ function RoundProgress({ round, due }: { round: RoundSummary | null; due: number
       </dl>
       {round.caregiver_route > 0 && (
         <p className="mt-1 text-xs text-muted">
-          +<span className="num">{round.caregiver_route}</span> on the caregiver route, not called directly
+          <span className="num">{round.caregiver_route}</span> of these through a caregiver (memory difficulty)
         </p>
       )}
     </div>

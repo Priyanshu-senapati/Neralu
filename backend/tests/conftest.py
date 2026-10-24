@@ -23,6 +23,7 @@ os.environ.update({
     "LANGUAGE_MENU": "false",
     "RUN_MODE": "demo",
     "AMBER_RECALL_MIN": "30",
+    "AFTERCARE_MIN": "60",
     "VOLUNTEER_DEMO_TOKEN": "priya-demo",
     "STT_PROVIDER": "sarvam",
     "SARVAM_API_KEY": "",

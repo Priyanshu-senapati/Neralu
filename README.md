@@ -16,13 +16,16 @@ within a single ward, so "it's fine today" for the city can be wrong for one hou
 1. **Works out who is at risk today**, from each person's own heat threshold (age, living alone, roof,
    fan, heat-sensitive medicines), not one city-wide number.
 2. **Phones them on any phone**, in Kannada, Hindi or English, opening with a code word their family
-   chose so they know it is not a scam call.
+   chose so they know it is not a scam call. People with memory difficulty are checked **through their
+   caregiver** instead: a caregiver call with its own published rules (C0–C6), so nobody is skipped.
 3. **Asks a few keypad questions** (water, dizziness, a hot room, the fan, help) and **"What day is it
    today?"**, because heat confusion can make someone say "I'm fine" when they are not.
 4. **Fixed, published rules decide** GREEN / AMBER / RED. AI never decides an outcome; anything unclear
    is followed up, never assumed fine.
 5. **A person goes to the door when needed:** a neighbour, then the nearest volunteer, then an ASHA
    worker, then the ward officer, each with a timer. Neralu never calls 108 itself; a human decides that.
+   After a person has checked on them, Neralu **calls again an hour later** (E7) to make sure they are
+   still okay; a worrying or missed after-care call sends a person again.
 6. **The family is told**, and the ward console shows who is fine, who needs follow-up and who is
    waiting for a person, with the full record of every step.
 

@@ -98,7 +98,7 @@ function Body({ d }: { d: Impact }) {
         <Stat label="Not reached yet, retrying" value={n.not_reached} />
         <Stat label="Waiting for a person" value={n.waiting_for_person} tone={n.waiting_for_person ? 'text-alert' : ''} />
         <Stat label="Call in progress" value={n.in_progress} />
-        <Stat label="To their caregiver" value={n.caregiver_route} />
+        <Stat label="Checked via caregiver" value={n.caregiver_route} />
       </dl>
       <p className="mt-2 text-xs text-muted">
         Case opened to a volunteer accepting: {mins(n.accept_median_min)} median · to a visit recorded: {mins(n.door_median_min)} median

@@ -347,6 +347,14 @@ const RULE_OUTCOME: Record<string, { label: string; dot: string; text: string }>
   S1: { label: 'Support', dot: 'bg-support', text: 'text-support' },
   E1: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
   E3: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  E7: { label: 'Call again', dot: 'bg-watch', text: 'text-watch' },
+  C0: { label: 'Not reached', dot: 'bg-ink/60', text: 'text-ink' },
+  C1: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  C2: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
+  C3: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  C4: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  C5: { label: 'AMBER', dot: 'bg-watch', text: 'text-watch' },
+  C6: { label: 'GREEN', dot: 'bg-ok', text: 'text-ok' },
 }
 
 function Rules() {

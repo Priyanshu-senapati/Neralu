@@ -19,25 +19,31 @@ from app.db import current_run_id
 from app.models import Elder, Volunteer
 from app.pilot import round_times
 from app.risk import calls_due
-from app.rules import Outcome, Signals, classify
-from app.sim_caller import RECALL_FINE, SCENARIOS
+from app.rules import CaregiverSignals, Outcome, Signals, classify, classify_caregiver
+from app.sim_caller import CG_SCENARIOS, RECALL_FINE, SCENARIOS
 from app.state import Weather
 
 VISIT_MIN = 45        # travel, the check at the door, water / ORS / a fan
 CASE_WINDOW_MIN = 120  # a round's cases arrive over about two hours
 
 
-def expected_rates() -> dict[str, float]:
+KEYS = ("fine", "follow_up", "red", "support", "no_answer_first_try")
+
+
+def expected_rates(callee: str = "elder") -> dict[str, float]:
     """Per first call, exclusive shares: fine, needing a follow-up call, red, needing support, not answered
-    at first; plus `cases`, the share needing a person (red, support, follow-ups still concerning)."""
-    total = sum(w for w, _ in SCENARIOS.values())
+    at first; plus `cases`, the share needing a person (red, support, follow-ups still concerning).
+    Calls to a caregiver use the caregiver answer mix and the caregiver rules (C0-C6)."""
+    scenarios = CG_SCENARIOS if callee == "caregiver" else SCENARIOS
+    total = sum(w for w, _ in scenarios.values())
     r = {"fine": 0.0, "follow_up": 0.0, "red": 0.0, "support": 0.0, "no_answer_first_try": 0.0, "cases": 0.0}
-    for weight, answers in SCENARIOS.values():
+    for weight, answers in scenarios.values():
         p = weight / total
         if answers is None:
             r["no_answer_first_try"] += p  # in the mix these answer the retry, so no case
             continue
-        v = classify(Signals(**answers))
+        v = (classify_caregiver(CaregiverSignals(**answers)) if callee == "caregiver"
+             else classify(Signals(**answers)))
         if v.needs_support:
             key = "support"  # a person brings water or a fan, whatever else they said
         else:
@@ -55,21 +61,22 @@ def _hhmm(t) -> str:
 
 
 def plan(elders: list[Elder], weather: Weather, responders: int) -> dict:
-    rates = expected_rates()
+    rates = {who: expected_rates(who) for who in ("elder", "caregiver")}
     hi, night = weather.heat_index_c, weather.night_min_c
     over = [e for e in elders if calls_due(e, hi, night) >= 1]
     rounds = []
     for n, at in round_times():
         to_call, caregiver = select_for_round(elders, n, weather)
         calls = len(to_call)
-        cases = calls * rates["cases"]
+        mix = {"elder": calls - caregiver, "caregiver": caregiver}
+        expect = {k: sum(mix[w] * rates[w][k] for w in mix) for k in (*KEYS, "cases")}
+        cases = expect["cases"]
         needed = math.ceil(round(cases * VISIT_MIN / CASE_WINDOW_MIN, 6)) if calls else 0
         end = (datetime.combine(datetime.today(), at) + timedelta(minutes=CASE_WINDOW_MIN)).time()
         rounds.append({
             "round_no": n, "at": _hhmm(at), "window": f"{_hhmm(at)}–{_hhmm(end)}",
-            "calls": calls, "real_calls": sum(not e.is_simulated for e in to_call), "caregiver_route": caregiver,
-            "expected": {k: round(calls * rates[k], 1) for k in
-                         ("fine", "follow_up", "red", "support", "no_answer_first_try")},
+            "calls": calls, "real_calls": sum(not e.is_simulated for e, _ in to_call), "caregiver_route": caregiver,
+            "expected": {k: round(expect[k], 1) for k in KEYS},
             "cases": round(cases, 1), "responders_needed": needed, "short": max(0, needed - responders),
         })
     return {
@@ -90,10 +97,12 @@ def assumptions() -> list[str]:
     pct = lambda x: f"{x * 100:.0f} %"  # noqa: E731
     return [
         "Who is called uses the same rules as a real round: personal threshold from the risk score, "
-        "two calls when the heat index is 3 °C or more above it, caregiver route for memory difficulty.",
+        "two calls when the heat index is 3 °C or more above it; people with memory difficulty are "
+        "checked through their caregiver.",
         f"What the calls find is simulated: the demo residents' answer mix ({pct(r['fine'])} fine, "
         f"{pct(r['follow_up'])} need a follow-up call, {pct(r['red'])} red, {pct(r['support'])} need support, "
-        f"{pct(r['no_answer_first_try'])} miss the first call) through the same safety rules. "
+        f"{pct(r['no_answer_first_try'])} miss the first call) through the same safety rules; caregiver "
+        f"calls use the caregiver mix and rules. "
         f"A pilot replaces it with measured rates.",
         f"{pct(1 - RECALL_FINE)} of follow-up calls still need a person.",
         f"Each case needs one responder for about {VISIT_MIN} minutes; a round's cases arrive over "

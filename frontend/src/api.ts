@@ -60,7 +60,7 @@ export const api = {
     current: () => request<{ call: PhoneCall | null }>('/api/phone/current'),
     answer: (id: number) => post<PhoneScript>(`/api/phone/calls/${id}/answer`, {}),
     key: (id: number, step: string, digit: string | null) =>
-      post<{ ok?: boolean; closing?: string[] }>(`/api/phone/calls/${id}/key`, { step, digit }),
+      post<{ ok?: boolean; closing?: string[]; speech?: PhoneSpeech }>(`/api/phone/calls/${id}/key`, { step, digit }),
     orientation: async (id: number, body: { audio?: Blob; day?: number }) => {
       const form = new FormData()
       if (body.audio) form.append('audio', body.audio, `answer.${body.audio.type.includes('mp4') ? 'm4a' : 'webm'}`)
@@ -79,13 +79,19 @@ export interface PhoneCall {
   attempt: number
   is_recall: boolean
   elder_name: string
+  callee?: 'elder' | 'caregiver'
 }
 
+/** Prompt URL -> text to speak instead, for prompts whose recorded clip does not exist yet. */
+export type PhoneSpeech = Record<string, { text: string; lang: string }>
+
 export interface PhoneScript {
+  callee?: 'elder' | 'caregiver'
   intro: string[]
   code_word: string
   steps: { step: string; prompt: string; caption: string }[]
-  orientation: { prompt: string; caption: string }
-  help: { prompt: string; caption: string }
+  orientation: { prompt: string; caption: string } | null // null: a caregiver is not asked the day
+  help: { step?: string; prompt: string; caption: string }
   reprompt: string
+  speech?: PhoneSpeech
 }

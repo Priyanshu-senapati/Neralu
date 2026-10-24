@@ -116,7 +116,7 @@ def test_resolve_flow_and_auth(client):
     assert r.json()["elder"]["address"] is None  # no longer revealed once resolved
     assert client.get("/api/cases", params={"state": "open,assigned"}).json() == []
     kinds = [e["kind"] for e in client.get(f"/api/cases/{cid}").json()["events"]]
-    assert kinds[-2:] == ["case_resolved", "family_notified"]
+    assert kinds[-3:] == ["case_resolved", "recall_scheduled", "family_notified"]  # E7 after-care call booked
 
 
 def test_simulated_round_resolves_and_never_touches_kamala_case(client, monkeypatch):
@@ -218,6 +218,10 @@ def _run_sim(minutes, monkeypatch, t=None):
 
 
 def test_rounds_summary_counts_outcomes_and_escalations(client, monkeypatch):
+    from app.config import get_settings
+    # Simulated volunteers finish their visits, and each visit books an after-care call an hour later
+    # (E7, tested in test_aftercare.py). Off here, so the round can finish inside the simulated window.
+    monkeypatch.setattr(get_settings(), "aftercare_min", 0)
     assert client.get("/api/rounds").json() == []
     client.post("/api/sim/heat", json=HEATWAVE)
     created = client.post("/api/sim/round", json={"round_no": 1}).json()["created"]

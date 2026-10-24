@@ -12,6 +12,7 @@ ROOF_TYPES = ("sheet", "tile", "concrete", "top_floor")
 TERMINAL_CALL_STATUSES = ("completed", "busy", "no-answer", "failed", "canceled")
 RESOLUTIONS = ("safe_in_person", "support_delivered", "called_108", "not_found_escalate")
 TIERS = ("neighbour", "volunteer", "asha")
+CALLEES = ("elder", "caregiver")  # caregiver: people with memory difficulty are checked through them
 
 EVENT_KINDS = (
     "run_reset", "sim_weather_set", "round_started", "call_placed", "call_ringing",
@@ -59,6 +60,7 @@ class CheckIn(SQLModel, table=True):
     round_no: int
     attempt: int = 1
     is_recall: bool = False
+    callee: str = "elder"  # "caregiver": the family contact is called about the person (CALLEES)
     scheduled_for_real: datetime = Field(default_factory=utcnow)
     started: bool = False
     call_sid: str | None = Field(default=None, index=True)

@@ -29,7 +29,7 @@ TRACE = {
     "reached_in_person": "cases resolved by a person at the door (safe, support delivered or called 108)",
     "waiting_for_person": "cases still open or accepted, not yet resolved",
     "not_reached": "last call not answered and no case yet (a retry is pending)",
-    "caregiver_route": "due a call but routed to their caregiver (memory difficulty)",
+    "caregiver_route": "people checked through their caregiver (memory difficulty)",
     "accept_median_min": "median minutes from a case opening to the case_accepted event",
     "door_median_min": "median minutes from a case opening to a person recording the visit",
     "safe_by_noon": "people due a call who were confirmed safe by 12:00 (scenario time)",
@@ -96,7 +96,7 @@ def impact(session: Session) -> dict[str, Any]:
                   and c.resolved_real]
         return min(times) if times else None
 
-    callable_due = [e for e in due if not e.cognitive_flag]
+    callable_due = due  # everyone due is called, people with memory difficulty through their caregiver
     by_noon = sum(1 for e in callable_due
                   if (t := safe_at(e.id)) is not None and state.clock.to_scenario(t).time() <= NOON)
     concerning: dict[int, int] = {}
@@ -127,7 +127,7 @@ def impact(session: Session) -> dict[str, Any]:
             "needed_person": len({c.elder_id for c in cases}),
             "reached_in_person": len({c.elder_id for c in helped}),
             "waiting_for_person": count("waiting_for_person"),
-            "caregiver_route": sum(1 for e in due if e.cognitive_flag),
+            "caregiver_route": len({c.elder_id for c in checkins if c.callee == "caregiver"}),
             "accept_median_min": _med(accept_waits),
             "door_median_min": _med(door),
         },

@@ -98,7 +98,7 @@ function Header({ d }: { d: ElderDetail }) {
         <span className="text-muted">
           · {LANG[d.language] ?? d.language} · {d.lives_alone ? 'lives alone' : 'lives with others'} · {(ROOF[d.roof_type] ?? d.roof_type).toLowerCase()}
         </span>
-        {d.caregiver_route && <span className="rounded-[3px] border border-line px-1 text-xs">Caregiver route</span>}
+        {d.caregiver_route && <span className="rounded-[3px] border border-line px-1 text-xs">Checked through caregiver{d.family_name ? ` · ${d.family_name}` : ''}</span>}
       </div>
     </div>
   )
@@ -146,7 +146,7 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
         <h3 className="mb-2 text-sm font-semibold">What happened to {first} today</h3>
         <ResidentStory
           lines={story(d.events, first)}
-          empty={d.caregiver_route ? `${first} is on the caregiver route and is not called directly.` : `Neralu has not called ${first} yet.`}
+          empty={d.caregiver_route ? `Neralu has not called ${first}'s caregiver yet.` : `Neralu has not called ${first} yet.`}
         />
       </section>
 
@@ -194,7 +194,7 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
       <section>
         <h3 className="mb-2 text-sm font-semibold">Call attempts</h3>
         {d.checkins.length === 0 ? (
-          <p className="text-sm text-muted">{d.caregiver_route ? 'Caregiver route · not called directly' : 'Not called yet'}</p>
+          <p className="text-sm text-muted">{d.caregiver_route ? 'Caregiver not called yet' : 'Not called yet'}</p>
         ) : (
           <ul className="divide-y divide-line border-y border-line text-sm">
             {d.checkins.map((x) => <AttemptRow key={x.id} x={x} />)}

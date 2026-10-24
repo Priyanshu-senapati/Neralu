@@ -94,6 +94,7 @@ export interface CurrentCall {
   checkin_id: number
   attempt: number
   is_recall: boolean
+  callee?: Callee
   started: boolean
   call_status: string | null
   round_no: number
@@ -168,11 +169,15 @@ export interface NeraluEvent {
   simulated: boolean
 }
 
+/** caregiver: a person with memory difficulty is checked through their caregiver (the family contact). */
+export type Callee = 'elder' | 'caregiver'
+
 export interface CheckInOut {
   id: number
   round_no: number
   attempt: number
   is_recall: boolean
+  callee?: Callee
   call_status: string | null
   answers: Record<string, string>
   transcript: string | null

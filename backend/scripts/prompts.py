@@ -8,6 +8,8 @@ Kannada speaker must review KN below (and ideally record it, same file names) be
 Have a native speaker review every non-English line before the demo.
 
 "lang_menu" is the language menu at the start of each call; every language says its own option.
+"cg_*" / "q_cg_*" are the caregiver check: people with memory difficulty are checked through their
+caregiver. Until these clips are generated, calls speak the English text instead (telephony.py).
 """
 
 EN_WORDS = {
@@ -43,6 +45,17 @@ EN = {
     "close_ok": "Thank you. We will check on you again later today.",
     "close_help": "Thank you. Someone from your area is being informed now.",
     "lang_menu": "For English, press 3.",
+    "cg_intro": "We are calling about the person in your care who is registered with Neralu.",
+    "q_cg_seen": "Are you with them now, or have you seen them in the last hour? Press 1 for yes, 2 for no.",
+    "q_cg_water": "Have they had water in the last hour? Press 1 for yes, 2 for no.",
+    "q_cg_unwell": "Do they seem more confused, drowsy or unwell than usual? Press 1 for yes, 2 for no.",
+    "q_cg_room": "Is their room very hot, with no fan or cooler working? Press 1 for yes, 2 for no.",
+    "q_cg_help": "If they need help now, press 2. If they are okay, press 1.",
+    "cg_advice_check": "Please go and see them in person now.",
+    "cg_advice_water": "Please give them a glass of water now, and keep them in the coolest part of the home.",
+    "cg_close_ok": "Thank you. We will call you again later today.",
+    "cg_close_help": "Thank you. Someone from your area is being informed now. "
+                     "If they cannot be woken, or they collapse, call 108.",
     "code_mallige": "Mallige.", "code_sampige": "Sampige.", "code_sevanthige": "Sevanthige.",
     "code_tulasi": "Tulasi.", "code_maavu": "Maavu.", "code_bevu": "Bevu.",
     "code_kaveri": "Kaveri.", "code_chandra": "Chandra.", "code_nakshatra": "Nakshatra.",
@@ -67,6 +80,17 @@ HI = {
     "close_ok": "धन्यवाद। हम आज बाद में फिर से आपका हाल पूछेंगे।",
     "close_help": "धन्यवाद। आपके इलाके के किसी व्यक्ति को अभी सूचना दी जा रही है।",
     "lang_menu": "हिंदी के लिए 2 दबाइए।",
+    "cg_intro": "हम आपकी देखरेख में रहने वाले उस व्यक्ति के बारे में फ़ोन कर रहे हैं, जो नेरलु में पंजीकृत हैं।",
+    "q_cg_seen": "क्या आप अभी उनके साथ हैं, या पिछले एक घंटे में आपने उन्हें देखा है? हाँ के लिए 1 दबाइए, नहीं के लिए 2।",
+    "q_cg_water": "क्या उन्होंने पिछले एक घंटे में पानी पिया है? हाँ के लिए 1 दबाइए, नहीं के लिए 2।",
+    "q_cg_unwell": "क्या वे आम दिनों से ज़्यादा उलझन में, सुस्त या बीमार लग रहे हैं? हाँ के लिए 1 दबाइए, नहीं के लिए 2।",
+    "q_cg_room": "क्या उनका कमरा बहुत गरम है, और कोई पंखा या कूलर नहीं चल रहा? हाँ के लिए 1 दबाइए, नहीं के लिए 2।",
+    "q_cg_help": "अगर उन्हें अभी मदद चाहिए तो 2 दबाइए। अगर वे ठीक हैं तो 1 दबाइए।",
+    "cg_advice_check": "कृपया अभी जाकर उन्हें खुद देखिए।",
+    "cg_advice_water": "कृपया उन्हें अभी एक गिलास पानी पिलाइए, और उन्हें घर की सबसे ठंडी जगह में रखिए।",
+    "cg_close_ok": "धन्यवाद। हम आज बाद में आपको फिर फ़ोन करेंगे।",
+    "cg_close_help": "धन्यवाद। आपके इलाके के किसी व्यक्ति को अभी सूचना दी जा रही है। "
+                     "अगर वे जाग न पाएँ या गिर पड़ें, तो 108 पर फ़ोन कीजिए।",
     "code_mallige": "मल्लिगे।", "code_sampige": "संपिगे।", "code_sevanthige": "सेवंतिगे।",
     "code_tulasi": "तुलसी।", "code_maavu": "मावु।", "code_bevu": "बेवु।",
     "code_kaveri": "कावेरी।", "code_chandra": "चंद्र।", "code_nakshatra": "नक्षत्र।",
@@ -92,6 +116,20 @@ KN = {
     "close_ok": "ಧನ್ಯವಾದಗಳು. ಇವತ್ತು ಮತ್ತೆ ನಿಮ್ಮನ್ನು ವಿಚಾರಿಸುತ್ತೇವೆ.",
     "close_help": "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ಹತ್ತಿರದ ಒಬ್ಬರಿಗೆ ಈಗಲೇ ತಿಳಿಸುತ್ತಿದ್ದೇವೆ.",
     "lang_menu": "ಕನ್ನಡಕ್ಕಾಗಿ 1 ಒತ್ತಿ.",
+    "cg_intro": "ನೆರಳು ಸೇವೆಯಲ್ಲಿ ನೋಂದಾಯಿಸಿರುವ, ನಿಮ್ಮ ಆರೈಕೆಯಲ್ಲಿರುವ ವ್ಯಕ್ತಿಯ ಬಗ್ಗೆ ಕರೆ ಮಾಡುತ್ತಿದ್ದೇವೆ.",
+    "q_cg_seen": "ನೀವು ಈಗ ಅವರ ಜೊತೆ ಇದ್ದೀರಾ, ಅಥವಾ ಕಳೆದ ಒಂದು ಗಂಟೆಯಲ್ಲಿ ಅವರನ್ನು ನೋಡಿದ್ದೀರಾ? "
+                 "ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_cg_water": "ಕಳೆದ ಒಂದು ಗಂಟೆಯಲ್ಲಿ ಅವರು ನೀರು ಕುಡಿದಿದ್ದಾರಾ? ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_cg_unwell": "ಅವರು ಎಂದಿಗಿಂತ ಹೆಚ್ಚು ಗೊಂದಲದಲ್ಲಿ, ಮಂಕಾಗಿ ಅಥವಾ ಅಸ್ವಸ್ಥರಾಗಿ ಕಾಣುತ್ತಿದ್ದಾರಾ? "
+                   "ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_cg_room": "ಅವರ ಕೋಣೆ ತುಂಬಾ ಬಿಸಿಯಾಗಿದ್ದು, ಫ್ಯಾನ್ ಅಥವಾ ಕೂಲರ್ ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲವಾ? "
+                 "ಹೌದು ಎಂದರೆ 1, ಇಲ್ಲ ಎಂದರೆ 2 ಒತ್ತಿ.",
+    "q_cg_help": "ಅವರಿಗೆ ಈಗಲೇ ಸಹಾಯ ಬೇಕಿದ್ದರೆ 2 ಒತ್ತಿ. ಅವರು ಚೆನ್ನಾಗಿದ್ದರೆ 1 ಒತ್ತಿ.",
+    "cg_advice_check": "ದಯವಿಟ್ಟು ಈಗಲೇ ಹೋಗಿ ಅವರನ್ನು ಖುದ್ದಾಗಿ ನೋಡಿ.",
+    "cg_advice_water": "ದಯವಿಟ್ಟು ಈಗಲೇ ಅವರಿಗೆ ಒಂದು ಲೋಟ ನೀರು ಕೊಡಿ, ಮತ್ತು ಅವರನ್ನು ಮನೆಯ ತಣ್ಣಗಿರುವ ಜಾಗದಲ್ಲಿ ಇರಿಸಿ.",
+    "cg_close_ok": "ಧನ್ಯವಾದಗಳು. ಇವತ್ತು ಮತ್ತೆ ನಿಮಗೆ ಕರೆ ಮಾಡುತ್ತೇವೆ.",
+    "cg_close_help": "ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ಹತ್ತಿರದ ಒಬ್ಬರಿಗೆ ಈಗಲೇ ತಿಳಿಸುತ್ತಿದ್ದೇವೆ. "
+                     "ಅವರು ಎಚ್ಚರಗೊಳ್ಳದಿದ್ದರೆ ಅಥವಾ ಕುಸಿದು ಬಿದ್ದರೆ, 108ಕ್ಕೆ ಕರೆ ಮಾಡಿ.",
     "code_mallige": "ಮಲ್ಲಿಗೆ.", "code_sampige": "ಸಂಪಿಗೆ.", "code_sevanthige": "ಸೇವಂತಿಗೆ.",
     "code_tulasi": "ತುಳಸಿ.", "code_maavu": "ಮಾವು.", "code_bevu": "ಬೇವು.",
     "code_kaveri": "ಕಾವೇರಿ.", "code_chandra": "ಚಂದ್ರ.", "code_nakshatra": "ನಕ್ಷತ್ರ.",

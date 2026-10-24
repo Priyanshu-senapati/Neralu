@@ -9,7 +9,7 @@ import type { NeraluEvent } from './types'
 export type StepState = 'done' | 'current' | 'pending' | 'skipped'
 
 export interface LoopStep {
-  key: 'call' | 'decision' | 'escalation' | 'accepted' | 'resolved' | 'family'
+  key: 'call' | 'decision' | 'escalation' | 'accepted' | 'resolved' | 'family' | 'aftercare'
   label: string
   detail: string
   at: string | null
@@ -33,9 +33,18 @@ const ANSWER: Record<string, Record<string, string>> = {
   orientation: { correct: 'knew what day it is', wrong: 'named the wrong day', uncertain: 'gave an unclear day', none: 'did not say what day it is' },
   self_report: { ok: 'said they are okay', help: 'pressed for help', none: 'did not answer the last question' },
 }
+// A caregiver answering about a person with memory difficulty: the sentence is still about the person.
+const CAREGIVER_ANSWER: Record<string, Record<string, string>> = {
+  seen: { yes: 'was seen by their caregiver in the last hour', no: 'had not been seen by their caregiver in the last hour', none: 'was not confirmed seen by their caregiver in the last hour' },
+  water: ANSWER.water,
+  unwell: { yes: 'seems more confused, drowsy or unwell than usual, says their caregiver', no: 'seems their usual self, says their caregiver' },
+  room_no_cooling: { yes: 'is in a very hot room with no fan or cooler working', no: 'is not in a hot room without cooling' },
+  self_report: { ok: 'is okay, says their caregiver', help: 'needs help now, says their caregiver', none: 'had no answer from their caregiver on the last question' },
+}
 const CONCERN: Record<string, string[]> = {
   water: ['no'], symptoms: ['yes'], room_hot: ['yes'], fan_working: ['no'],
   orientation: ['wrong', 'uncertain'], self_report: ['help'],
+  seen: ['no', 'none'], unwell: ['yes'], room_no_cooling: ['yes'],
 }
 const OUTCOME_TONE: Record<string, LoopStep['tone']> = { GREEN: 'ok', AMBER: 'watch', RED: 'alert', UNREACHED: 'alert' }
 const OUTCOME_WORD: Record<string, string> = {
@@ -45,7 +54,7 @@ const OUTCOME_WORD: Record<string, string> = {
 /** What a call found, as plain phrases, worrying answers first. */
 export function callFindings(answers: Record<string, string>): { text: string; concern: boolean }[] {
   const out: { text: string; concern: boolean }[] = []
-  for (const [step, phrases] of Object.entries(ANSWER)) {
+  for (const [step, phrases] of Object.entries('seen' in answers ? CAREGIVER_ANSWER : ANSWER)) {
     const v = answers[step]
     if (v && phrases[v]) out.push({ text: phrases[v], concern: CONCERN[step]?.includes(v) ?? false })
   }
@@ -76,7 +85,11 @@ export function episode(events: NeraluEvent[]): NeraluEvent[] {
 }
 
 export function closedLoop(all: NeraluEvent[]): LoopStep[] {
-  const ev = episode(all)
+  const whole = episode(all)
+  // E7: the after-care call booked after a visit is its own last step, not part of the first call's loop.
+  const booked = whole.find((e) => e.kind === 'recall_scheduled' && e.data.aftercare) ?? null
+  const cut = booked ? whole.findIndex((e) => e.id > booked.id && e.kind === 'call_placed') : -1
+  const ev = cut < 0 ? whole : whole.slice(0, cut)
   const of = (kind: string) => ev.filter((e) => e.kind === kind)
   const last = (kind: string) => of(kind).at(-1) ?? null
 
@@ -161,7 +174,25 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
     state: told ? 'done' : outcome === 'GREEN' && !redOpen ? 'skipped' : 'pending',
     detail: told ? `${told.message.split(' notified')[0]} · simulated channel` : outcome === 'GREEN' && !redOpen ? 'Nothing to report' : '—',
   })
+
+  // 7. Checked again after the visit (E7)
+  if (booked) steps.push(aftercareStep(booked, cut < 0 ? [] : whole.slice(cut)))
   return steps
+}
+
+function aftercareStep(booked: NeraluEvent, after: NeraluEvent[]): LoopStep {
+  const result = after.filter((e) => e.kind === 'checkin_classified').at(-1)
+  const outcome = String(result?.data.outcome ?? '')
+  const again = after.find((e) => e.kind === 'case_opened' && e.data.level === 'red')
+  const calling = after.filter((e) => e.kind === 'call_placed').length > after.filter((e) => e.kind === 'call_ended').length
+  const base = { key: 'aftercare' as const, label: 'Checked again later' }
+  if (again) return { ...base, at: again.ts_scenario, state: 'done', tone: 'alert', detail: `Not okay · a person is sent again (${String(again.data.rule_id)})` }
+  if (result && outcome !== 'UNREACHED') {
+    return { ...base, at: result.ts_scenario, state: 'done', tone: OUTCOME_TONE[outcome], detail: `${OUTCOME_WORD[outcome] ?? outcome} · Rule ${String(result.data.rule_id)}` }
+  }
+  if (calling) return { ...base, at: after[0].ts_scenario, state: 'current', detail: 'After-care call now' }
+  if (result) return { ...base, at: result.ts_scenario, state: 'current', tone: 'watch', detail: 'No answer · trying again' }
+  return { ...base, at: booked.ts_scenario, state: 'pending', detail: `After-care call at ${atTime(booked.message)}` }
 }
 
 /** A plain-English account of what happened to this person, oldest first. */
@@ -169,21 +200,25 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
   const lines: StoryLine[] = []
   const add = (e: NeraluEvent, text: string, tone?: StoryLine['tone']) =>
     lines.push({ id: e.id, at: e.ts_scenario, text, tone, simulated: e.simulated })
+  let caregiver = false // the call in progress is to their caregiver (memory difficulty)
   for (const e of episode(all)) {
     const d = e.data
     switch (e.kind) {
-      case 'call_placed':
+      case 'call_placed': {
+        if (!String(e.message).startsWith('Call failed')) caregiver = String(e.message).includes('caregiver')
+        const callee = caregiver ? `${firstName}'s caregiver` : firstName
         add(e, String(e.message).startsWith('Recall')
-          ? `Neralu made a follow-up call to ${firstName}.`
+          ? `Neralu made a follow-up call to ${callee}.`
           : String(e.message).startsWith('Call failed')
-            ? `The call to ${firstName} could not be placed.`
-            : `Neralu called ${firstName}${Number(d.attempt) > 1 ? ` again (attempt ${d.attempt})` : ''}.`)
+            ? `The call to ${callee} could not be placed.`
+            : `Neralu called ${callee}${Number(d.attempt) > 1 ? ` again (attempt ${d.attempt})` : ''}.`)
         break
+      }
       case 'call_answered':
-        add(e, `${firstName} picked up and heard the family code word.`)
+        add(e, `${caregiver ? `${firstName}'s caregiver` : firstName} picked up and heard the family code word.`)
         break
       case 'answer_recorded': {
-        const text = ANSWER[String(d.step)]?.[String(d.value)]
+        const text = (caregiver ? CAREGIVER_ANSWER : ANSWER)[String(d.step)]?.[String(d.value)]
         if (text) add(e, `${firstName} ${text}.`, CONCERN[String(d.step)]?.includes(String(d.value)) ? 'alert' : undefined)
         break
       }
@@ -199,7 +234,9 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
           d.outcome === 'GREEN' ? 'ok' : d.outcome === 'AMBER' ? 'watch' : 'alert')
         break
       case 'recall_scheduled':
-        add(e, `Family told. A follow-up call is booked for ${atTime(e.message)}.`, 'watch')
+        add(e, d.aftercare
+          ? `An after-care call is booked for ${atTime(e.message)} to make sure ${firstName} is still okay.`
+          : `Family told. A follow-up call is booked for ${atTime(e.message)}.`, d.aftercare ? 'muted' : 'watch')
         break
       case 'case_opened':
         add(e, d.level === 'red'

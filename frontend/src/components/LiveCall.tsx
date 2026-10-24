@@ -13,6 +13,14 @@ const QUESTIONS: { key: string; label: string; concern: string[] }[] = [
   { key: 'orientation', label: 'Knew what day it is', concern: ['wrong', 'uncertain'] },
   { key: 'self_report', label: 'Okay, or needs help', concern: ['help'] },
 ]
+const CAREGIVER_QUESTIONS: typeof QUESTIONS = [
+  { key: 'seen', label: 'Caregiver with them in the last hour', concern: ['no'] },
+  { key: 'water', label: 'Water in the last hour', concern: ['no'] },
+  { key: 'unwell', label: 'More confused, drowsy or unwell', concern: ['yes'] },
+  { key: 'room_no_cooling', label: 'Room very hot, no cooling', concern: ['yes'] },
+  { key: 'self_report', label: 'Okay, or needs help', concern: ['help'] },
+]
+const questionsFor = (c: CheckInOut) => (c.callee === 'caregiver' ? CAREGIVER_QUESTIONS : QUESTIONS)
 const VALUE: Record<string, string> = {
   yes: 'Yes', no: 'No', none: 'No answer', correct: 'Yes', wrong: 'Wrong day', uncertain: 'Unclear',
   ok: 'Okay', help: 'Needs help',
@@ -85,13 +93,18 @@ export function LiveCall({ elders, refreshKey, onOpen }: Props) {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-ok" />
           </span>
           <span className="font-semibold">{line}</span>
-          {line === 'Connected' && call && <span className="text-muted">· question {Math.min(answered(call) + 1, 6)} of 6</span>}
+          {line === 'Connected' && call && (
+            <span className="text-muted">
+              · question {Math.min(answered(call) + 1, questionsFor(call).length)} of {questionsFor(call).length}
+              {call.callee === 'caregiver' && ' · caregiver call'}
+            </span>
+          )}
         </div>
       )}
 
       {call && (call.call_status === 'in-progress' || call.classified) && call.call_status !== 'no-answer' && (
         <ol className="mx-4 mt-2.5 divide-y divide-line border-y border-line text-sm">
-          {QUESTIONS.map((q, i) => {
+          {questionsFor(call).map((q, i) => {
             const v = call.answers[q.key]
             const current = active && !v && i === answered(call)
             const concern = v && q.concern.includes(v)
@@ -119,7 +132,7 @@ export function LiveCall({ elders, refreshKey, onOpen }: Props) {
 }
 
 function answered(c: CheckInOut) {
-  return QUESTIONS.filter((q) => c.answers[q.key]).length
+  return questionsFor(c).filter((q) => c.answers[q.key]).length
 }
 
 function Verdict({ call, resident }: { call: CheckInOut; resident: ElderListItem }) {

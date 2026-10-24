@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, type PhoneCall, type PhoneScript } from '../api'
+import { api, type PhoneCall, type PhoneScript, type PhoneSpeech } from '../api'
 
 /**
  * Browser phone (TELEPHONY_MODE=browser): the demo fallback when Twilio cannot ring a real SIM.
@@ -35,6 +35,7 @@ export default function Phone() {
   const live = useRef(false) // false once the call is hung up: every await checks it
   const ringTimer = useRef<number | undefined>(undefined)
   const finishClip = useRef<(() => void) | null>(null) // resolves the clip now playing
+  const speech = useRef<PhoneSpeech>({}) // prompts with no recorded clip yet: spoken by the browser
 
   const stopRing = () => {
     window.clearInterval(ringTimer.current)
@@ -122,12 +123,22 @@ export default function Phone() {
   const play = (src: string) =>
     new Promise<void>((resolve, reject) => {
       if (!live.current) return reject(new HungUp())
-      const el = audioEl.current!
       const done = () => {
         finishClip.current = null
         resolve()
       }
       finishClip.current = done
+      const say = speech.current[src]
+      if (say && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(say.text)
+        u.lang = say.lang
+        u.rate = 0.9
+        u.onend = done
+        u.onerror = done
+        window.speechSynthesis.speak(u)
+        return
+      }
+      const el = audioEl.current!
       el.onended = done
       el.onerror = done // a missing clip must not stall the call
       el.src = src
@@ -142,6 +153,7 @@ export default function Phone() {
       el.onerror = null
       el.pause()
     }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
     finishClip.current?.()
   }
 
@@ -167,9 +179,9 @@ export default function Phone() {
     return null
   }
 
-  const askDay = async (s: PhoneScript, id: number) => {
-    setCaption(s.orientation.caption)
-    await play(s.orientation.prompt)
+  const askDay = async (q: NonNullable<PhoneScript['orientation']>, id: number) => {
+    setCaption(q.caption)
+    await play(q.prompt)
     if (mic.current) {
       const rec = new MediaRecorder(mic.current)
       const chunks: Blob[] = []
@@ -206,8 +218,12 @@ export default function Phone() {
     setPhase('talking')
     try {
       const s = await api.phone.answer(id)
+      const caregiver = s.callee === 'caregiver'
+      speech.current = s.speech ?? {}
       setCodeWord(s.code_word)
-      setCaption('Namaskara. This is Neralu, the heat care service from your ward office.')
+      setCaption(caregiver
+        ? 'Namaskara. This is Neralu. We are calling about the person in your care who is registered with Neralu.'
+        : 'Namaskara. This is Neralu, the heat care service from your ward office.')
       for (const src of s.intro) await play(src)
       for (const step of s.steps) {
         setCaption(step.caption)
@@ -215,13 +231,16 @@ export default function Phone() {
         await api.phone.key(id, step.step, d)
       }
       setKeypad(false)
-      await askDay(s, id)
+      if (s.orientation) await askDay(s.orientation, id)
       setCaption(s.help.caption)
       const d = await gather(s.help.prompt, s.reprompt, ['1', '2'])
-      const { closing = [] } = await api.phone.key(id, 'help', d)
+      const res = await api.phone.key(id, s.help.step ?? 'help', d)
+      Object.assign(speech.current, res.speech ?? {})
       setKeypad(false)
-      setCaption(d === '2' ? 'Thank you. Someone from your area is being informed now.' : 'Thank you. We will check on you again later today.')
-      for (const src of closing) await play(src)
+      const sending = (res.closing ?? []).some((u) => u.endsWith('close_help.mp3')) // cg_close_help too
+      setCaption(sending ? 'Thank you. Someone from your area is being informed now.'
+        : caregiver ? 'Thank you. We will call you again later today.' : 'Thank you. We will check on you again later today.')
+      for (const src of res.closing ?? []) await play(src)
       await hangUp('Call ended')
     } catch (e) {
       if (!(e instanceof HungUp)) {
@@ -287,7 +306,7 @@ export default function Phone() {
             <div className="mt-2 text-3xl font-semibold">Neralu</div>
             <div className="mt-1 text-sm text-ink/60">Heat care service · Ward 47</div>
             <div className="mt-1 text-xs text-ink/40">
-              to {call.elder_name} · {call.is_recall ? 'recall' : `attempt ${call.attempt}`}
+              {call.callee === 'caregiver' ? `to ${call.elder_name}'s caregiver` : `to ${call.elder_name}`} · {call.is_recall ? 'recall' : `attempt ${call.attempt}`}
             </div>
           </div>
         )}
