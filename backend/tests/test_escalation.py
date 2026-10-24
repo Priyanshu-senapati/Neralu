@@ -190,7 +190,7 @@ def test_accept_then_resolve_safe(world):
         accept_case(s, case.id, p.id)
     resolve_case(s, case.id, p.id, "safe_in_person", None); s.commit()
     assert (case.state, case.resolution) == ("resolved", "safe_in_person")
-    assert kinds(s, case.id)[-2:] == ["case_resolved", "family_notified"]
+    assert kinds(s, case.id)[-3:] == ["case_resolved", "recall_scheduled", "family_notified"]  # E7 after-care
 
 
 def test_only_assignee_can_resolve(world):

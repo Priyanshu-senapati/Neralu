@@ -9,7 +9,7 @@ from app.config import get_settings
 from app.db import current_run_id
 from app.escalation import open_case
 from app.events import log_event
-from app.models import CheckIn, Elder
+from app.models import Case, CheckIn, Elder
 from app.notify import notify_family
 from app.rules import CaregiverSignals, Outcome, Signals, classify, classify_caregiver
 from app.state import state
@@ -170,6 +170,37 @@ def schedule_recall(session: Session, checkin: CheckIn) -> CheckIn:
               actor="system", elder_id=recall.elder_id, checkin_id=recall.id,
               simulated=recall.is_simulated)
     return recall
+
+
+def schedule_aftercare(session: Session, elder: Elder, case_id: int) -> CheckIn | None:
+    """E7: after a person checked on them in person, call again later to make sure they are still
+    okay; heat illness can come back while the heat lasts. Treated like any follow-up call, so a
+    concerning or missed after-care call sends a person again (E3). Not when another call is already
+    due or another case is still open for them."""
+    minutes = get_settings().aftercare_min
+    run = current_run_id()
+    if minutes <= 0:
+        return None
+    pending = session.exec(select(CheckIn).where(
+        CheckIn.run_id == run, CheckIn.elder_id == elder.id, CheckIn.processed == False)).first()  # noqa: E712
+    other_case = session.exec(select(Case).where(
+        Case.run_id == run, Case.elder_id == elder.id, Case.id != case_id,
+        Case.state.in_(("open", "assigned")))).first()
+    callee = callee_for(elder)
+    phone = elder.family_phone if callee == "caregiver" else elder.phone
+    if pending or other_case or (not elder.is_simulated and not phone):
+        return None
+    last = session.exec(select(CheckIn).where(CheckIn.run_id == run, CheckIn.elder_id == elder.id)
+                        .order_by(CheckIn.id.desc())).first()
+    c = CheckIn(run_id=run, elder_id=elder.id, round_no=last.round_no if last else (state.round_no or 1),
+                attempt=1, is_recall=True, callee=callee, is_simulated=elder.is_simulated,
+                scheduled_for_real=state.clock.real_now() + state.clock.real_delta(minutes))
+    session.add(c)
+    session.flush()
+    log_event(session, "recall_scheduled", f"After-care call at {_hhmm(c.scheduled_for_real)} · E7",
+              actor="system", elder_id=elder.id, case_id=case_id, checkin_id=c.id,
+              data={"aftercare": True}, simulated=elder.is_simulated)
+    return c
 
 
 def caregiver_signals_for(checkin: CheckIn, call_status: str) -> CaregiverSignals:

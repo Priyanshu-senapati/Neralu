@@ -24,6 +24,8 @@ within a single ward, so "it's fine today" for the city can be wrong for one hou
    is followed up, never assumed fine.
 5. **A person goes to the door when needed:** a neighbour, then the nearest volunteer, then an ASHA
    worker, then the ward officer, each with a timer. Neralu never calls 108 itself; a human decides that.
+   After a person has checked on them, Neralu **calls again an hour later** (E7) to make sure they are
+   still okay; a worrying or missed after-care call sends a person again.
 6. **The family is told**, and the ward console shows who is fine, who needs follow-up and who is
    waiting for a person, with the full record of every step.
 

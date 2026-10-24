@@ -116,7 +116,7 @@ def test_resolve_flow_and_auth(client):
     assert r.json()["elder"]["address"] is None  # no longer revealed once resolved
     assert client.get("/api/cases", params={"state": "open,assigned"}).json() == []
     kinds = [e["kind"] for e in client.get(f"/api/cases/{cid}").json()["events"]]
-    assert kinds[-2:] == ["case_resolved", "family_notified"]
+    assert kinds[-3:] == ["case_resolved", "recall_scheduled", "family_notified"]  # E7 after-care call booked
 
 
 def test_simulated_round_resolves_and_never_touches_kamala_case(client, monkeypatch):
