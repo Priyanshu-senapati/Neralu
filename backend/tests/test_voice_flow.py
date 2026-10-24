@@ -121,6 +121,25 @@ def test_timeout_on_every_gather_is_r0_unreached(client, stt):
     assert (c.outcome, c.rule_id) == ("UNREACHED", "R0")
 
 
+def test_help_after_no_other_answers_is_red_not_a_retry(client, stt):
+    # The close says "someone from your area is being informed", so a person must be: RED, not R0.
+    cid = start_kamala_call(client)
+    post(client, f"/voice/answer?checkin_id={cid}")
+    for step in ["water", "symptoms", "room", "fan"]:
+        post(client, f"/voice/gather/{step}?checkin_id={cid}&timeout=1")
+        post(client, f"/voice/gather/{step}?checkin_id={cid}&r=1&timeout=1")
+    post(client, f"/voice/orientation?checkin_id={cid}&empty=1")
+    twiml = post(client, f"/voice/gather/help?checkin_id={cid}", Digits="2")
+    assert "close_help.mp3" in twiml
+    end_call(client, cid)
+    c = checkin(cid)
+    assert (c.outcome, c.rule_id) == ("RED", "R1")
+    with Session(engine) as s:
+        case = s.exec(select(Case).where(Case.elder_id == c.elder_id)).one()
+        assert (case.level, case.rule_id) == ("red", "R1")
+        assert not s.exec(select(CheckIn).where(CheckIn.elder_id == c.elder_id, CheckIn.attempt == 2)).all()
+
+
 def test_answered_then_hung_up_after_greeting_is_unreached(client, stt):
     cid = start_kamala_call(client)
     post(client, f"/voice/answer?checkin_id={cid}")

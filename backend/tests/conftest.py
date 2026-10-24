@@ -20,6 +20,7 @@ os.environ.update({
     "RING_TIMEOUT_S": "15",
     "RETRY_GAP_MIN": "15",
     "ACK_TIMEOUT_MIN": "15",
+    "VISIT_TIMEOUT_MIN": "120",
     "LANGUAGE_MENU": "false",
     "RUN_MODE": "demo",
     "AMBER_RECALL_MIN": "30",

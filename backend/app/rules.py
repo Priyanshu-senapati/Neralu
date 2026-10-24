@@ -42,10 +42,12 @@ def _keypad_missing(s: Signals) -> int:
 
 
 def _rule(s: Signals) -> tuple[Outcome, str, str]:
-    if _keypad_missing(s) == 4:
-        return Outcome.UNREACHED, "R0", "No valid answer on the call"
+    # Help comes first: a key pressed for help proves we reached them, and the call has just told
+    # them someone is being informed, so it is never a retry, whatever else went unanswered.
     if s.self_report == "help":
         return Outcome.RED, "R1", "Asked for help"
+    if _keypad_missing(s) == 4:
+        return Outcome.UNREACHED, "R0", "No valid answer on the call"
     if s.symptoms == "yes" and s.orientation in ("wrong", "uncertain"):
         return Outcome.RED, "R2", "Symptoms with possible confusion"
     if s.symptoms == "yes" and s.water == "no":
@@ -82,10 +84,10 @@ class CaregiverSignals:
 
 def _caregiver_rule(s: CaregiverSignals) -> tuple[Outcome, str, str]:
     keypad = [s.seen, s.water, s.unwell, s.room_no_cooling]
+    if s.self_report == "help":  # first, as in R1: a help key is never a retry
+        return Outcome.RED, "C1", "Caregiver asked for help"
     if keypad.count("none") == 4:
         return Outcome.UNREACHED, "C0", "No valid answer from the caregiver"
-    if s.self_report == "help":
-        return Outcome.RED, "C1", "Caregiver asked for help"
     if s.unwell == "yes":
         return Outcome.RED, "C2", "More confused, drowsy or unwell than usual"
     if s.seen != "yes":
@@ -104,11 +106,12 @@ def classify_caregiver(signals: CaregiverSignals) -> Verdict:
 
 # Plain-English explanation of every rule a judge, officer or family member may see (plan §7.2).
 # The single source for this wording: the dashboard reads it from GET /api/rules.
+# Listed in the order the rules are checked (the story page publishes them as "first match wins").
 EXPLANATIONS: dict[str, str] = {
+    "R1": "They pressed the key for \"I need help now\". This is escalated straight away, whatever the "
+          "other answers were, even if no other question was answered.",
     "R0": "No keypad answers came back: the call was not picked up, or was picked up with no answers. "
           "We could not confirm they are safe, so this counts as not reached, never as fine.",
-    "R1": "They pressed the key for \"I need help now\". This is escalated straight away, whatever the "
-          "other answers were.",
     "R2": "They reported dizziness, weakness or confusion, and could not say what day it is. Together "
           "these can be early signs of heat illness affecting thinking.",
     "R3": "They reported dizziness, weakness or confusion, and had no water in the last hour. Together "
@@ -127,12 +130,15 @@ EXPLANATIONS: dict[str, str] = {
     "E7": "A person checked on them in person. Neralu calls again an hour later to make sure they are still "
           "okay while the heat lasts; if that call is concerning or goes unanswered, a person is sent again (E3). "
           "Not when they were handed over to medical care.",
+    "E8": "A volunteer accepted the visit, but no visit was recorded within two hours. The ward officer is "
+          "alerted to follow up; the volunteer can still record what they found.",
     "S1": "Their room is very hot and their fan or cooler is not working. A volunteer can bring water, "
           "ORS or a fan.",
     # Caregiver check: people with memory difficulty are checked through their caregiver.
+    "C1": "The caregiver pressed the key for \"they need help now\". This is escalated straight away, "
+          "whatever the other answers were.",
     "C0": "The caregiver gave no keypad answers, so no one has confirmed this person is safe. This counts "
           "as not reached, never as fine.",
-    "C1": "The caregiver pressed the key for \"they need help now\". This is escalated straight away.",
     "C2": "The caregiver says they seem more confused, drowsy or unwell than usual. In someone with memory "
           "difficulty, a change like this in the heat can be an early sign of heat illness, so a person "
           "checks in person.",

@@ -154,6 +154,9 @@ def volunteer_case(session: Session, c: Case, v: Volunteer) -> dict:
     detail["elder"]["phone"] = e.phone if mine else None
     detail["elder"]["maps_url"] = (f"https://www.google.com/maps/search/?api=1&query={e.lat},{e.lng}"
                                    if mine else None)
+    if not mine:  # before accepting: why, and roughly how far (distance_km), but no position at all
+        detail["elder"].pop("lat", None)
+        detail["elder"].pop("lng", None)
     return detail
 
 

@@ -24,7 +24,7 @@ export const toneHex = (t: Tone) => token(TONE_TOKEN[t])
 export function elderStatus(e: ElderListItem): ElderStatus {
   const c = e.open_case
   if (c?.level === 'red') {
-    if (c.overdue) return { tone: 'alert', label: 'RED · overdue', group: 0 }
+    if (c.overdue) return { tone: 'alert', label: c.state === 'assigned' ? 'RED · no visit yet' : 'RED · overdue', group: 0 }
     if (c.state === 'assigned') return { tone: 'alert', label: 'RED · accepted', group: 3.5 }
     return { tone: 'alert', label: 'RED', group: 1 }
   }

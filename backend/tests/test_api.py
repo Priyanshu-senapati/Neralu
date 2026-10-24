@@ -76,6 +76,25 @@ def test_register_elder_appears_with_event(client):
     assert client.get("/api/summary").json()["counts"]["registered"] == 402
 
 
+def test_code_word_goes_only_to_the_family_who_chose_it(client):
+    body = client.post("/api/elders", json=REGISTRATION).json()
+    assert body["code_word"] == "tulasi"  # echoed once, so the family can tell their parent
+    assert "code_word" not in client.get(f"/api/elders/{body['id']}").json()
+    assert "code_word" not in client.get(f"/api/elders/{kamala_id()}").json()
+    cid = red_case_for_kamala()
+    assert "code_word" not in client.get(f"/api/cases/{cid}").json()["elder"]
+
+
+def test_real_people_are_placed_approximately_in_shared_views(client):
+    items = {i["id"]: i for i in client.get("/api/elders").json()}
+    kamala = items[kamala_id()]
+    assert (kamala["lat"], kamala["lng"]) == (12.926, 77.585)  # stored 12.9262, 77.5851: ~100 m
+    assert client.get(f"/api/elders/{kamala_id()}").json()["lat"] == 12.926
+    with Session(engine) as s:  # simulated residents are fictional and stay exactly as seeded
+        sim = s.exec(select(Elder).where(Elder.is_simulated == True)).first()  # noqa: E712
+    assert (items[sim.id]["lat"], items[sim.id]["lng"]) == (sim.lat, sim.lng)
+
+
 def test_register_requires_consent_and_valid_code_word(client):
     assert client.post("/api/elders", json={**REGISTRATION, "consent": False}).status_code == 422
     assert client.post("/api/elders", json={**REGISTRATION, "code_word": "password"}).status_code == 422
@@ -87,11 +106,14 @@ def test_volunteer_sees_address_only_after_accepting(client):
     me = client.get("/api/volunteer/me", params={"token": "priya-demo"}).json()
     case = next(c for c in me["cases"] if c["id"] == cid)
     assert case["elder"]["address"] is None and case["elder"]["phone"] is None
+    assert "lat" not in case["elder"] and "lng" not in case["elder"]  # no position before accepting
+    assert case["elder"]["maps_url"] is None
     assert case["distance_km"] > 0
     r = client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
     assert r.status_code == 200
     assert r.json()["elder"]["address"].startswith("#18")
     assert r.json()["elder"]["phone"] == "+919900000001"
+    assert "12.9262,77.5851" in r.json()["elder"]["maps_url"]  # the exact point, only to the acceptor
     # dashboard detail shows it as assigned
     assert client.get(f"/api/cases/{cid}").json()["state"] == "assigned"
 

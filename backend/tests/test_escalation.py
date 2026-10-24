@@ -140,6 +140,36 @@ def test_e5_volunteer_then_asha_then_overdue_and_never_108(world, clock):
         assert "108" not in ev.message or ev.actor == "volunteer"
 
 
+def test_e8_accepted_but_no_visit_recorded_goes_to_the_ward_officer(world, clock):
+    s = world
+    case = open_case(s, kamala(s).id, "red", "E1", "No answer ×2"); s.commit()
+    p = priya(s)
+    clock.advance(10)
+    accept_case(s, case.id, p.id); s.commit()
+    clock.advance(119.9); sync_tick(s)  # timed from acceptance, not from opening
+    assert not case.overdue
+    clock.advance(0.2); sync_tick(s)
+    assert case.overdue and (case.state, case.assignee_id) == ("assigned", p.id)  # Priya keeps it
+    ev = s.exec(select(Event).where(Event.kind == "tier_overdue")).one()
+    assert "E8" in ev.message and "Priya" in ev.message and ev.data["visit"] is True
+    clock.advance(60); sync_tick(s)
+    assert len(s.exec(select(Event).where(Event.kind == "tier_overdue")).all()) == 1
+    resolve_case(s, case.id, p.id, "safe_in_person", None); s.commit()  # she can still record it
+    assert case.state == "resolved"
+
+
+def test_e8_does_not_fire_when_the_visit_is_recorded_in_time(world, clock):
+    s = world
+    case = open_case(s, kamala(s).id, "red", "E1", "No answer ×2"); s.commit()
+    p = priya(s)
+    accept_case(s, case.id, p.id); s.commit()
+    clock.advance(45); sync_tick(s)  # the pitch: Safe about 45 scenario minutes after accepting
+    resolve_case(s, case.id, p.id, "safe_in_person", None); s.commit()
+    clock.advance(200); sync_tick(s)
+    assert not case.overdue
+    assert not s.exec(select(Event).where(Event.kind == "tier_overdue")).all()
+
+
 def test_support_case_does_not_advance(world, clock):
     s = world
     case = open_case(s, kamala(s).id, "support", "S1", "Room very hot and fan not working")

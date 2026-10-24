@@ -9,7 +9,7 @@ from app.db import current_run_id, get_session
 from app.events import log_event
 from app.models import Elder
 from app.runs import start_new_run
-from app.state import Weather, state
+from app.state import Weather, is_pilot, state
 from app.weather import ForecastUnavailable, bengaluru_today
 from app.views import summary
 
@@ -52,7 +52,9 @@ def set_live_heat(session: Session = Depends(get_session)) -> dict:
 
 @router.post("/reset")
 def reset(session: Session = Depends(get_session)) -> dict:
-    return {"run_id": start_new_run(session)}
+    # Pilot mode: the people families registered are real and stay (as at midnight); only the
+    # demo state starts over. Demo mode starts from the seed alone.
+    return {"run_id": start_new_run(session, carry_from=current_run_id() if is_pilot() else None)}
 
 
 @router.post("/family-link")
