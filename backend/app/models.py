@@ -20,6 +20,7 @@ EVENT_KINDS = (
     "checkin_classified", "recall_scheduled", "case_opened", "tier_alerted", "tier_skipped",
     "tier_overdue", "case_accepted", "case_resolved", "family_notified", "elder_registered",
     "elder_deleted", "language_chosen", "case_declined", "volunteer_duty",
+    "recordings_deleted",
 )
 
 
@@ -45,6 +46,7 @@ class Elder(SQLModel, table=True):
     family_phone: str | None = None
     family_name: str | None = None
     family_token: str | None = Field(default=None, index=True)  # private family status link (random)
+    erasure_hash: str | None = None  # hash of the erasure code shown once to the family
     code_word: str = "mallige"
     address: str = ""
     lat: float = 0.0

@@ -141,13 +141,19 @@ the line still stands on its own.
   ward's live stream); no address, code word or phone numbers; the link dies with an erasure. With
   FAMILY_SMS=twilio the family's SMS carries the link. Tests: `backend/tests/test_family.py`.
 
-**R2-6 · Responsible-tech hardening** · responsible tech · 1.5 h
+**R2-6 · Responsible-tech hardening** · responsible tech · 1.5 h · **done**
 - Erasure with a random secret shown once to the family (replaces the guessable number).
 - Call recordings deleted automatically after 7 days; transcripts kept only as the day word.
 - A **Responsible by design** page: what we store, who sees what, consent, DPDP Act alignment,
   accessibility (any phone, keypad, three languages, slow pace), known risks (false reassurance,
   digital exclusion, scam impersonation, volunteer safety) and the mitigation for each.
 - *Done when:* tests cover the secret and the retention job; the page is linked from the console and story.
+- *Built:* erasure code (XXXX-XXXX, unambiguous letters, stored only as a hash) shown once at
+  registration; delete from the confirmation screen or the family status link. Hourly retention sweep
+  deletes recordings older than `RECORDING_RETENTION_DAYS` (7) in every run, plus stray files; the
+  spoken day is stored only as the weekday word. `/responsible` page linked from the console top bar,
+  the story page (nav and footer), registration consent and the family page. Tests:
+  `backend/tests/test_erase.py`, `backend/tests/test_retention.py`.
 
 **R2-7 · Command-center polish** · execution, presentation · 1 h
 - Filters on the attention list: risk level, call status, assigned volunteer; an "assigned to" column.

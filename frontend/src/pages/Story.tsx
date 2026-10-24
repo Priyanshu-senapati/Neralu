@@ -52,6 +52,7 @@ export default function Story() {
           <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted">
             <a href="#call" className="hover:text-ink hover:underline">The call</a>
             <a href="#rules" className="hover:text-ink hover:underline">The rules</a>
+            <Link to="/responsible" className="hover:text-ink hover:underline">Responsible by design</Link>
             <Link to="/register" className="hover:text-ink hover:underline">Register someone</Link>
           </nav>
         </header>
@@ -556,6 +557,9 @@ function Footer() {
         <div className="text-sm">
           <div className="font-semibold">Context</div>
           <p className="mt-2 leading-relaxed text-muted">Hack4SDG prototype. SDG targets 11.5, 3.d and 13.1.</p>
+          <Link to="/responsible" className="mt-2 inline-block text-muted underline underline-offset-2 hover:text-ink">
+            Responsible by design: data, consent and risks
+          </Link>
         </div>
         <a href="#top" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
           Back to top

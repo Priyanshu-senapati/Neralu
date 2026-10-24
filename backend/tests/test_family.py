@@ -117,7 +117,7 @@ def test_shows_nothing_about_anyone_else(client):
 def test_removed_registration_link_stops_working(client):
     reg = client.post("/api/elders", json=REGISTER).json()
     token = reg["family_link"].split("t=")[1]
-    client.request("DELETE", f"/api/elders/{reg['id']}", json={"registration": f"NRL-W47-{reg['id']:05d}"})
+    client.request("DELETE", f"/api/elders/{reg['id']}", json={"code": reg["erasure_code"]})
     assert family(client, token).status_code == 404
 
 

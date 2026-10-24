@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.db import current_run_id, engine
 from app.events import log_event
 from app.models import TERMINAL_CALL_STATUSES, CheckIn, Elder
-from app.orientation import score_orientation
+from app.orientation import day_word, score_orientation
 from app.state import state
 from app.transcribe import fetch_recording, transcribe
 
@@ -170,8 +170,9 @@ async def score_audio(checkin_id: int, audio: bytes | None, lang: str,
         c = _live_checkin(session, checkin_id)
         if c is None:
             return
-        c.transcript = transcript
-        _store(session, c, "orientation", value, "voice", transcript=transcript)
+        # Only the weekday is kept (e.g. "Thursday"); the raw transcript is never stored.
+        c.transcript = day_word(transcript)
+        _store(session, c, "orientation", value, "voice", day_heard=c.transcript)
         session.commit()
 
 

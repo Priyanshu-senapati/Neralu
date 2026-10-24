@@ -11,6 +11,7 @@ from app import browser_phone as bp
 from app import telephony as tw
 from app.audio import fallback_speech
 from app.calls import handle_call_ended
+from app.config import get_settings
 from app.db import engine
 from app.models import CheckIn, Elder
 from app.routes.voice import HELP_KEYPAD, KEYPAD, _await_orientation, _live_checkin, _store, \
@@ -19,7 +20,7 @@ from app.state import state
 
 router = APIRouter(prefix="/api/phone")
 
-RECORDINGS_DIR = Path(__file__).resolve().parents[2] / "recordings"
+RECORDINGS_DIR = Path(get_settings().recordings_dir or Path(__file__).resolve().parents[2] / "recordings")
 CAPTIONS = {  # English captions shown on the phone screen while the Kannada prompt plays
     "water": "Have you had water in the last hour? Press 1 for yes, 2 for no.",
     "symptoms": "Do you feel dizzy, weak or confused? Press 1 for yes, 2 for no.",

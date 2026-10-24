@@ -15,6 +15,15 @@ WEEKDAYS: dict[int, list[str]] = {
 }
 
 
+DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+
+def day_word(transcript: str | None) -> str | None:
+    """What is kept of a spoken answer: only the weekday it named, never the words themselves."""
+    day = parse_weekday(transcript or "")
+    return DAY_NAMES[day] if day is not None else None
+
+
 def parse_weekday(transcript: str) -> int | None:
     """The single weekday named in the transcript; None if no weekday or several distinct ones."""
     text = (transcript or "").casefold()

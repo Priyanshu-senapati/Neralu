@@ -47,7 +47,7 @@ const SCRIPT: ScriptLine[] = [
       if (typeof pressed === 'number') {
         return { text: `Pressed ${pressed + 1} · ${DAYS[pressed]}${v === 'correct' ? ' · correct' : ' · wrong day'}`, concern: v !== 'correct' }
       }
-      if (c.transcript) return { text: `Said "${c.transcript}" · ${v === 'correct' ? 'correct' : v === 'wrong' ? 'wrong day' : 'unclear'}`, concern: v !== 'correct' }
+      if (c.transcript) return { text: `Named ${c.transcript} · ${v === 'correct' ? 'correct' : v === 'wrong' ? 'wrong day' : 'unclear'}`, concern: v !== 'correct' }
       return { text: v === 'none' ? 'No answer' : v === 'correct' ? 'Correct' : v === 'wrong' ? 'Wrong day' : 'Unclear', concern: v !== 'correct' }
     },
   },

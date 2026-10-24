@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     kamala_phone: str = ""
     volunteer_demo_token: str = "priya-demo"
     family_demo_token: str = "kamala-family"  # Kamala's family status link in the demo
+    recording_retention_days: float = 7  # call recordings are deleted this long after the call
+    recordings_dir: str = ""  # browser-phone recordings; default backend/recordings
 
 
 @lru_cache

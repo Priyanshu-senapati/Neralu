@@ -84,7 +84,7 @@ def test_full_happy_path_is_green(client, stt):
     c = checkin(cid)
     assert (c.outcome, c.rule_id) == ("GREEN", "R9")
     assert c.answers["orientation"] == "correct"
-    assert c.transcript == "ಇವತ್ತು ಶುಕ್ರವಾರ"
+    assert c.transcript == "Friday"  # only the day word is kept, never what was said
 
 
 def test_symptoms_and_no_water_is_red_with_advice(client, stt):

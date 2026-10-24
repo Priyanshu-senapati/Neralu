@@ -219,6 +219,8 @@ export interface ElderDetail extends ElderListItem, RiskDetail {
   family_name: string | null
   /** only in the registration response: the family's private status link */
   family_link?: string
+  /** only in the registration response, shown once: the code that deletes this registration */
+  erasure_code?: string
   checkins: CheckInOut[]
   events: NeraluEvent[]
 }

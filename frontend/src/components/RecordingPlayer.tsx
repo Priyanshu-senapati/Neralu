@@ -9,13 +9,14 @@ export function RecordingPlayer({ src, transcript }: { src: string; transcript: 
         <span>Recording</span>
       </div>
       <div className="mb-2 text-sm">
-        {transcript ? <span className="font-semibold">"{transcript}"</span> : <span className="text-muted">Transcription unclear → scored as unclear</span>}
+        {transcript ? <>Day heard: <span className="font-semibold">{transcript}</span></> : <span className="text-muted">No single weekday heard → scored as unclear</span>}
       </div>
       {failed ? (
         <div className="text-xs text-alert">Recording unavailable</div>
       ) : (
         <audio controls preload="none" src={src} className="h-8 w-full" onError={() => setFailed(true)} />
       )}
+      <div className="mt-1 text-xs text-muted">Only the day word is kept from what was said. The recording is deleted 7 days after the call.</div>
     </div>
   )
 }

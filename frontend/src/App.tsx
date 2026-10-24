@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Family from './pages/Family'
 import Phone from './pages/Phone'
 import Register from './pages/Register'
+import Responsible from './pages/Responsible'
 import Story from './pages/Story'
 import Volunteer from './pages/Volunteer'
 
@@ -42,6 +43,7 @@ function PageTransitions() {
       <Route path="/register" element={<Register />} />
       <Route path="/phone" element={<Phone />} />
       <Route path="/family" element={<Family />} />
+      <Route path="/responsible" element={<Responsible />} />
     </Routes>
   )
   // Reduced motion: switch pages instantly (a fade that cannot run must never leave a blank page).

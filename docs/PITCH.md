@@ -121,7 +121,7 @@ person: safe".
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 214 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 220 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 
@@ -148,9 +148,10 @@ and may not read. A call works on any phone and needs nothing from them.
 telephony provider and the government's Bhashini voice services; we would measure the real per-check
 cost in the pilot rather than quote a number we haven't tested.
 
-**"Privacy?"** Families register with consent. We store only what the check needs. The address is shown
-only to the volunteer who accepts that case. Families can delete a registration. Recordings would be
-kept for days, not months.
+**"Privacy?"** Families register with consent. We store only what the check needs; from a spoken answer
+only the weekday word. The address is shown only to the volunteer who accepts that case. Families can
+delete everything with a random code shown once (stored only as a hash). Recordings are deleted after
+7 days. Open the **Responsible by design** page (console top bar): stores, who sees what, DPDP, risks.
 
 **"What if the volunteer doesn't go?"** Every tier has a timer: neighbour, then volunteer, then ASHA
 worker, then the ward officer. A case never just sits.

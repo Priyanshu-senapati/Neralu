@@ -278,6 +278,8 @@ def sync_tick(session: Session) -> None:
         close_lost_calls(session)  # Twilio: never leave a call stuck on a lost callback
     step_simulation(session)
     check_ack_timeouts(session)
+    from app.privacy import retention_tick
+    retention_tick(session)  # hourly: recordings past the retention limit are deleted
     session.commit()
 
 

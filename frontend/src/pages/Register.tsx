@@ -239,7 +239,8 @@ export default function Register() {
                     <input type="checkbox" checked={f.consent} onChange={(e) => set('consent', e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--brand)]" />
                     <span>
                       I have {first}'s permission. Neralu stores only what is needed to check on them, shows the address only to
-                      the volunteer who accepts a case, and never shares it.
+                      the volunteer who accepts a case, and never shares it.{' '}
+                      <a href="/responsible" target="_blank" rel="noreferrer" className="underline underline-offset-2">What Neralu stores</a>
                     </span>
                   </label>
                 </>
@@ -460,6 +461,16 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
         </motion.div>
 
         {done.family_link && <FamilyLink link={done.family_link} name={dn} />}
+        {done.erasure_code && (
+          <div className="mt-4 rounded-[10px] border border-line-strong bg-surface px-5 py-4">
+            <div className="text-sm font-semibold">Your erasure code</div>
+            <div className="num mt-1 text-[1.6rem] font-semibold tracking-[0.08em]">{done.erasure_code}</div>
+            <p className="mt-1 text-sm text-ink/80">
+              Write it down. With it you can delete {dn}'s registration and everything recorded about them, at any time,
+              from the status link. It is shown only now; Neralu keeps only a scrambled form of it.
+            </p>
+          </div>
+        )}
 
         <motion.h2 {...item(2)} className="display mt-10 text-[1.6rem] font-medium">What happens next</motion.h2>
         <ol className="mt-4">
@@ -529,7 +540,7 @@ function RemoveRegistration({ done, onRemoved }: { done: ElderDetail; onRemoved:
     setStage('busy')
     setError(null)
     try {
-      await api.removeRegistration(done.id, regNo(done.id))
+      await api.removeRegistration(done.id, done.erasure_code ?? '')
       setStage('removed')
     } catch {
       setStage('confirm')

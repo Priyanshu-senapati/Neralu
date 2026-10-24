@@ -216,6 +216,14 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Responsible by design
+
+`/responsible` sets out what Neralu stores, who sees what, how it lines up with India's DPDP Act 2023
+(our reading, not a legal review), accessibility, and each known risk with its mitigation and what
+remains. In the code: the family's erasure code is random, shown once and stored only as a hash;
+call recordings are deleted 7 days after the call (`RECORDING_RETENTION_DAYS`); only the weekday word
+is kept from a spoken answer; addresses appear only to the volunteer who accepts.
+
 ### Family status link
 
 Registering gives the family a private link that shows that one person's checks today in plain words:

@@ -83,6 +83,9 @@ export function TopBar({ summary, now, stream, onPlan, onResponders, onImpact }:
         >
           Impact
         </button>
+        <Link to="/responsible" className="text-xs text-muted underline-offset-2 hover:text-ink hover:underline" title="What Neralu stores, who sees what, and the known risks">
+          Responsible by design
+        </Link>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="rounded-[3px] border border-line-strong px-2 py-0.5 text-xs text-muted hover:text-ink"

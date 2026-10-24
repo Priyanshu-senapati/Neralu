@@ -13,6 +13,59 @@ const TONE: Record<string, { box: string; dot: string }> = {
   muted: { box: 'border-line bg-surface', dot: 'bg-line-strong' },
 }
 
+/** Right to erasure from the status page: the erasure code shown once at registration. */
+function RemoveRegistration({ token, name, onRemoved }: { token: string; name: string; onRemoved: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  if (!open)
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="underline underline-offset-2 hover:text-alert">
+        Remove this registration
+      </button>
+    )
+  const remove = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.removeFromFamilyLink(token, code)
+      onRemoved()
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 403
+        ? 'That erasure code does not match. It was shown once, when you registered.'
+        : 'Could not remove it. Check your connection and try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="mt-2 rounded-ui border border-alert/50 bg-alert-bg px-3 py-3 text-sm text-ink">
+      <label htmlFor="erasure-code" className="block">
+        Delete {name} from Neralu? Their details and call history are erased and Neralu stops calling. Enter the
+        erasure code you were given at registration.
+      </label>
+      <input
+        id="erasure-code"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        autoComplete="off"
+        placeholder="XXXX-XXXX"
+        className="num mt-2 w-full rounded-ui border border-line bg-surface px-3 py-2 text-base uppercase tracking-[0.08em]"
+      />
+      {error && <p role="alert" className="mt-2 text-alert">{error}</p>}
+      <div className="mt-3 flex gap-2">
+        <button type="button" onClick={remove} disabled={busy || code.trim().length < 8} className="press min-h-11 rounded-full bg-alert px-4 font-semibold text-paper disabled:opacity-60">
+          {busy ? 'Deleting…' : 'Delete registration'}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="press min-h-11 rounded-full border border-line-strong px-4">
+          Keep it
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /*
  * A family's private view of one person's heat check today. It asks only for this person's status
  * (never the ward's live stream), so nothing about anyone else ever reaches this phone.
@@ -22,6 +75,7 @@ export default function Family() {
   const token = params.get('t') ?? ''
   const [d, setD] = useState<FamilyStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [removed, setRemoved] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -35,10 +89,11 @@ export default function Family() {
   }, [token])
 
   useEffect(() => {
+    if (removed) return
     load()
     const id = window.setInterval(() => document.visibilityState === 'visible' && load(), POLL_MS)
     return () => window.clearInterval(id)
-  }, [load])
+  }, [load, removed])
 
   const first = d?.name.split(' ')[0]
   const tone = TONE[d?.tone ?? 'neutral'] ?? TONE.neutral
@@ -50,9 +105,14 @@ export default function Family() {
         <span className="text-sm text-muted">Family view</span>
       </header>
       <main className="flex flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
-        {!d && !error && <div className="h-40 animate-pulse rounded-ui bg-line" />}
+        {removed && (
+          <p role="status" className="rounded-ui border border-line bg-surface px-4 py-3 text-sm">
+            The registration and everything Neralu recorded about them has been deleted. Neralu will not call again.
+          </p>
+        )}
+        {!removed && !d && !error && <div className="h-40 animate-pulse rounded-ui bg-line" />}
         {error && !d && <p role="alert" className="rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
-        {d && (
+        {d && !removed && (
           <>
             <h1 className="display text-[1.7rem] font-medium leading-tight">{first}'s heat check today</h1>
             <section aria-live="polite" className={`mt-4 rounded-ui border-l-4 px-4 py-4 ${tone.box}`}>
@@ -85,6 +145,10 @@ export default function Family() {
               <p>This page updates by itself. The link is private to your family: please do not share it.</p>
               <p>Neralu never asks for money, OTP, Aadhaar or bank details. Neralu never calls an ambulance itself; a person decides that.</p>
               {d.demo_clock && <p>Demo: times on this page run faster than real time.</p>}
+              <p>
+                <a href="/responsible" className="underline underline-offset-2 hover:text-ink">How Neralu handles your family's data</a>
+              </p>
+              <RemoveRegistration token={token} name={first ?? ''} onRemoved={() => setRemoved(true)} />
             </footer>
           </>
         )}

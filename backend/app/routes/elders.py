@@ -9,6 +9,7 @@ from app.db import current_run_id, get_session
 from app.erase import erase_elder
 from app.events import log_event
 from app.family import find, link, new_token, status
+from app.privacy import code_matches, hash_code, new_erasure_code
 from app.models import CODE_WORDS, LANGUAGES, ROOF_TYPES, Elder, Event
 from app.risk import vulnerability_score
 from app.views import elder_detail, elder_items
@@ -100,11 +101,11 @@ def get_elder(elder_id: int, session: Session = Depends(get_session)) -> dict:
 
 
 class DeleteIn(BaseModel):
-    registration: str  # NRL-W47-00042, shown only to the family on the confirmation screen
+    code: str = Field(max_length=20)  # the erasure code shown once to the family at registration
 
 
-def registration_number(elder_id: int) -> str:
-    return f"NRL-W47-{elder_id:05d}"
+class FamilyDeleteIn(DeleteIn):
+    t: str = Field(max_length=64)
 
 
 @router.delete("/elders/{elder_id}")
@@ -117,8 +118,21 @@ def delete_elder(elder_id: int, body: DeleteIn, session: Session = Depends(get_s
         Event.run_id == current_run_id(), Event.kind == "elder_registered", Event.elder_id == elder_id)).first()
     if not registered:
         raise HTTPException(409, "Only people registered through Neralu can be removed here")
-    if body.registration.strip().upper() != registration_number(elder_id):
-        raise HTTPException(403, "Registration number does not match")
+    if not code_matches(e.erasure_hash, body.code):
+        raise HTTPException(403, "The erasure code does not match")
+    return _erase(session, e)
+
+
+@router.delete("/family")
+def delete_from_family_link(body: FamilyDeleteIn, session: Session = Depends(get_session)) -> dict:
+    """The same right to erasure from the family's status page: their link plus the erasure code."""
+    e = find(session, body.t)
+    if e is None or not code_matches(e.erasure_hash, body.code):
+        raise HTTPException(403, "The link or the erasure code does not match")
+    return _erase(session, e)
+
+
+def _erase(session: Session, e: Elder) -> dict:
     removed = erase_elder(session, e)
     log_event(session, "elder_deleted", "A registration was removed at the family's request · all their data deleted",
               actor="family", data=removed)
@@ -133,7 +147,9 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
     # No geocoding in the MVP: place the dot at an approximate point inside the ward.
     rng = random.Random(body.phone)
     data = body.model_dump(exclude={"consent"})
+    erasure_code = new_erasure_code()
     e = Elder(run_id=current_run_id(), is_simulated=False, family_token=new_token(),
+              erasure_hash=hash_code(erasure_code),
               lat=round(CENTER_LAT + rng.uniform(-HALF_LAT, HALF_LAT) * 0.6, 6),
               lng=round(CENTER_LNG + rng.uniform(-HALF_LNG, HALF_LNG) * 0.6, 6), **data)
     session.add(e)
@@ -145,7 +161,7 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
     session.commit()
     session.refresh(e)
     # The family link is shown once, here, to the person who registered; nowhere else returns it.
-    return {**elder_detail(session, e), "family_link": link(e.family_token)}
+    return {**elder_detail(session, e), "family_link": link(e.family_token), "erasure_code": erasure_code}
 
 
 @router.get("/family")

@@ -29,6 +29,7 @@ os.environ.update({
     "SARVAM_API_KEY": "",
     "FRONTEND_DIST": "/nonexistent-neralu-dist",
     "FAMILY_SMS": "simulated",
+    "RECORDINGS_DIR": f"{_tmp}/recordings",  # never the real recordings folder
 })
 
 import pytest  # noqa: E402

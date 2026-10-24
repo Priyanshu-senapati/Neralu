@@ -55,8 +55,10 @@ export const api = {
   resolve: (id: number, token: string, resolution: string, note?: string) =>
     post<CaseDetail>(`/api/cases/${id}/resolve`, { volunteer_token: token, resolution, note }),
   register: (body: unknown) => post<ElderDetail>('/api/elders', body),
-  removeRegistration: (id: number, registration: string) =>
-    request<{ deleted: true }>(`/api/elders/${id}`, { method: 'DELETE', body: JSON.stringify({ registration }) }),
+  removeRegistration: (id: number, code: string) =>
+    request<{ deleted: true }>(`/api/elders/${id}`, { method: 'DELETE', body: JSON.stringify({ code }) }),
+  removeFromFamilyLink: (t: string, code: string) =>
+    request<{ deleted: true }>('/api/family', { method: 'DELETE', body: JSON.stringify({ t, code }) }),
   phone: {
     current: () => request<{ call: PhoneCall | null }>('/api/phone/current'),
     answer: (id: number) => post<PhoneScript>(`/api/phone/calls/${id}/answer`, {}),
