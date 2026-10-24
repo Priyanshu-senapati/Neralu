@@ -124,6 +124,9 @@ EXPLANATIONS: dict[str, str] = {
     "E1": "No one answered any of the call attempts, so a person nearby is asked to check in person.",
     "E3": "A follow-up call was still concerning or went unanswered, so this moves to a person checking "
           "in person.",
+    "E7": "A person checked on them in person. Neralu calls again an hour later to make sure they are still "
+          "okay while the heat lasts; if that call is concerning or goes unanswered, a person is sent again (E3). "
+          "Not when they were handed over to medical care.",
     "S1": "Their room is very hot and their fan or cooler is not working. A volunteer can bring water, "
           "ORS or a fan.",
     # Caregiver check: people with memory difficulty are checked through their caregiver.

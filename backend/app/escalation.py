@@ -151,7 +151,14 @@ def resolve_case(session: Session, case_id: int, volunteer_id: int, resolution: 
     log_event(session, "case_resolved", f"{vol.name}: {label}" + (f" · {note}" if note else ""),
               actor="volunteer", elder_id=elder.id, case_id=case.id, data=data,
               simulated=vol.is_simulated)
-    notify_family(session, elder, f"Update on {elder.name}: {label}.", case_id=case.id)
+    aftercare = None
+    if resolution in ("safe_in_person", "support_delivered"):  # not after 108: they are in medical care
+        from app.calls import schedule_aftercare  # calls imports this module
+
+        aftercare = schedule_aftercare(session, elder, case.id)
+    later = (f" Neralu will call again at {state.clock.to_scenario(aftercare.scheduled_for_real):%H:%M} "
+             "to check they are still okay.") if aftercare else ""
+    notify_family(session, elder, f"Update on {elder.name}: {label}.{later}", case_id=case.id)
     return case
 
 

@@ -9,7 +9,7 @@ import type { NeraluEvent } from './types'
 export type StepState = 'done' | 'current' | 'pending' | 'skipped'
 
 export interface LoopStep {
-  key: 'call' | 'decision' | 'escalation' | 'accepted' | 'resolved' | 'family'
+  key: 'call' | 'decision' | 'escalation' | 'accepted' | 'resolved' | 'family' | 'aftercare'
   label: string
   detail: string
   at: string | null
@@ -85,7 +85,11 @@ export function episode(events: NeraluEvent[]): NeraluEvent[] {
 }
 
 export function closedLoop(all: NeraluEvent[]): LoopStep[] {
-  const ev = episode(all)
+  const whole = episode(all)
+  // E7: the after-care call booked after a visit is its own last step, not part of the first call's loop.
+  const booked = whole.find((e) => e.kind === 'recall_scheduled' && e.data.aftercare) ?? null
+  const cut = booked ? whole.findIndex((e) => e.id > booked.id && e.kind === 'call_placed') : -1
+  const ev = cut < 0 ? whole : whole.slice(0, cut)
   const of = (kind: string) => ev.filter((e) => e.kind === kind)
   const last = (kind: string) => of(kind).at(-1) ?? null
 
@@ -170,7 +174,25 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
     state: told ? 'done' : outcome === 'GREEN' && !redOpen ? 'skipped' : 'pending',
     detail: told ? `${told.message.split(' notified')[0]} · simulated channel` : outcome === 'GREEN' && !redOpen ? 'Nothing to report' : '—',
   })
+
+  // 7. Checked again after the visit (E7)
+  if (booked) steps.push(aftercareStep(booked, cut < 0 ? [] : whole.slice(cut)))
   return steps
+}
+
+function aftercareStep(booked: NeraluEvent, after: NeraluEvent[]): LoopStep {
+  const result = after.filter((e) => e.kind === 'checkin_classified').at(-1)
+  const outcome = String(result?.data.outcome ?? '')
+  const again = after.find((e) => e.kind === 'case_opened' && e.data.level === 'red')
+  const calling = after.filter((e) => e.kind === 'call_placed').length > after.filter((e) => e.kind === 'call_ended').length
+  const base = { key: 'aftercare' as const, label: 'Checked again later' }
+  if (again) return { ...base, at: again.ts_scenario, state: 'done', tone: 'alert', detail: `Not okay · a person is sent again (${String(again.data.rule_id)})` }
+  if (result && outcome !== 'UNREACHED') {
+    return { ...base, at: result.ts_scenario, state: 'done', tone: OUTCOME_TONE[outcome], detail: `${OUTCOME_WORD[outcome] ?? outcome} · Rule ${String(result.data.rule_id)}` }
+  }
+  if (calling) return { ...base, at: after[0].ts_scenario, state: 'current', detail: 'After-care call now' }
+  if (result) return { ...base, at: result.ts_scenario, state: 'current', tone: 'watch', detail: 'No answer · trying again' }
+  return { ...base, at: booked.ts_scenario, state: 'pending', detail: `After-care call at ${atTime(booked.message)}` }
 }
 
 /** A plain-English account of what happened to this person, oldest first. */
@@ -212,7 +234,9 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
           d.outcome === 'GREEN' ? 'ok' : d.outcome === 'AMBER' ? 'watch' : 'alert')
         break
       case 'recall_scheduled':
-        add(e, `Family told. A follow-up call is booked for ${atTime(e.message)}.`, 'watch')
+        add(e, d.aftercare
+          ? `An after-care call is booked for ${atTime(e.message)} to make sure ${firstName} is still okay.`
+          : `Family told. A follow-up call is booked for ${atTime(e.message)}.`, d.aftercare ? 'muted' : 'watch')
         break
       case 'case_opened':
         add(e, d.level === 'red'
