@@ -203,7 +203,10 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
                           <>{TIER_LABEL[c.tier]} · not accepted <WaitingTimer since={c.tier_started_scenario} now={now} /></>
                         )
                       ) : (
-                        <>{c.assignee_name ? <span className="text-ink">{c.assignee_name}</span> : TIER_LABEL[c.tier]} accepted</>
+                        <>
+                          {c.assignee_name ? <span className="text-ink">{c.assignee_name}</span> : TIER_LABEL[c.tier]} accepted
+                          {c.overdue && <span className="font-semibold text-alert"> · no visit yet</span>}
+                        </>
                       )
                     ) : (
                       <WaitingTimer since={since(e)} now={now} />

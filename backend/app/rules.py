@@ -130,6 +130,8 @@ EXPLANATIONS: dict[str, str] = {
     "E7": "A person checked on them in person. Neralu calls again an hour later to make sure they are still "
           "okay while the heat lasts; if that call is concerning or goes unanswered, a person is sent again (E3). "
           "Not when they were handed over to medical care.",
+    "E8": "A volunteer accepted the visit, but no visit was recorded within two hours. The ward officer is "
+          "alerted to follow up; the volunteer can still record what they found.",
     "S1": "Their room is very hot and their fan or cooler is not working. A volunteer can bring water, "
           "ORS or a fan.",
     # Caregiver check: people with memory difficulty are checked through their caregiver.

@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     ring_timeout_s: int = 15
     retry_gap_min: float = 15
     ack_timeout_min: float = 15
+    # E8: an accepted RED case with no visit recorded this long after acceptance goes to the ward officer.
+    # 120 scenario minutes is 2 real minutes on stage (the pitch records Safe ~45 s after accepting).
+    visit_timeout_min: float = 120
     alert_nearest: int = 3  # volunteers/ASHAs alerted first, nearest to the person
     amber_recall_min: float = 30
     aftercare_min: float = 60  # E7: call again this long after a person checked in person (0: off)

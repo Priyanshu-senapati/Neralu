@@ -103,6 +103,9 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
   const caseEv = (kind: string) => (redOpen ? ev.filter((e) => e.kind === kind && e.case_id === redOpen.case_id).at(-1) ?? null : null)
   const alerted = caseEv('tier_alerted')
   const overdue = caseEv('tier_overdue')
+  // E8: accepted, but no visit recorded in time; otherwise nobody accepted at all (E5)
+  const visitOverdue = overdue?.data.visit === true ? overdue : null
+  const ackOverdue = visitOverdue ? null : overdue
   const accepted = caseEv('case_accepted')
   const resolvedAll = redOpen ? ev.filter((e) => e.kind === 'case_resolved' && e.case_id === redOpen.case_id) : []
   const resolved = resolvedAll.filter((e) => e.data.resolution !== 'not_found_escalate').at(-1) ?? null
@@ -143,10 +146,10 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
     at: redOpen?.ts_scenario ?? recall?.ts_scenario ?? null,
     state: redOpen ? 'done' : noPerson ? 'skipped' : 'pending',
     detail: redOpen
-      ? overdue ? 'Nobody accepted · ward officer alerted' : alerted ? alertedText(alerted, ev) : 'Case opened'
+      ? ackOverdue ? 'Nobody accepted · ward officer alerted' : alerted ? alertedText(alerted, ev) : 'Case opened'
       : noPerson ? (outcome === 'AMBER' && recall ? `Not yet · follow-up call at ${atTime(recall.message)}` : 'Not needed')
         : '—',
-    tone: overdue ? 'alert' : undefined,
+    tone: ackOverdue ? 'alert' : undefined,
   })
 
   // 4. Someone accepts
@@ -162,8 +165,10 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
     key: 'resolved', label: 'Checked in person',
     at: resolved?.ts_scenario ?? null,
     state: resolved ? 'done' : accepted ? 'current' : noPerson ? 'skipped' : 'pending',
-    detail: resolved ? resolved.message.replace(/^[^:]+: /, '') : accepted ? 'On the way' : noPerson ? 'Not needed' : '—',
-    tone: resolved ? (resolved.data.resolution === 'called_108' ? 'alert' : 'ok') : undefined,
+    detail: resolved ? resolved.message.replace(/^[^:]+: /, '')
+      : accepted ? (visitOverdue ? 'No visit recorded yet · ward officer alerted' : 'On the way')
+        : noPerson ? 'Not needed' : '—',
+    tone: resolved ? (resolved.data.resolution === 'called_108' ? 'alert' : 'ok') : visitOverdue ? 'alert' : undefined,
   })
 
   // 6. Family told
@@ -262,7 +267,9 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
         break
       }
       case 'tier_overdue':
-        add(e, 'Nobody has taken this visit yet. The ward officer was alerted.', 'alert')
+        add(e, d.visit === true
+          ? 'No visit was recorded in time after it was accepted. The ward officer was alerted.'
+          : 'Nobody has taken this visit yet. The ward officer was alerted.', 'alert')
         break
       case 'case_accepted':
         add(e, `${e.message.replace(' · waited', ' after waiting')}.`, 'ok')

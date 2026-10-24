@@ -66,6 +66,8 @@ Same story, with the live demo between 1:15 and 5:30.
    rings again. Keep it as the 5:00 beat below, or switch it off before running the script with
    `AFTERCARE_MIN=0` in `backend\.env`. Never decline it on stage: two missed after-care calls send a
    person again (E3) and Priya's phone buzzes.
+7. Priya taps **Safe** within two minutes of **Accept** (the script takes about 45 s). After two real
+   minutes with no visit recorded, rule E8 marks the case "no visit yet · ward officer alerted".
 
 **1:15 · Normal day.** Point at the heat index (31.7 °C) and "1 of 401 residents over their own threshold".
 > **"On a normal day almost nobody needs a call."**
@@ -129,7 +131,7 @@ person: safe".
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 229 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 237 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 
@@ -162,7 +164,12 @@ delete everything with a random code shown once (stored only as a hash). Recordi
 7 days. Open the **Responsible by design** page (console top bar): stores, who sees what, DPDP, risks.
 
 **"What if the volunteer doesn't go?"** Every tier has a timer: neighbour, then volunteer, then ASHA
-worker, then the ward officer. A case never just sits.
+worker, then the ward officer. And once someone accepts, if no visit is recorded within two hours,
+the ward officer is alerted (rule E8). A case never just sits.
+
+**"Who sees the code word?"** Only the household. The call plays it and the family sees it once, when
+they choose it; the ward console and the volunteers never see it. If an operator could read it, it
+would protect nobody.
 
 **"What about people with dementia, who can't answer reliably?"** They are checked through their
 caregiver: Neralu calls the family contact about them (seen in the last hour, water, more confused or
