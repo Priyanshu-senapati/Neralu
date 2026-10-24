@@ -4,7 +4,6 @@ after a restart, with the people families registered carried over to the next da
 Webhooks and timers belonging to an earlier run are ignored from then on.
 """
 import uuid
-from datetime import datetime
 
 from sqlmodel import Session, select
 
@@ -40,7 +39,7 @@ def resume_or_start(session: Session) -> str:
     if not is_pilot():
         return start_new_run(session)
     latest = _latest_pilot_run(session)
-    today = datetime.now(IST).date()
+    today = state.clock.real_now().astimezone(IST).date()  # the same clock start_new_run dates runs by
     if latest is None or latest.data.get("day") != today.isoformat():
         return start_new_run(session, carry_from=latest.run_id if latest else None)
     set_run_id(latest.run_id)
