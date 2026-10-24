@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { reducedMotion } from '../../motion'
+import { useTheme } from '@/theme'
 import { OrbitTooltip } from './OrbitTooltip'
 import { H_END, HIT_R, HitGrid, heat01, isCalled, type Household } from './orbitPhysics'
 import { heat, useHeatValue, useProgressValue } from './useScrollHeat'
@@ -72,6 +73,8 @@ function stars(count: number) {
 
 export default function HeroSpace({ households, className = '' }: { households: Household[]; className?: string }) {
   const still = reducedMotion()
+  const theme = useTheme()
+  const applyTheme = useRef<(dark: boolean) => void>(() => {})
   const hostRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const tipRef = useRef<HTMLDivElement>(null)
@@ -335,6 +338,14 @@ export default function HeroSpace({ households, className = '' }: { households: 
     canvas.addEventListener('pointerdown', down)
     canvas.addEventListener('pointerleave', leave)
     redraw.current = () => still && draw(0)
+    // Light theme: a daylight sky in the page's paper colour; stars and the orbit line belong to the night.
+    applyTheme.current = (dark: boolean) => {
+      renderer.setClearColor(new THREE.Color(getComputedStyle(host).getPropertyValue('--paper').trim() || (dark ? '#030406' : '#f7f6f1')), 1)
+      sky.points.visible = dark
+      orbitLine.visible = dark
+      if (still) draw(0)
+    }
+    applyTheme.current(document.documentElement.dataset.theme !== 'light')
 
     return () => {
       stop()
@@ -358,6 +369,7 @@ export default function HeroSpace({ households, className = '' }: { households: 
     }
   }, [households, still])
   const redraw = useRef<() => void>(() => {})
+  useEffect(() => applyTheme.current(theme === 'dark'), [theme])
 
   // Keyboard: step through the households Neralu calls at the current heat (Kamala first).
   const calledIdx = useCallback(() => {

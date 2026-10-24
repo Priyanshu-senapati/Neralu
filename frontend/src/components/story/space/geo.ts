@@ -5,7 +5,8 @@ import * as THREE from 'three'
  * so a point lands exactly on its pixel of the equirectangular maps.
  */
 
-export const KAMALA = { lat: 12.9262, lng: 77.5851 }
+// Kamala's home to about 100 m: shared views never show a registered person's exact position.
+export const KAMALA = { lat: 12.926, lng: 77.585 }
 export const WARD = { lat: 12.925, lng: 77.584 }
 /** 1 unit of the Earth model in kilometres. */
 export const EARTH_KM = 6371

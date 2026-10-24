@@ -39,7 +39,7 @@ export function altitudeAt(p: number): number {
 export const tiltAt = (p: number) => 0.3 * ease(0.55, 0.95, p)
 export const heatAt = (p: number) => 31 + 7 * ease(0.74, 0.97, p)
 export const cloudsAt = (p: number) => 1 - ease(0.5, 0.62, p)
-export const cityPatchAt = (p: number) => ease(0.5, 0.6, p)
+export const cityPatchAt = (p: number) => ease(0.57, 0.65, p) // after the clouds have cleared
 export const wardPatchAt = (p: number) => ease(0.64, 0.74, p)
 export const householdsAt = (p: number) => ease(0.7, 0.8, p)
 

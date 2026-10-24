@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom'
 import { Wordmark } from '../components/Brand'
 import { FlowButton } from '@/components/ui/flow-button'
 import { AnimatedThemeToggle } from '@/components/ui/animated-theme-toggle'
+import { useTheme } from '@/theme'
 import { Spotlight } from '@/components/ui/spotlight'
 import { EASE, gsap, reducedMotion, ScrollTrigger } from '../motion'
 import { api } from '../api'
 import { Reveal, RevealLines } from '../components/Reveal'
-import { EXAMPLE_HEAT, personalThreshold } from '@/heat'
 import type { ElderListItem } from '@/types'
 import { useRuleBook } from '../rules'
 import CallOnScroll from '../components/story/CallOnScroll'
@@ -24,7 +24,6 @@ import { useRimLight } from '../components/story/useRimLight'
  */
 
 // Canvas-heavy pieces load after first paint, on this page only.
-const WardDiorama = lazy(() => import('@/components/WardDiorama'))
 const HeroSpace = lazy(() => import('../components/story/HeroSpace'))
 const HeatHaze = lazy(() => import('../components/story/HeatHaze'))
 
@@ -57,7 +56,7 @@ export default function Story() {
       <Hero households={households} example={example} />
 
       <main id="main">
-        <Statement elders={elders} />
+        <Statement />
         <TheCall />
         <Rules />
         <WhoGoes />
@@ -72,6 +71,7 @@ export default function Story() {
 
 function Hero({ households, example }: { households: Household[]; example: boolean }) {
   const still = reducedMotion()
+  const theme = useTheme()
   const section = useRef<HTMLElement>(null)
   const heatLabel = useRef<HTMLSpanElement>(null)
   const countLabel = useRef<HTMLSpanElement>(null)
@@ -134,7 +134,8 @@ function Hero({ households, example }: { households: Household[]; example: boole
   // The wrapper is React's: pinning moves the section into a spacer, and React must not lose track of it.
   return (
     <div>
-      <section ref={section} className="space-dark relative flex h-svh min-h-[600px] flex-col overflow-hidden bg-paper">
+      {/* Dark: deep space. Light: the same scene on a daylight sky, with the page's light tokens. */}
+      <section ref={section} className={`${theme === 'dark' ? 'space-dark ' : ''}relative flex h-svh min-h-[600px] flex-col overflow-hidden bg-paper`}>
         <div className="absolute inset-0">
           <Suspense fallback={null}>
             <HeroSpace households={households} className="h-full w-full" />
@@ -193,10 +194,6 @@ function Hero({ households, example }: { households: Household[]; example: boole
             <div className="mt-6 hidden sm:block">
               <FlowButton to="/ward">Open the ward console</FlowButton>
             </div>
-            <p className="mt-6 hidden max-w-[30rem] text-xs leading-relaxed text-muted lg:block">
-              Ward 47 is a demo ward: its residents, weather and most call outcomes are simulated and labelled. The rules,
-              the escalation and the live call are real.
-            </p>
           </div>
         </div>
       </section>
@@ -272,10 +269,9 @@ function CallReplay() {
   )
 }
 
-function Statement({ elders }: { elders: ElderListItem[] | null }) {
-  const called = elders?.filter((e) => personalThreshold(e.risk_score) <= EXAMPLE_HEAT).length ?? 0
+function Statement() {
   return (
-    <section className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-x-12 gap-y-10 px-5 py-24 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
       <div>
         <p className="display max-w-4xl text-[2.4rem] font-medium leading-[1.12] sm:text-[3.4rem]">
           <RevealLines stagger={0.35}>
@@ -289,21 +285,6 @@ function Statement({ elders }: { elders: ElderListItem[] | null }) {
           sheet roof, is actually all right. That is the gap Neralu fills.
         </p>
       </div>
-      <figure>
-        <div className="relative h-[340px] sm:h-[420px]">
-          {elders && elders.length > 0 && (
-            <Suspense fallback={null}>
-              <WardDiorama elders={elders} heat={EXAMPLE_HEAT} className="h-full w-full" />
-            </Suspense>
-          )}
-        </div>
-        <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-          <span>Ward 47 at {EXAMPLE_HEAT}°C: <span className="num font-semibold text-heat">{called}</span> of {elders?.length ?? '—'} homes get a call · height is heat risk</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#e8622e]" />Called, high risk</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-[#ee9a45]" />Called</span>
-          <span className="rounded-[3px] border border-line-strong px-1.5 font-mono text-[0.625rem] uppercase tracking-[0.08em]">demo data</span>
-        </figcaption>
-      </figure>
     </section>
   )
 }
@@ -484,34 +465,6 @@ function WhoGoes() {
   )
 }
 
-/** A drawn keypad phone: the device Neralu is designed for. 1 and 2 are the keys that matter. */
-function KeypadPhone() {
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
-  return (
-    <svg viewBox="0 0 160 300" className="h-auto w-[150px]" role="img" aria-label="A keypad phone showing an incoming Neralu call: press 1 for yes, 2 for no">
-      <rect x="4" y="4" width="152" height="292" rx="26" fill="#17302A" stroke="#F3F1EA" strokeOpacity="0.25" />
-      <rect x="22" y="26" width="116" height="96" rx="6" fill="#F3F1EA" />
-      <text x="80" y="54" textAnchor="middle" fontFamily="Public Sans" fontSize="11" fill="#5F625B">Incoming call</text>
-      <text x="80" y="76" textAnchor="middle" fontFamily="Public Sans" fontWeight="600" fontSize="17" fill="#1F3D33">Neralu</text>
-      <text x="80" y="96" textAnchor="middle" fontFamily="Public Sans" fontSize="10.5" fill="#5F625B">Code word: Mallige</text>
-      <text x="80" y="112" textAnchor="middle" fontFamily="IBM Plex Mono" fontSize="9" fill="#5F625B">1 = yes · 2 = no</text>
-      {keys.map((k, i) => {
-        const col = i % 3
-        const row = Math.floor(i / 3)
-        const hot = k === '1' || k === '2'
-        return (
-          <g key={k}>
-            <rect x={22 + col * 40} y={140 + row * 36} width="34" height="28" rx="9" fill={hot ? '#F3F1EA' : '#24453B'} />
-            <text x={39 + col * 40} y={159 + row * 36} textAnchor="middle" fontFamily="IBM Plex Mono" fontSize="13" fontWeight={hot ? 600 : 400} fill={hot ? '#1F3D33' : '#F3F1EA'} fillOpacity={hot ? 1 : 0.7}>
-              {k}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
-
 function Phones() {
   const facts: [string, string][] = [
     ['Any phone', 'A normal voice call to a keypad phone. Nothing to install, no smartphone, no data plan.'],
@@ -521,17 +474,14 @@ function Phones() {
   ]
   return (
     <section className="border-y border-line bg-brand-tint text-ink">
-      <div className="mx-auto grid max-w-6xl items-center gap-x-14 gap-y-12 px-5 py-20 sm:px-8 lg:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="flex justify-center lg:justify-start">
-          <KeypadPhone />
-        </div>
+      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <div>
           <Reveal blur={false}>
             <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
               Built for the phones <span className="italic">people actually have.</span>
             </h2>
           </Reveal>
-          <dl className="mt-10 grid gap-x-12 gap-y-7 sm:grid-cols-2">
+          <dl className="mt-10 grid gap-x-12 gap-y-7 sm:grid-cols-2 lg:grid-cols-4">
             {facts.map(([t, d]) => (
               <div key={t} className="border-t border-line pt-4">
                 <dt className="font-semibold">{t}</dt>
