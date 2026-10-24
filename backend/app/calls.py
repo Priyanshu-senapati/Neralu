@@ -12,9 +12,9 @@ from app.events import log_event
 from app.models import CheckIn, Elder
 from app.notify import notify_family
 from app.rules import Outcome, Signals, classify
-from app.state import state
+from app.risk import calls_due
+from app.state import Weather, state
 from app.telephony import cancel_call, place_call
-from app.views import due_count
 
 log = logging.getLogger(__name__)
 
@@ -29,26 +29,36 @@ def _hhmm(real_ts) -> str:
     return state.clock.to_scenario(real_ts).strftime("%H:%M")
 
 
-def start_round(session: Session, round_no: int, *, auto: bool = False) -> int:
-    """Create check-ins for every elder due a call this round. Returns how many were created.
-    `auto`: started by pilot mode's schedule rather than by an officer."""
-    state.round_no = round_no
-    already = {c.elder_id for c in session.exec(select(CheckIn).where(
-        CheckIn.run_id == current_run_id(), CheckIn.round_no == round_no))}
-    elders = session.exec(select(Elder).where(Elder.run_id == current_run_id()))
-    created, caregiver = 0, 0
-    now = state.clock.real_now()
+def select_for_round(elders: list[Elder], round_no: int, weather: Weather) -> tuple[list[Elder], int]:
+    """Who a round calls at this weather, and how many are due but go to the caregiver route instead.
+    The single source for both real rounds and the what-if planner."""
+    to_call, caregiver = [], 0
     for e in elders:
-        if due_count(e) < round_no or e.id in already:
+        if calls_due(e, weather.heat_index_c, weather.night_min_c) < round_no:
             continue
         if e.cognitive_flag:
             caregiver += 1  # caregiver route: counted as due, not called directly in the MVP
             continue
         if not e.is_simulated and not e.phone:
             continue
+        to_call.append(e)
+    return to_call, caregiver
+
+
+def start_round(session: Session, round_no: int, *, auto: bool = False) -> int:
+    """Create check-ins for every elder due a call this round. Returns how many were created.
+    `auto`: started by pilot mode's schedule rather than by an officer."""
+    state.round_no = round_no
+    already = {c.elder_id for c in session.exec(select(CheckIn).where(
+        CheckIn.run_id == current_run_id(), CheckIn.round_no == round_no))}
+    elders = [e for e in session.exec(select(Elder).where(Elder.run_id == current_run_id()))
+              if e.id not in already]
+    to_call, caregiver = select_for_round(elders, round_no, state.weather)
+    now = state.clock.real_now()
+    for e in to_call:
         session.add(CheckIn(run_id=current_run_id(), elder_id=e.id, round_no=round_no,
                             scheduled_for_real=now, is_simulated=e.is_simulated))
-        created += 1
+    created = len(to_call)
     log_event(session, "round_started",
               f"Round {round_no} started{' automatically (pilot schedule)' if auto else ''} · {created} calls" +
               (f" · {caregiver} on caregiver route" if caregiver else ""),

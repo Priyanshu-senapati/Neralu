@@ -16,6 +16,40 @@ export interface Weather {
   observed_at: string | null
 }
 
+export interface PlanRound {
+  round_no: number
+  at: string
+  /** when this round's cases arrive and need responders */
+  window: string
+  calls: number
+  real_calls: number
+  caregiver_route: number
+  expected: { fine: number; follow_up: number; red: number; support: number; no_answer_first_try: number }
+  cases: number
+  responders_needed: number
+  short: number
+}
+
+export interface WardPlan {
+  weather: Weather
+  residents: number
+  over_threshold: number
+  rounds: PlanRound[]
+  calls: number
+  cases: number
+  responders_on_duty: number
+  peak_needed: number
+  short: number
+}
+
+/** GET /api/whatif: the run's weather now against a scenario. Outcomes are simulated estimates. */
+export interface WhatIf {
+  baseline: WardPlan
+  scenario: WardPlan
+  assumptions: string[]
+  simulated: true
+}
+
 export interface Summary {
   run_id: string
   scenario_now: string

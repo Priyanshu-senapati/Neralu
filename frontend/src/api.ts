@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, RoundSummary, Summary, VolunteerMe } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, RoundSummary, Summary, VolunteerMe, WhatIf } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -37,6 +37,13 @@ export const api = {
   setLiveHeat: () => post<Summary>('/api/sim/heat/live', {}),
   startRound: (round_no: number) => post<{ created: number }>('/api/sim/round', { round_no }),
   reset: () => post<{ run_id: string }>('/api/sim/reset', {}),
+  whatIf: (
+    q: { temp_c: number; humidity_pct: number; night_min_c: number; responders?: number } | { forecast: 'tomorrow'; responders?: number },
+    signal?: AbortSignal,
+  ) => {
+    const params = new URLSearchParams(Object.entries(q).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))
+    return request<WhatIf>(`/api/whatif?${params}`, { signal })
+  },
   volunteerMe: (token: string) => request<VolunteerMe>(`/api/volunteer/me?token=${encodeURIComponent(token)}`),
   accept: (id: number, token: string) =>
     post<CaseDetail>(`/api/cases/${id}/accept`, { volunteer_token: token }),

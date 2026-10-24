@@ -27,6 +27,7 @@ SCENARIOS = {  # name: (weight %, answers or None for no answer)
     "unreached_then_answers": (4, None),
     "red": (1, {**FINE, "symptoms": "yes", "water": "no"}),
 }
+RECALL_FINE = 0.8  # share of follow-up calls that come back fine; the rest are still short of water
 
 
 def _rng(c: CheckIn, stream: str = "answers") -> random.Random:
@@ -38,7 +39,7 @@ def _rng(c: CheckIn, stream: str = "answers") -> random.Random:
 def _answers_for(c: CheckIn) -> dict | None:
     rng = _rng(c)
     if c.is_recall:
-        return FINE if rng.random() < 0.8 else {**FINE, "water": "no"}
+        return FINE if rng.random() < RECALL_FINE else {**FINE, "water": "no"}
     if c.attempt > 1:
         return FINE  # "unreached, then answers" on the retry
     names = list(SCENARIOS)

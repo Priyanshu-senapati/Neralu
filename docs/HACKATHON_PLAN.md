@@ -87,7 +87,7 @@ the line still stands on its own.
   a restart resumes the day, each new day carries over registered people. Top bar and status strip
   show the schedule. Tests: `backend/tests/test_pilot.py`.
 
-**R2-2 · What-if simulator with volunteer workload (the wow moment)** · originality, feasibility · 2.5 h
+**R2-2 · What-if simulator with volunteer workload (the wow moment)** · originality, feasibility · 2.5 h · **done**
 - On the console: drag temperature, humidity and night minimum (or load tomorrow's real forecast) and
   watch, using the same risk rules as live calls: residents over their threshold, calls in each round,
   expected follow-ups and escalations, **volunteer workload and shortfall**
@@ -95,6 +95,11 @@ the line still stands on its own.
 - Baseline vs scenario side by side. Every simulated input and output is labelled simulated.
 - *Why it matters:* turns a heat forecast into a ward work plan before the heat arrives.
 - *Done when:* moving the slider updates the numbers instantly and matches what a real round then does.
+- *Built:* console top bar → **Plan ahead**. Sliders for temperature, humidity, night minimum and
+  responders on duty, or tomorrow's real forecast; now against scenario; responders per round with the
+  shortfall. Who is called comes from the same function a real round uses (a test checks they match);
+  outcomes are the simulated answer mix through the same rules, labelled simulated. `GET /api/whatif`,
+  `backend/app/whatif.py`, tests in `backend/tests/test_whatif.py`.
 
 **R2-3 · Volunteer availability and live reassignment** · execution, feasibility · 2 h
 - Volunteers toggle **available / not available**. "Can't go" now tells the system: the case is offered

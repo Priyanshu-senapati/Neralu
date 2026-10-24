@@ -33,7 +33,7 @@ function ModeBadge({ summary }: { summary: Summary }) {
 }
 
 /** The console's identity bar: brand, where we are, what time it is in the scenario, and honesty. */
-export function TopBar({ summary, now, stream }: { summary: Summary; now: Date | null; stream: StreamStatus }) {
+export function TopBar({ summary, now, stream, onPlan }: { summary: Summary; now: Date | null; stream: StreamStatus; onPlan: () => void }) {
   const live = stream === 'live'
   const theme = useTheme()
   return (
@@ -53,6 +53,13 @@ export function TopBar({ summary, now, stream }: { summary: Summary; now: Date |
           <span className="text-xs text-muted">{now ? fmtDay(now) : '—'}</span>
           <span className="num text-lg font-medium">{now ? fmtTime(now.toISOString()) : '—'}</span>
         </span>
+        <button
+          onClick={onPlan}
+          className="press rounded-[3px] border border-line-strong px-2 py-0.5 text-xs hover:bg-paper"
+          title="Turn a heat forecast into the ward's work plan: calls, cases and responders needed"
+        >
+          Plan ahead
+        </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="rounded-[3px] border border-line-strong px-2 py-0.5 text-xs text-muted hover:text-ink"

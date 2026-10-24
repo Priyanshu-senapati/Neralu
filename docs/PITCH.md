@@ -69,6 +69,13 @@ Same story, with the live demo between 1:15 and 5:30.
 > **"Heat index 43. Severe for vulnerable residents. Now everyone in this ward has crossed their own
 > threshold."** Open Kamala's profile: score 70, threshold 32 °C, the four reasons.
 
+**2:15 · Plan ahead (optional, 30 s).** Top bar → **Plan ahead**. Drag to 38 °C, 40 %, night 27 °C
+(heat index 43), then responders on duty down to 5:
+> **"Before the heat arrives, Neralu turns the forecast into a work plan: 774 calls, about 40 people
+> needing a visit, and with five responders we're three short from eleven to one. The officer calls in
+> help the day before."**
+Close it.
+
 **2:30 · The call.** Demo controls → **Start round 1**. Hand the phone to a judge:
 > **"You're Kamala. You're 74 and you live alone."**
 The live call spotlight opens. The judge answers, presses any key after the trial notice, then:
@@ -98,7 +105,7 @@ Priya taps **Accept · I'll go**, shows the address, then **Safe, confirmed in p
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 156 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 163 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 

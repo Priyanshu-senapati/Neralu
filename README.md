@@ -213,6 +213,16 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### What-if planner: a forecast turned into a work plan
+
+On the console, **Plan ahead** opens the planner. Drag temperature, humidity and night minimum, or load
+tomorrow's real Bengaluru forecast, and see against today: residents over their own threshold, calls
+in each round, expected follow-ups and cases needing a person, and the responders needed at the busiest
+time against those on duty ("774 calls, ~40 cases, 5 responders on duty → 3 short from 11:00 to 13:00").
+Who is called uses exactly the rules a real round uses. What the calls would find is an estimate from
+the simulated residents' answer mix, labelled simulated; a pilot would replace it with measured rates.
+Nothing in the planner changes the run.
+
 ### Pilot mode: a real day, run by itself
 
 `RUN_MODE=pilot` (or `scripts\stage.ps1 -Pilot`) turns the demo into a real day: the clock is real

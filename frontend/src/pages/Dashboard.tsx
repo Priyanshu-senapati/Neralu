@@ -10,6 +10,7 @@ import { StatusStrip } from '../components/StatusStrip'
 import { DemoControls } from '../components/DemoControls'
 import { TopBar } from '../components/TopBar'
 import { WardPanel } from '../components/WardPanel'
+import { WhatIfPlanner } from '../components/WhatIfPlanner'
 import { useScenarioNow } from '../time'
 import type { ElderListItem, NeraluEvent, RoundSummary, Summary } from '../types'
 import { useEventStream } from '../useEventStream'
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [drawerKey, setDrawerKey] = useState(0)
   const [events, setEvents] = useState<NeraluEvent[]>([])
   const [rounds, setRounds] = useState<RoundSummary[]>([])
+  const [planning, setPlanning] = useState(false)
   const timer = useRef<number | undefined>(undefined)
   const lastFetch = useRef(0)
   const selectedRef = useRef<number | null>(null)
@@ -72,6 +74,7 @@ export default function Dashboard() {
 
   const now = useScenarioNow(summary?.scenario_now, summary?.demo_speed ?? 1)
   const closeDrawer = useCallback(() => setSelected(null), [])
+  const closePlanner = useCallback(() => setPlanning(false), [])
 
   if (!summary) {
     return (
@@ -84,7 +87,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
       <h1 className="sr-only">Ward 47 heat welfare console</h1>
-      <TopBar summary={summary} now={now} stream={stream} />
+      <TopBar summary={summary} now={now} stream={stream} onPlan={() => { setSelected(null); setPlanning(true) }} />
       <StatusStrip />
       {stream !== 'live' && (
         <div role="status" className="bg-watch-bg px-5 py-1 text-xs text-watch">
@@ -106,6 +109,7 @@ export default function Dashboard() {
         </div>
       </main>
       <CallSpotlight elders={elders} mode={summary.telephony_mode ?? 'twilio'} speed={summary.demo_speed} now={now} refreshKey={drawerKey} onOpenProfile={setSelected} />
+      {planning && selected === null && <WhatIfPlanner weatherNow={summary.weather} onClose={closePlanner} />}
       {selected !== null && <CaseDrawer elderId={selected} refreshKey={drawerKey} now={now} onClose={closeDrawer} />}
       <DemoControls onChanged={scheduleFetch} />
     </div>
