@@ -123,7 +123,7 @@ def accept_case(session: Session, case_id: int, volunteer_id: int) -> Case:
     """Atomic compare-and-set: exactly one acceptor wins; others get AlreadyAccepted."""
     result = session.exec(
         update(Case).where(Case.id == case_id, Case.state == "open")
-        .values(state="assigned", assignee_id=volunteer_id)
+        .values(state="assigned", assignee_id=volunteer_id, accepted_real=state.clock.real_now())
     )
     if result.rowcount != 1:
         raise AlreadyAccepted()
@@ -221,7 +221,7 @@ def resolve_case(session: Session, case_id: int, volunteer_id: int, resolution: 
         log_event(session, "case_resolved", f"{vol.name}: {label}" + (f" · {note}" if note else ""),
                   actor="volunteer", elder_id=elder.id, case_id=case.id, data=data,
                   simulated=vol.is_simulated)
-        case.state, case.assignee_id = "open", None
+        case.state, case.assignee_id, case.accepted_real = "open", None, None
         _advance(session, case, elder, why="E6 · couldn't reach")
         notify_family(session, elder, f"A volunteer could not reach {elder.name}. "
                       "The case has been passed on.", case_id=case.id)
@@ -257,6 +257,29 @@ def check_ack_timeouts(session: Session) -> None:
             _advance(session, case, elder, why=f"E5 · not accepted in {mins:g} min")
 
 
+def check_visit_timeouts(session: Session) -> None:
+    """E8: a red case accepted but with no visit recorded within VISIT_TIMEOUT_MIN goes to the ward
+    officer, so an accepted case never just sits. The volunteer keeps it and can still record the visit."""
+    mins = get_settings().visit_timeout_min
+    limit = state.clock.real_delta(mins)
+    now = state.clock.real_now()
+    cases = session.exec(select(Case).where(
+        Case.run_id == current_run_id(), Case.level == "red", Case.state == "assigned",
+        Case.overdue == False, Case.accepted_real != None))  # noqa: E711, E712
+    for case in cases:
+        if now - case.accepted_real < limit:
+            continue
+        case.overdue = True
+        elder = session.get(Elder, case.elder_id)
+        vol = session.get(Volunteer, case.assignee_id)
+        who = vol.name if vol else "the volunteer"
+        log_event(session, "tier_overdue",
+                  f"No visit recorded {mins:g} min after {who} accepted · ward officer action needed · E8",
+                  actor="system", elder_id=elder.id, case_id=case.id,
+                  data={"tier": case.tier, "visit": True, "volunteer": who},
+                  simulated=elder.is_simulated)
+
+
 def sync_tick(session: Session) -> None:
     """One scheduler step: due calls and retries/recalls, simulated residents, ack timeouts."""
     from app.calls import cancel_unanswered_calls, close_lost_calls, dispatch_due_calls
@@ -278,6 +301,7 @@ def sync_tick(session: Session) -> None:
         close_lost_calls(session)  # Twilio: never leave a call stuck on a lost callback
     step_simulation(session)
     check_ack_timeouts(session)
+    check_visit_timeouts(session)
     from app.privacy import retention_tick
     retention_tick(session)  # hourly: recordings past the retention limit are deleted
     session.commit()

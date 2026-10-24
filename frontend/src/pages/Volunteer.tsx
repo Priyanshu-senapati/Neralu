@@ -370,6 +370,11 @@ function AssignedCase({ c, token, now, onDone }: { c: CaseDetail; token: string;
         <div className="text-base font-semibold">You are now responsible for {first}'s visit</div>
         <div className="mt-0.5 text-sm text-paper/80">Nobody else is being asked. The ward office and family can see you are on the way.</div>
       </div>
+      {c.overdue && (
+        <p role="alert" className="bg-alert-bg px-4 py-2.5 text-sm font-semibold text-alert">
+          No visit has been recorded yet, so the ward office has been alerted. Record what you found as soon as you can.
+        </p>
+      )}
       <div className="p-4">
       <ol className="mb-4 grid grid-cols-4 gap-1 text-center text-xs" aria-label="Your visit, step by step">
         {['Accepted', `Go to ${first}`, 'Record what you found', 'Family told'].map((label, i) => (

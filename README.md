@@ -82,7 +82,9 @@ the finale. `git log pre-finale..main` lists the finale work.
 - **Sarvam AI**: *Bulbul* text-to-speech generated the call prompts (Kannada, Hindi, Indian English);
   *Saaras* speech-to-text transcribes a spoken day during calls. The Kannada wording still needs
   review by a native speaker.
-- AI never decides an outcome in Neralu: `backend/app/rules.py` does, with tests.
+- **Amazon Polly** (through Twilio `<Say>`) and the browser's built-in voice speak a prompt only when
+  its recorded clip does not exist yet (the caregiver prompts today). Same fixed text; nothing is generated.
+- No language model runs anywhere in Neralu. AI never decides an outcome in Neralu: `backend/app/rules.py` does, with tests.
 
 **APIs and services.** Twilio (calls, optional SMS) · Sarvam AI (speech) · Open-Meteo (optional live
 forecast, free, no key) · ngrok (public tunnel for the demo) · Google Maps (volunteer "Open in Maps" link).

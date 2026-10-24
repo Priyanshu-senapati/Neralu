@@ -101,6 +101,7 @@ class Case(SQLModel, table=True):
     resolution_note: str | None = None
     opened_real: datetime = Field(default_factory=utcnow)
     resolved_real: datetime | None = None
+    accepted_real: datetime | None = None  # when the current assignee accepted (E8 visit timer)
     sim_accept_at_real: datetime | None = None  # simulated cases only: when a sim volunteer accepts
     sim_visit_done_real: datetime | None = None  # simulated cases only: when that visit is recorded
     alerted_ids: list[int] = Field(default_factory=list, sa_column=Column(JSON))  # nearest responders alerted

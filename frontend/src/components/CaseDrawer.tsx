@@ -114,7 +114,7 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
         <section className={`-mx-5 -mt-4 px-5 py-3 ${c.level === 'red' ? 'bg-alert-bg' : 'bg-support-bg'}`}>
           <h3 className={`text-base font-semibold ${c.level === 'red' ? 'text-alert' : 'text-support'}`}>
             {c.state === 'assigned'
-              ? `${c.assignee_name ? `${c.assignee_name} (${TIER_LABEL[c.tier].toLowerCase()})` : TIER_LABEL[c.tier]} accepted · on the way`
+              ? `${c.assignee_name ? `${c.assignee_name} (${TIER_LABEL[c.tier].toLowerCase()})` : TIER_LABEL[c.tier]} accepted · ${c.overdue ? 'no visit recorded yet · ward officer action needed' : 'on the way'}`
               : c.overdue
                 ? 'Nobody has accepted · ward officer action needed'
                 : `Waiting for a ${TIER_LABEL[c.tier].toLowerCase()} to accept`}
@@ -187,9 +187,9 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
       <section className="text-sm">
         <h3 className="mb-1 font-semibold">How {first} knows the call is real</h3>
         <p>
-          Every call starts with the family code word{' '}
-          <span className="font-semibold">{d.code_word[0].toUpperCase() + d.code_word.slice(1)}</span>, chosen by{' '}
-          {d.family_name ?? 'their family'}, and says Neralu never asks for money, OTP, Aadhaar or bank details.
+          Every call starts with a code word chosen by {d.family_name ?? 'their family'}, and says Neralu never
+          asks for money, OTP, Aadhaar or bank details. The word is not shown here: it only protects {first} if
+          the household alone knows it.
         </p>
       </section>
 

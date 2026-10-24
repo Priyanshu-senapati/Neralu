@@ -24,6 +24,9 @@ def cg(**changes) -> CaregiverSignals:
     (cg(seen="none", water="none", unwell="none", room_no_cooling="none", self_report="none"),
      Outcome.UNREACHED, "C0"),
     (cg(self_report="help"), Outcome.RED, "C1"),
+    # help outranks "no answers": a help key is never a retry
+    (cg(seen="none", water="none", unwell="none", room_no_cooling="none", self_report="help"),
+     Outcome.RED, "C1"),
     (cg(unwell="yes"), Outcome.RED, "C2"),
     (cg(unwell="yes", seen="no"), Outcome.RED, "C2"),  # unwell outranks "not seen"
     (cg(seen="no", water="none", unwell="none"), Outcome.AMBER, "C3"),

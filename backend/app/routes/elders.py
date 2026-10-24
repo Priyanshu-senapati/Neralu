@@ -120,7 +120,16 @@ def delete_elder(elder_id: int, body: DeleteIn, session: Session = Depends(get_s
 
 
 def erase_registration(session: Session, e: Elder) -> dict:
-    removed = erase_elder(session, e)
+    """Erase the person in every run, not just today's: pilot mode carries a registered person over to
+    each new day as a new row (runs._carry_registrations), and every copy shares the erasure hash."""
+    copies = [e]
+    if e.erasure_hash:
+        copies = list(session.exec(select(Elder).where(Elder.erasure_hash == e.erasure_hash)))
+    removed: dict[str, int] = {}
+    for copy in copies:
+        for key, n in erase_elder(session, copy).items():
+            removed[key] = removed.get(key, 0) + n
+    removed["days"] = len(copies)
     log_event(session, "elder_deleted", "A registration was removed at the family's request · all their data deleted",
               actor="family", data=removed)
     session.commit()
@@ -149,5 +158,7 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
     session.commit()
     session.refresh(e)
     # The family link and the erasure code are shown once, here, to the person who registered; only
-    # their hashes are kept, so nothing can show them again.
-    return {**elder_detail(session, e), "family_token": token, "erasure_code": erasure_code}
+    # their hashes are kept, so nothing can show them again. The code word is echoed back to the family
+    # who just chose it, so they can tell their parent; no other response ever carries it.
+    return {**elder_detail(session, e), "family_token": token, "erasure_code": erasure_code,
+            "code_word": e.code_word}

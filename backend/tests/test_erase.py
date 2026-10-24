@@ -59,6 +59,24 @@ def test_family_can_erase_from_their_status_link(client):
     assert client.get("/api/family/status", headers=head).status_code == 404
 
 
+def test_erasure_removes_the_copies_carried_over_from_earlier_pilot_days(client):
+    from app import runs
+    from app.db import current_run_id
+
+    r = client.post("/api/elders", json=REGISTRATION).json()
+    first_day = current_run_id()
+    with Session(engine) as s:  # the next pilot day carries the person over as a new row
+        runs.start_new_run(s, carry_from=first_day)
+    head = {"X-Family-Token": r["family_token"]}  # the link keeps working on the new day
+    assert client.get("/api/family/status", headers=head).status_code == 200
+    out = client.post("/api/family/erase", headers=head, json={"code": r["erasure_code"]})
+    assert out.status_code == 200 and out.json()["days"] == 2
+    with Session(engine) as s:
+        assert s.exec(select(Elder).where(Elder.name == REGISTRATION["name"],  # (the seed has a simulated namesake)
+                                          Elder.is_simulated == False)).first() is None  # noqa: E712
+        assert s.get(Elder, r["id"]) is None  # yesterday's copy too
+
+
 def test_demo_persona_cannot_be_erased_from_her_family_link(client):
     token = client.post("/api/sim/family-link").json()["family_token"]
     r = client.post("/api/family/erase", headers={"X-Family-Token": token}, json={"code": "AAAA-AAAA"})

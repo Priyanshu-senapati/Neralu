@@ -36,7 +36,7 @@ Volunteer phone (/volunteer) · Family page (/family) · Registration (/register
 - **Public access for the demo:** ngrok tunnel (`deputy-folic-tiptop.ngrok-free.dev`).
 - **One command:** `scripts/stage.ps1` builds the site, starts server + ngrok, and runs a go/no-go
   check (server, scheduler, public link, Twilio, call audio).
-- **Tests:** 239 automated tests (`backend/tests`, pytest). Frontend: TypeScript strict build.
+- **Tests:** 247 automated tests (`backend/tests`, pytest). Frontend: TypeScript strict build.
 
 ---
 
@@ -107,12 +107,14 @@ we placed for that check-in **and** Twilio's API confirms it's our account (`val
 
 ## 5. The rules (the core: `backend/app/rules.py`)
 
-First match wins. "I'm okay" never overrides another warning sign.
+First match wins, in this order. "I'm okay" never overrides another warning sign. **Help comes
+first:** a key pressed for help proves the person was reached, so R1 is checked before R0 (and C1
+before C0 for caregivers). A teammate fixed this at the finale.
 
 | Rule | Condition | Outcome |
 |---|---|---|
-| R0 | no keypad answers | UNREACHED |
 | R1 | pressed "need help" | RED |
+| R0 | no keypad answers | UNREACHED |
 | R2 | symptoms + wrong/unclear day | RED |
 | R3 | symptoms + no water | RED |
 | R4 | symptoms | AMBER |
@@ -132,6 +134,7 @@ Escalation rules (`app/calls.py`, `app/escalation.py`):
 | E4 | support cases stay in the volunteer queue |
 | E5 | RED case not accepted in 15 min → next tier; after ASHA → "ward officer action needed" |
 | E7 | after a person checked in person, call again 60 min later |
+| E8 | a volunteer accepted but recorded no visit within 120 min → ward officer alerted (the volunteer keeps the case) |
 
 AMBER → family told + follow-up call 30 min later. Retries are 15 min apart. Every outcome stores
 the rule id and reason; the console shows the plain-English explanation of each rule.
@@ -153,8 +156,10 @@ An LLM can be wrong in ways nobody can predict or explain.
   volunteer wins, the others see "Someone else accepted" (HTTP 409).
 - **"Can't go":** the case goes straight to the next nearest available responder; if nobody is left,
   the tier is skipped rather than leaving the case unasked.
-- **Address privacy:** volunteers see why and roughly how far; the address and phone appear only
-  after they accept that one case.
+- **Address privacy:** volunteers see why and the distance (no coordinates); the address, phone and
+  exact location appear only after they accept that one case. On the console, real people are
+  placed to about 100 m, and the **family code word is not shown to the console at all**: it's played
+  on the call and shown once to the family who chose it.
 - **Resolution** by the volunteer: safe in person · support delivered · called 108 · couldn't reach
   (escalates).
 - **Never 108 automatically.** Only a human records "called 108".
@@ -293,6 +298,9 @@ never asks for money/OTP/Aadhaar. A code word can leak; families should choose o
 **Nobody accepts?** E5: every 15 min the next tier; after ASHA the ward officer is alerted on the
 console. A case is never left with nobody asked.
 
+**A volunteer accepts and never goes?** E8: no visit recorded within two hours → the ward officer is
+alerted; the volunteer can still record the visit.
+
 **How does it scale?** Calls are independent; Twilio handles concurrency. SQLite is fine for one
 ward; a city needs Postgres and one worker per ward or a queue. The scheduler is one loop per server
 today. The what-if planner shows how many volunteers a forecast needs.
@@ -314,7 +322,7 @@ login, ASHA/resident-association onboarding, and a legal review of the DPDP mapp
 
 ## 13. Live checks you can show
 
-- `cd backend && .venv\Scripts\python.exe -m pytest -q` → 239 passed.
+- `cd backend && .venv\Scripts\python.exe -m pytest -q` → 247 passed.
 - Console `/ward` → click a resident → "Why Neralu calls" (score breakdown with data source) →
   "Case record · print or save".
 - `/responsible` → the privacy and risk page.

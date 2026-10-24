@@ -23,11 +23,12 @@ def test_r0_all_none_is_unreached():
     assert v.reason == "No valid answer on the call"
 
 
-def test_r0_wins_even_if_help_pressed():
-    # Zero keypad answers to the four questions means we never really reached them.
+def test_help_wins_even_with_no_other_answers():
+    # A key pressed for help proves the person was reached, and the call has just told them someone
+    # is being informed: it must never become a retry (R0).
     s = sig(water="none", symptoms="none", room_hot="none", fan_working="none",
-            self_report="help")
-    check(s, Outcome.UNREACHED, "R0")
+            orientation="none", self_report="help")
+    check(s, Outcome.RED, "R1")
 
 
 def test_help_overrides_everything():
