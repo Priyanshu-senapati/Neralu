@@ -32,7 +32,7 @@ vec3 ramp(float t) {
 void main() {
   vec3 p = normalize(vObj);
   float s2 = p.y * p.y;
-  float rot = uTime * 0.09 * (1.0 - 0.162 * s2 - 0.121 * s2 * s2);
+  float rot = uTime * 0.05 * (1.0 - 0.162 * s2 - 0.121 * s2 * s2);
   float c = cos(rot), s = sin(rot);
   vec3 q = vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
   float gran = 1.0 - abs(snoise(q * 22.0 + vec3(0.0, uTime * 0.05, 0.0)));

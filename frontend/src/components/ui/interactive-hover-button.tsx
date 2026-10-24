@@ -29,7 +29,7 @@ const VARIANT: Record<Variant, { shell: string; dot: string; hover: string }> = 
   secondary: { shell: 'border-line-strong text-ink', dot: 'bg-ink', hover: 'text-paper' },
 }
 const SIZE: Record<Size, string> = { md: 'px-7 py-3 text-base', sm: 'px-5 py-2 text-sm' }
-const EASE = 'duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]'
+const EASE = 'duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]'
 
 export function InteractiveHoverButton(props: InteractiveHoverButtonProps) {
   const { children, variant = 'primary', size = 'md', className } = props
@@ -62,7 +62,7 @@ export function InteractiveHoverButton(props: InteractiveHoverButtonProps) {
       {/* The dot that floods the pill (scaled, never resized). */}
       <span
         aria-hidden="true"
-        className={cn('absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:scale-[40] group-focus-visible:scale-[40] motion-reduce:duration-150', v.dot)}
+        className={cn('absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full transition-transform duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:scale-[40] group-focus-visible:scale-[40] motion-reduce:duration-150', v.dot)}
       />
     </>
   )

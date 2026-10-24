@@ -92,8 +92,8 @@ function Hero({ households, example }: { households: Household[]; example: boole
           trigger: section.current,
           pin: true,
           start: 'top top',
-          end: '+=320%',
-          scrub: 0.6,
+          end: '+=520%', // a long, unhurried flight
+          scrub: 1.6, // the scene catches up with the scroll over 1.6 s, so it glides
           onLeave: () => heat.settle(true),
           onEnterBack: () => heat.settle(false),
         },
@@ -122,7 +122,7 @@ function Hero({ households, example }: { households: Household[]; example: boole
     }
     const tween = gsap.to(shown, {
       current: called,
-      duration: 0.35,
+      duration: 0.7,
       ease: EASE,
       onUpdate: () => (el.textContent = String(Math.round(shown.current))),
     })

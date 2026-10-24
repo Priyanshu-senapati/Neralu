@@ -202,17 +202,17 @@ export default function HeroSpace({ households, className = '' }: { households: 
       t += dt
       // Follow the scroll with a light lag, so even a jerky wheel moves the camera smoothly.
       const goal = still ? 1 : heat.progress
-      p += (goal - p) * Math.min(1, dt * 9)
+      p += (goal - p) * Math.min(1, dt * 3) // eases toward the scroll (about a third of a second behind)
       if (Math.abs(goal - p) < 1e-4) p = goal
       const f = flyAt(p)
-      theta += dt * ((Math.PI * 2) / 150) * orbitSpeedAt(p)
+      theta += dt * ((Math.PI * 2) / 260) * orbitSpeedAt(p)
       E.set(Math.sin(theta) * ORBIT_RADIUS, 0, -Math.cos(theta) * ORBIT_RADIUS)
       sunDir.copy(E).negate().normalize()
       // Turn Earth so Ward 47 ends up facing the camera in afternoon light (sun to the west).
       const sunH = v.set(sunDir.x, 0, sunDir.z).normalize()
       const east = new THREE.Vector3().crossVectors(UP, sunH)
       const want = sunH.clone().multiplyScalar(Math.cos(AFTERNOON)).addScaledVector(east, Math.sin(AFTERNOON))
-      const spinFree = 2.2 + t * 0.06
+      const spinFree = 2.2 + t * 0.03
       const spinTarget = Math.atan2(want.x, want.z) - Math.atan2(wardLocal.x, wardLocal.z)
       const spin = spinFree + wrapPi(spinTarget - spinFree) * f
       earthGroup.position.copy(E)

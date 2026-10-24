@@ -216,7 +216,7 @@ export function createEarth(renderer: THREE.WebGLRenderer) {
     /** Sun direction in world space; seconds; how much cloud to show (fades as we descend). */
     update(sunDir: THREE.Vector3, t: number, cloudAmount: number) {
       shared.uSun.value.copy(sunDir)
-      shared.uCloudShift.value = (t * 0.0012) % 1
+      shared.uCloudShift.value = (t * 0.0007) % 1
       shared.uCloudAmt.value = cloudAmount
       group.getWorldPosition(atmosUniforms.uCenter.value)
     },
