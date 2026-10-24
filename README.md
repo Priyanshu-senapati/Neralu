@@ -177,7 +177,7 @@ React 19, TypeScript, Vite, Tailwind CSS, three.js, GSAP, Motion, Leaflet, d3.
 | Priyanshu Kumar Senapati | [@Priyanshu-senapati](https://github.com/Priyanshu-senapati) |
 | Gourab Dash | [@gd23456](https://github.com/gd23456) |
 | Mohsin | [@mohsin200711](https://github.com/mohsin200711) |
-| | [@Vkun2508](https://github.com/Vkun2508) |
+| Vinochan R | [@Vkun2508](https://github.com/Vkun2508) |
 
 ## Built honestly: credits and pre-existing work
 
