@@ -7,8 +7,9 @@ import gsap from 'gsap'
 import { CustomEase } from 'gsap/CustomEase'
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin'
 import { Flip } from 'gsap/Flip'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-gsap.registerPlugin(CustomEase, DrawSVGPlugin, Flip)
+gsap.registerPlugin(CustomEase, DrawSVGPlugin, Flip, ScrollTrigger)
 
 /** Strong ease-out: instant response, long gentle settle (same curve as --ease-out in tokens.css). */
 export const EASE = CustomEase.create('neralu', '0.23, 1, 0.32, 1')
@@ -23,4 +24,4 @@ export const reducedMotion = () =>
 /** The RED flash colour in the current theme (GSAP needs a concrete colour, not a CSS variable). */
 export const flashAlert = () => getComputedStyle(document.documentElement).getPropertyValue('--alert-bg').trim()
 
-export { Flip, gsap }
+export { Flip, gsap, ScrollTrigger }

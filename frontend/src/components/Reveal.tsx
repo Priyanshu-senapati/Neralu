@@ -13,16 +13,22 @@ const EASE = [0.23, 1, 0.32, 1] as const
 
 const pop: Variants = {
   hidden: { opacity: 0, y: '0.35em', filter: 'blur(10px) brightness(1.6)' },
-  shown: { opacity: 1, y: 0, filter: 'blur(0px) brightness(1)', transition: { duration: 0.8, ease: EASE } },
+  shown: { opacity: 1, y: 0, filter: 'blur(0px) brightness(1)', transition: { duration: 1.1, ease: EASE } },
+}
+
+/** The same arrival without the blur: for long text, where a blurred layer repaints every frame. */
+const rise: Variants = {
+  hidden: { opacity: 0, y: '0.35em' },
+  shown: { opacity: 1, y: 0, transition: { duration: 1.1, ease: EASE } },
 }
 
 /** Pops one block (a heading, a paragraph) into view. */
-export function Reveal({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string }) {
+export function Reveal({ children, delay = 0, className, blur = true }: { children: ReactNode; delay?: number; className?: string; blur?: boolean }) {
   if (reducedMotion()) return <div className={className}>{children}</div> // no motion: the text is simply there
   return (
     <motion.div
       className={className}
-      variants={pop}
+      variants={blur ? pop : rise}
       initial="hidden"
       whileInView="shown"
       viewport={{ once: true, margin: '0px 0px -12% 0px' }}

@@ -1,9 +1,14 @@
 import { Check, Pencil, Volume2 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { lazy, Suspense, useRef, useState } from 'react'
+import { AnimatedThemeToggle } from '@/components/ui/animated-theme-toggle'
+import { Spotlight } from '@/components/ui/spotlight'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import { Wordmark } from '../components/Brand'
+
+// The story page's heat haze behind the form: same look, loaded after the form.
+const HeatHaze = lazy(() => import('../components/story/HeatHaze'))
 import { AnimatedNumber, DrawnCheck } from '../components/Motion'
 import { Reveal, RevealLines } from '../components/Reveal'
 import { FlowButton } from '@/components/ui/flow-button'
@@ -284,14 +289,23 @@ export default function Register() {
 
 function Shell({ side, children }: { side: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-paper text-ink lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+    <div className="skin relative isolate min-h-dvh bg-paper text-ink lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      {!reducedMotion() && (
+        <Suspense fallback={null}>
+          <HeatHaze />
+        </Suspense>
+      )}
+      <Spotlight color="rgba(94, 255, 200, 0.07)" size={560} />
       {side}
       <main className="flex min-h-dvh flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-10 lg:px-16 lg:py-14">
         <div className="mb-8 flex items-center justify-between lg:hidden">
           <Link to="/" aria-label="About Neralu">
             <Wordmark size="sm" />
           </Link>
-          <span className="text-sm text-muted">Ward 47 · demo</span>
+          <span className="flex items-center gap-3 text-sm text-muted">
+            Ward 47 · demo
+            <AnimatedThemeToggle />
+          </span>
         </div>
         <div className="mx-auto flex w-full max-w-[34rem] flex-1 flex-col">{children}</div>
       </main>
@@ -319,7 +333,7 @@ function SidePanel({ step, furthest, onStep, name, score, factors, answered }: {
         <p className="display text-[1.9rem] font-medium leading-[1.1]">
           <RevealLines>
             <span>Register someone</span>
-            <span className="oled italic text-brand">for heat checks.</span>
+            <span className="italic neon-mint">for heat checks.</span>
           </RevealLines>
         </p>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">Two minutes, five steps. On hot days Neralu phones them and makes sure someone knows they are safe.</p>
@@ -432,7 +446,7 @@ function Confirmation({ done, onAnother }: { done: ElderDetail & { family_token?
         <h1 className="display mt-1 text-[2.2rem] font-medium leading-[1.08] sm:text-[2.7rem]">
           <RevealLines>
             <span>{done.name} is on the</span>
-            <span className="oled italic text-brand">Ward 47 heat register.</span>
+            <span className="italic neon-mint">Ward 47 heat register.</span>
           </RevealLines>
         </h1>
 
