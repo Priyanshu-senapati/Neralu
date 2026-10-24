@@ -22,6 +22,7 @@ Write-Host ""
 Write-Host "  Neralu is running"
 Write-Host "  On this laptop:    http://localhost:8000"
 if ($lan) { Write-Host "  On phones (Wi-Fi): http://${lan}:8000" }
+Write-Host "  Ward console passcode: OFFICER_PASSCODE in backend\.env (if empty, printed below for this run)"
 Write-Host "  Stop with Ctrl+C"
 Write-Host ""
 Set-Location backend

@@ -25,18 +25,23 @@ os.environ.update({
     "RUN_MODE": "demo",
     "AMBER_RECALL_MIN": "30",
     "AFTERCARE_MIN": "60",
-    "VOLUNTEER_DEMO_TOKEN": "priya-demo",
+    "VOLUNTEER_DEMO_TOKEN": "priya-test-link-0123456789",
     "STT_PROVIDER": "sarvam",
     "SARVAM_API_KEY": "",
     "FRONTEND_DIST": "/nonexistent-neralu-dist",
     "FAMILY_SMS": "simulated",
     "RECORDINGS_DIR": f"{_tmp}/recordings",  # never the real recordings folder
     "DEMO_DATE": "",
+    "OFFICER_PASSCODE": "test-officer-passcode",
 })
+
+OFFICER_PASSCODE = os.environ["OFFICER_PASSCODE"]
+PRIYA_TOKEN = os.environ["VOLUNTEER_DEMO_TOKEN"]
 
 import pytest  # noqa: E402
 from sqlmodel import Session, SQLModel  # noqa: E402
 
+from app import officer  # noqa: E402
 from app.db import engine, set_run_id  # noqa: E402
 from app.state import reset_state  # noqa: E402
 
@@ -88,6 +93,19 @@ def client(monkeypatch):
     monkeypatch.setattr(calls, "place_call", fake_place_call)
     SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
+    officer.reset_for_tests()
     with TestClient(app) as c:
         c.placed = placed
+        # Signed in as the ward officer, as the console is; tests/test_officer.py checks the locks.
+        assert c.post("/api/officer/login", json={"passcode": OFFICER_PASSCODE}).status_code == 200
         yield c
+
+
+def token_of(name: str) -> str:
+    """A seeded volunteer's private link token in the current run (they are random)."""
+    from sqlmodel import select
+
+    from app.db import current_run_id
+    from app.models import Volunteer
+    with Session(engine) as s:
+        return s.exec(select(Volunteer).where(Volunteer.run_id == current_run_id(), Volunteer.name == name)).one().token

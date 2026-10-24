@@ -89,9 +89,9 @@ flowchart LR
 | Page | Who it is for |
 |---|---|
 | `/` | The story: the problem, the call, the rules, who goes |
-| `/ward` | The ward officer's live console |
+| `/ward` | The ward officer's live console (passcode sign-in: `OFFICER_PASSCODE` in `backend/.env`) |
 | `/register` | A family registering an older relative |
-| `/volunteer?token=priya-demo` | A volunteer's phone: accept a case, record the visit |
+| `/volunteer#<private token>` | A volunteer's phone: accept a case, record the visit (console > Demo controls > Priya's volunteer phone) |
 | `/phone` | The browser phone, when a real call cannot be made |
 | `/family#…` | A family's private, read-only status page |
 | `/ward/record/:id` | A printable case record |

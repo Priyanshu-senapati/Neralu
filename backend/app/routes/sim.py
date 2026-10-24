@@ -8,12 +8,13 @@ from app.calls import start_round
 from app.db import current_run_id, get_session
 from app.events import log_event
 from app.models import Elder
+from app.officer import require_officer
 from app.runs import start_new_run
 from app.state import Weather, is_pilot, state
 from app.weather import ForecastUnavailable, bengaluru_today
 from app.views import summary
 
-router = APIRouter(prefix="/api/sim")
+router = APIRouter(prefix="/api/sim", dependencies=[Depends(require_officer)])  # console only
 
 
 class HeatIn(BaseModel):

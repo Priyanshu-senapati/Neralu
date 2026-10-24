@@ -4,13 +4,14 @@ from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlmodel import Session
 
 from app.config import get_settings
 from app.db import create_tables, engine
+from app import officer
 from app.routes import audio, cases, elders, family, phone, recordings, sim, stream, summary, voice, whatif
+from app.routes import officer as officer_routes
 from app.runs import resume_or_start
 from app.scheduler import run_scheduler
 
@@ -18,6 +19,7 @@ from app.scheduler import run_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    officer.passcode()  # without OFFICER_PASSCODE, prints this run's passcode in the server window
     with Session(engine) as session:
         resume_or_start(session)
     task = asyncio.create_task(run_scheduler()) if get_settings().scheduler_enabled else None
@@ -28,11 +30,10 @@ async def lifespan(app: FastAPI):
             await task
 
 
+# No CORS: the website is served from this same address (and the dev server proxies /api), so no
+# other site may call the API from a browser.
 app = FastAPI(title="Neralu", lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
-for module in (summary, stream, sim, voice, phone, recordings, elders, cases, audio, whatif, family):
+for module in (summary, stream, sim, voice, phone, recordings, elders, cases, audio, whatif, family, officer_routes):
     app.include_router(module.router)
 
 

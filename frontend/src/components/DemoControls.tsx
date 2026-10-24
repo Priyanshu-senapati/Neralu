@@ -1,6 +1,7 @@
 import { FlowButton } from '@/components/ui/flow-button'
 import { useState } from 'react'
 import { api, ApiError } from '../api'
+import type { VolunteerLink } from '../types'
 
 const PRESETS = [
   { label: 'Normal day 31 °C / 45 %', w: { temp_c: 31, humidity_pct: 45, night_min_c: 23 } },
@@ -13,6 +14,8 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
+  // Priya's private volunteer link (the public ngrok address), shown here to copy or open.
+  const [link, setLink] = useState<VolunteerLink | null>(null)
 
   const run = async (key: string, fn: () => Promise<string | void>) => {
     setBusy(key)
@@ -75,6 +78,37 @@ export function DemoControls({ onChanged }: { onChanged: () => void }) {
           })}>
             Kamala’s family view
           </Btn>
+          {link ? (
+            <div className="rounded-ui border border-line p-2">
+              <div className="text-[0.6875rem] text-muted">{link.name}’s private link · open it on the volunteer’s phone</div>
+              <input
+                readOnly
+                value={link.url}
+                onFocus={(e) => e.currentTarget.select()}
+                aria-label={`${link.name}’s private volunteer link`}
+                className="mt-1 w-full rounded-[3px] border border-line bg-paper px-1.5 py-1 font-mono text-[0.6875rem] text-ink"
+              />
+              <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+                <Btn onClick={() => {
+                  navigator.clipboard?.writeText(link.url).then(() => setNote('Link copied'), () => setNote('Could not copy: select the link and copy it'))
+                }}>
+                  Copy
+                </Btn>
+                <a href={link.path} target="_blank" rel="noreferrer" className="press rounded-ui border border-line px-2 py-1.5 text-sm hover:bg-paper">
+                  Open
+                </a>
+                <Btn onClick={() => setLink(null)}>Hide</Btn>
+              </div>
+            </div>
+          ) : (
+            <Btn busy={busy === 'priya'} onClick={() => run('priya', async () => {
+              const [priya] = await api.officer.volunteerLinks()
+              if (!priya) return 'No volunteer link in this run'
+              setLink(priya)
+            })}>
+              Priya’s volunteer phone
+            </Btn>
+          )}
           {confirmReset ? (
             <div className="grid grid-cols-2 gap-1.5">
               <Btn busy={busy === 'reset'} onClick={() => { setConfirmReset(false); run('reset', async () => void (await api.reset())) }}>

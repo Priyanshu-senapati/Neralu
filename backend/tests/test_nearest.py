@@ -32,8 +32,8 @@ def test_volunteer_sees_alerted_flag_and_any_volunteer_can_still_accept(client, 
         case = open_case(s, kamala(s).id, "red", "E1", "No answer ×2")
         s.commit()
         alerted = s.get(Case, case.id).alerted_ids
-        priya = s.exec(select(Volunteer).where(Volunteer.token == "priya-demo")).one()
-    me = client.get("/api/volunteer/me", params={"token": "priya-demo"}).json()
+        priya = s.exec(select(Volunteer).where(Volunteer.token == "priya-test-link-0123456789")).one()
+    me = client.get("/api/volunteer/me", params={"token": "priya-test-link-0123456789"}).json()
     c = next(c for c in me["cases"] if c["id"] == case.id)  # visible whether or not alerted
     assert c["alerted_you"] == (priya.id in alerted)
-    assert client.post(f"/api/cases/{case.id}/accept", json={"volunteer_token": "priya-demo"}).status_code == 200
+    assert client.post(f"/api/cases/{case.id}/accept", json={"volunteer_token": "priya-test-link-0123456789"}).status_code == 200

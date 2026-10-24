@@ -9,7 +9,7 @@ import { Spotlight } from '@/components/ui/spotlight'
 import { EASE, gsap, reducedMotion, ScrollTrigger } from '../motion'
 import { api } from '../api'
 import { Reveal, RevealLines } from '../components/Reveal'
-import type { ElderListItem } from '@/types'
+import type { PublicHousehold } from '@/types'
 import { useRuleBook } from '../rules'
 import CallOnScroll from '../components/story/CallOnScroll'
 import { countCalled, exampleHouseholds, H_START, householdsFrom, type Household } from '../components/story/orbitPhysics'
@@ -31,9 +31,9 @@ export default function Story() {
   const still = reducedMotion()
   const page = useRef<HTMLDivElement>(null)
   useRimLight(page)
-  const [elders, setElders] = useState<ElderListItem[] | null>(null)
+  const [elders, setElders] = useState<PublicHousehold[] | null>(null)
   useEffect(() => {
-    api.elders().then(setElders).catch(() => setElders([]))
+    api.households().then(setElders).catch(() => setElders([]))
   }, [])
   // The live ward when it loads; until then, or if it fails, a labelled example ward.
   const example = !elders?.length

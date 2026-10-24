@@ -45,7 +45,7 @@ def kamala_red_case(client) -> int:
 
 def priya_accepts(case_id: int, resolve: bool = False):
     with Session(engine, expire_on_commit=False) as s:
-        priya = s.exec(select(Volunteer).where(Volunteer.token == "priya-demo")).one()
+        priya = s.exec(select(Volunteer).where(Volunteer.token == "priya-test-link-0123456789")).one()
         accept_case(s, case_id, priya.id)
         if resolve:
             resolve_case(s, case_id, priya.id, "safe_in_person", "Drinking water, fan on")

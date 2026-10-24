@@ -139,6 +139,23 @@ def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
     }
 
 
+def public_household(e: Elder) -> dict[str, Any]:
+    """One home as the public story page shows it. Simulated residents and the demo persona are
+    fictional, so they keep their details. A family-registered person is a real person: no name,
+    age or health details, and their dot placed only to about 1 km."""
+    score, breakdown = vulnerability_score(e)
+    source = data_source(e)["kind"]
+    real = source == "family"
+    lat, lng = (round(e.lat, 2), round(e.lng, 2)) if real else shown_position(e)
+    return {"id": e.id, "name": None if real else e.name, "age": None if real else e.age,
+            "risk_score": score, "risk_factors": [] if real else [label for label, _ in breakdown],
+            "is_simulated": e.is_simulated, "source": source, "lat": lat, "lng": lng}
+
+
+def public_households(session: Session) -> list[dict[str, Any]]:
+    return [public_household(e) for e in run_elders(session)]
+
+
 def run_elders(session: Session) -> list[Elder]:
     return list(session.exec(select(Elder).where(Elder.run_id == current_run_id()).order_by(Elder.id)))
 

@@ -12,7 +12,7 @@ export const OrbitTooltip = forwardRef<HTMLDivElement, { household: Household | 
     const called = h ? isCalled(h.threshold, H) : false
     // Age is shown as a number, so the two factors are the heaviest of the rest.
     const factors = h ? topFactors(h.factors.filter((f) => !f.startsWith('Age'))) : []
-    const example = h ? h.age === null : false
+    const example = h ? h.age === null && !h.registered : false
     return (
       <div
         ref={ref}
@@ -28,6 +28,8 @@ export const OrbitTooltip = forwardRef<HTMLDivElement, { household: Household | 
                 <span className="shrink-0 rounded-ui border border-line px-1 font-mono text-xs text-muted">demo persona</span>
               ) : example ? (
                 <span className="shrink-0 rounded-ui border border-line px-1 font-mono text-xs text-muted">example</span>
+              ) : h.registered ? (
+                <span className="shrink-0 rounded-ui border border-line px-1 font-mono text-xs text-muted">details private</span>
               ) : (
                 h.simulated && <SimTag />
               )}

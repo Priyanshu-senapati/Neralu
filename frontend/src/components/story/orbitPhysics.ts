@@ -8,7 +8,7 @@
  */
 
 import { personalThreshold } from '@/heat'
-import type { ElderListItem } from '@/types'
+import type { PublicHousehold } from '@/types'
 
 /** Thresholds run about 30–40 °C; that range spans the drawn orbits. */
 export const T_MIN = 30
@@ -57,6 +57,8 @@ export interface Household {
   simulated: boolean
   /** The demo persona, Kamala R.: marked with a ring. */
   kamala: boolean
+  /** A real person registered by their family: shown without name, age or health details. */
+  registered: boolean
   /** Where the household is, so the hero can put it on the ward. */
   lat: number
   lng: number
@@ -66,15 +68,16 @@ export interface Household {
  * Households from the live list. The threshold is the example afternoon's: a mild night, so no
  * warm-night degree off (the live console's threshold_c follows its own weather).
  */
-export function householdsFrom(elders: ElderListItem[]): Household[] {
+export function householdsFrom(elders: PublicHousehold[]): Household[] {
   return elders.map((e) => ({
     id: e.id,
-    name: e.name,
+    name: e.name ?? 'A registered resident',
     age: e.age,
     threshold: personalThreshold(e.risk_score),
     factors: e.risk_factors,
     simulated: e.is_simulated,
     kamala: e.source === 'demo',
+    registered: e.source === 'family',
     lat: e.lat,
     lng: e.lng,
   }))
@@ -89,13 +92,13 @@ const EXAMPLE_SPREAD: [number, number][] = [[31, 1], [32, 5], [33, 13], [34, 39]
 
 export function exampleHouseholds(): Household[] {
   const out: Household[] = [
-    { id: 0, name: 'Kamala R.', age: 74, threshold: 33, factors: ['Age 74', 'Lives alone', 'Sheet roof', 'Heat-sensitive medicines'], simulated: false, kamala: true, lat: 12.9262, lng: 77.5851 },
+    { id: 0, name: 'Kamala R.', age: 74, threshold: 33, factors: ['Age 74', 'Lives alone', 'Sheet roof', 'Heat-sensitive medicines'], simulated: false, kamala: true, registered: false, lat: 12.9262, lng: 77.5851 },
   ]
   // Spread over the ward's footprint (about 1 km across), from a fixed seed.
   const rand = mulberry32(401)
   for (const [threshold, n] of EXAMPLE_SPREAD)
     for (let k = 0; k < n; k++)
-      out.push({ id: out.length, name: `Example household ${out.length}`, age: null, threshold, factors: [], simulated: true, kamala: false, lat: 12.925 + (rand() - 0.5) * 0.009, lng: 77.584 + (rand() - 0.5) * 0.009 })
+      out.push({ id: out.length, name: `Example household ${out.length}`, age: null, threshold, factors: [], simulated: true, kamala: false, registered: false, lat: 12.925 + (rand() - 0.5) * 0.009, lng: 77.584 + (rand() - 0.5) * 0.009 })
   return out
 }
 

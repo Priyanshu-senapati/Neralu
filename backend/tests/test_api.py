@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from app.db import engine
 from app.escalation import open_case, sync_tick
 from app.models import Elder, Event, Volunteer
+from tests.conftest import token_of
 
 HEATWAVE = {"temp_c": 38, "humidity_pct": 40, "night_min_c": 27}
 NORMAL = {"temp_c": 31, "humidity_pct": 45, "night_min_c": 23}
@@ -103,13 +104,13 @@ def test_register_requires_consent_and_valid_code_word(client):
 
 def test_volunteer_sees_address_only_after_accepting(client):
     cid = red_case_for_kamala()
-    me = client.get("/api/volunteer/me", params={"token": "priya-demo"}).json()
+    me = client.get("/api/volunteer/me", params={"token": "priya-test-link-0123456789"}).json()
     case = next(c for c in me["cases"] if c["id"] == cid)
     assert case["elder"]["address"] is None and case["elder"]["phone"] is None
     assert "lat" not in case["elder"] and "lng" not in case["elder"]  # no position before accepting
     assert case["elder"]["maps_url"] is None
     assert case["distance_km"] > 0
-    r = client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
+    r = client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-test-link-0123456789"})
     assert r.status_code == 200
     assert r.json()["elder"]["address"].startswith("#18")
     assert r.json()["elder"]["phone"] == "+919900000001"
@@ -120,20 +121,20 @@ def test_volunteer_sees_address_only_after_accepting(client):
 
 def test_second_acceptor_gets_409(client):
     cid = red_case_for_kamala()
-    assert client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"}).status_code == 200
-    r = client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "sim-vol-1"})
+    assert client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-test-link-0123456789"}).status_code == 200
+    r = client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": token_of("Ravi K.")})
     assert r.status_code == 409 and r.json() == {"error": "already_accepted"}
 
 
 def test_resolve_flow_and_auth(client):
     cid = red_case_for_kamala()
     assert client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "nope"}).status_code == 401
-    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
+    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-test-link-0123456789"})
     r = client.post(f"/api/cases/{cid}/resolve",
-                    json={"volunteer_token": "sim-vol-1", "resolution": "safe_in_person"})
+                    json={"volunteer_token": token_of("Ravi K."), "resolution": "safe_in_person"})
     assert r.status_code == 409
     r = client.post(f"/api/cases/{cid}/resolve",
-                    json={"volunteer_token": "priya-demo", "resolution": "safe_in_person"})
+                    json={"volunteer_token": "priya-test-link-0123456789", "resolution": "safe_in_person"})
     assert r.status_code == 200 and r.json()["state"] == "resolved"
     assert r.json()["elder"]["address"] is None  # no longer revealed once resolved
     assert client.get("/api/cases", params={"state": "open,assigned"}).json() == []
@@ -178,9 +179,9 @@ def test_volunteer_still_sees_case_after_it_moves_to_asha(client):
         c = s.get(Case, cid)
         c.tier = "asha"
         s.commit()
-    me = client.get("/api/volunteer/me", params={"token": "priya-demo"}).json()
+    me = client.get("/api/volunteer/me", params={"token": "priya-test-link-0123456789"}).json()
     assert cid in [c["id"] for c in me["cases"]]
-    asha = client.get("/api/volunteer/me", params={"token": "sim-asha-1"}).json()
+    asha = client.get("/api/volunteer/me", params={"token": token_of("Mangala (ASHA)")}).json()
     assert cid in [c["id"] for c in asha["cases"]]
 
 
@@ -193,8 +194,8 @@ def test_resolution_supersedes_unreached_call(client):
         s.add(c); s.commit()
         handle_call_ended(s, c.id, "no-answer"); s.commit()
     cid = client.get("/api/cases").json()[0]["id"]
-    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
-    client.post(f"/api/cases/{cid}/resolve", json={"volunteer_token": "priya-demo", "resolution": "safe_in_person"})
+    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-test-link-0123456789"})
+    client.post(f"/api/cases/{cid}/resolve", json={"volunteer_token": "priya-test-link-0123456789", "resolution": "safe_in_person"})
     item = next(i for i in client.get("/api/elders").json() if i["id"] == kamala_id())
     assert item["last_resolution"]["resolution"] == "safe_in_person"
     counts = client.get("/api/summary").json()["counts"]
@@ -205,9 +206,9 @@ def test_summary_counts_people_helped_after_resolution(client):
     before = client.get("/api/summary").json()["impact"]
     assert before == {"checks_completed": 0, "people_checked": 0, "people_helped": 0}
     cid = red_case_for_kamala()
-    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-demo"})
+    client.post(f"/api/cases/{cid}/accept", json={"volunteer_token": "priya-test-link-0123456789"})
     client.post(f"/api/cases/{cid}/resolve",
-                json={"volunteer_token": "priya-demo", "resolution": "safe_in_person"})
+                json={"volunteer_token": "priya-test-link-0123456789", "resolution": "safe_in_person"})
     assert client.get("/api/summary").json()["impact"]["people_helped"] == 1
 
 

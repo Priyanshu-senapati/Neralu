@@ -164,8 +164,8 @@ old copy holding port 8000.
 | Page | Address (Option B; use :8000 for Option A) |
 |---|---|
 | Story / landing | http://localhost:5180/ |
-| Ward console | http://localhost:5180/ward |
-| Volunteer (Priya) | http://localhost:5180/volunteer?token=priya-demo |
+| Ward console | http://localhost:5180/ward (passcode: `OFFICER_PASSCODE` in `backend/.env`) |
+| Volunteer (Priya) | console > Demo controls > Priya's volunteer phone (`/volunteer#` + `VOLUNTEER_DEMO_TOKEN`) |
 | Family registration | http://localhost:5180/register |
 | Browser phone | http://localhost:5180/phone |
 

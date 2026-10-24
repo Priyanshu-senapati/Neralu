@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, FamilyStatus, NeraluEvent, CaseRecord, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, FamilyStatus, NeraluEvent, CaseRecord, PublicHousehold, RoundSummary, Summary, VolunteerLink, VolunteerMe, WhatIf, Responder, Impact } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -17,15 +17,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   const text = await res.text()
   const body = text ? JSON.parse(text) : null
-  if (!res.ok) throw new ApiError(res.status, body)
+  if (!res.ok) {
+    // The console's sign-in ended (expired, or signed out in another tab): show the sign-in screen.
+    if (res.status === 401 && (body as { detail?: string } | null)?.detail === OFFICER_SIGN_IN) {
+      window.dispatchEvent(new Event(SIGNED_OUT_EVENT))
+    }
+    throw new ApiError(res.status, body)
+  }
   return body as T
 }
+
+const OFFICER_SIGN_IN = 'officer_sign_in'
+export const SIGNED_OUT_EVENT = 'neralu:officer-signed-out'
 
 const post = <T>(path: string, body: unknown) =>
   request<T>(path, { method: 'POST', body: JSON.stringify(body) })
 
 export const api = {
+  // The ward console (sign-in needed: names, risk details, addresses once accepted, recordings).
+  officer: {
+    session: () => request<{ signed_in: boolean }>('/api/officer/session'),
+    login: (passcode: string) => post<{ signed_in: boolean }>('/api/officer/login', { passcode }),
+    logout: () => post<{ signed_in: boolean }>('/api/officer/logout', {}),
+    volunteerLinks: () => request<VolunteerLink[]>('/api/officer/volunteer-links'),
+  },
   summary: () => request<Summary>('/api/summary'),
+  // Public: the scenario clock, and the ward for the story page with no real person identifiable.
+  clock: () => request<{ scenario_now: string; demo_speed: number }>('/api/clock'),
+  households: () => request<PublicHousehold[]>('/api/households'),
   events: (limit = 40) => request<NeraluEvent[]>(`/api/events?limit=${limit}`),
   rounds: () => request<RoundSummary[]>('/api/rounds'),
   elders: () => request<ElderListItem[]>('/api/elders'),
@@ -46,7 +65,8 @@ export const api = {
     const params = new URLSearchParams(Object.entries(q).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))
     return request<WhatIf>(`/api/whatif?${params}`, { signal })
   },
-  volunteerMe: (token: string) => request<VolunteerMe>(`/api/volunteer/me?token=${encodeURIComponent(token)}`),
+  // The link's token goes in a header, never in a URL (it stays out of server and tunnel logs).
+  volunteerMe: (token: string) => request<VolunteerMe>('/api/volunteer/me', { headers: { 'X-Volunteer-Token': token } }),
   accept: (id: number, token: string) =>
     post<CaseDetail>(`/api/cases/${id}/accept`, { volunteer_token: token }),
   decline: (id: number, token: string) => post<CaseDetail>(`/api/cases/${id}/decline`, { volunteer_token: token }),

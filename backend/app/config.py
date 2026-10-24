@@ -56,7 +56,10 @@ class Settings(BaseSettings):
     frontend_dist: str = ""
 
     kamala_phone: str = ""
-    volunteer_demo_token: str = "priya-demo"
+    # Priya's private volunteer link (16+ characters). Empty: a random one each server start.
+    volunteer_demo_token: str = ""
+    # Ward console sign-in (app/officer.py). Empty: a random one each server start, printed in its window.
+    officer_passcode: str = ""
     recording_retention_days: float = 7  # call recordings are deleted this long after the call
     recordings_dir: str = ""  # browser-phone recordings; default backend/recordings
 

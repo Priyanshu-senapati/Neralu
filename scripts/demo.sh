@@ -18,6 +18,7 @@ echo ""
 echo "  Neralu is running"
 echo "  On this laptop:   http://localhost:8000"
 [ -n "$LAN" ] && echo "  On phones (Wi-Fi): http://$LAN:8000"
+echo "  Ward console passcode: OFFICER_PASSCODE in backend/.env (if empty, printed below for this run)"
 echo "  Stop with Ctrl+C"
 echo ""
 cd backend && exec .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000

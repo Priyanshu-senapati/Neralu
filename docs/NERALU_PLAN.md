@@ -196,7 +196,8 @@ SCENARIO_START=2026-10-09T10:55:00+05:30
 
 # Demo persona phones (E.164)
 KAMALA_PHONE=+91XXXXXXXXXX
-VOLUNTEER_DEMO_TOKEN=priya-demo
+VOLUNTEER_DEMO_TOKEN=<16+ random characters>
+OFFICER_PASSCODE=<ward console passcode>
 ```
 
 ---

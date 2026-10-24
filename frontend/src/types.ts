@@ -120,6 +120,27 @@ export interface CaseBrief {
 /** Where a person's details came from: generated for the demo, the demo persona, or a family's registration. */
 export type DataSource = 'simulated' | 'demo' | 'family'
 
+/** One home as the public story page gets it: a family-registered (real) person has no name, age or factors. */
+export interface PublicHousehold {
+  id: number
+  name: string | null
+  age: number | null
+  risk_score: number
+  risk_factors: string[]
+  is_simulated: boolean
+  source: DataSource
+  lat: number
+  lng: number
+}
+
+/** A real volunteer's private link, for the officer to hand out. */
+export interface VolunteerLink {
+  name: string
+  role: string
+  path: string
+  url: string
+}
+
 export interface ElderListItem {
   id: number
   name: string

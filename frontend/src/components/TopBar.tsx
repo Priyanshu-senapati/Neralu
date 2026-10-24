@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { api, SIGNED_OUT_EVENT } from '../api'
 import type { Summary } from '../types'
 import { fmtDay, fmtTime } from '../time'
 import type { StreamStatus } from '../useEventStream'
@@ -86,6 +87,13 @@ export function TopBar({ summary, now, stream, onPlan, onResponders, onImpact }:
           Responsible by design
         </Link>
         <AnimatedThemeToggle className="h-7 w-7" />
+        <button
+          onClick={() => api.officer.logout().finally(() => window.dispatchEvent(new Event(SIGNED_OUT_EVENT)))}
+          className="press text-xs text-muted underline-offset-2 hover:text-ink hover:underline"
+          title="Sign out of the ward console on this computer"
+        >
+          Sign out
+        </button>
         <span className="inline-flex items-center gap-1.5 text-xs" role="status">
           <span className="relative flex h-2 w-2" aria-hidden="true">
             <span className={`relative inline-flex h-2 w-2 rounded-full ${live ? 'bg-ok' : 'bg-watch'}`} />

@@ -5,10 +5,11 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session
 
 from app.config import get_settings
+from app.officer import require_officer
 from app.db import current_run_id, get_session
 from app.models import CheckIn
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", dependencies=[Depends(require_officer)])  # console only
 
 
 @router.get("/recordings/{checkin_id}")

@@ -10,6 +10,7 @@ import Register from './pages/Register'
 import Responsible from './pages/Responsible'
 import Story from './pages/Story'
 import Volunteer from './pages/Volunteer'
+import { OfficerGate } from './components/OfficerGate'
 
 export default function App() {
   return (
@@ -39,8 +40,8 @@ function PageTransitions() {
   const routes = (
     <Routes location={location}>
       <Route path="/" element={<Story />} />
-      <Route path="/ward" element={<Dashboard />} />
-      <Route path="/ward/record/:id" element={<CaseRecord />} />
+      <Route path="/ward" element={<OfficerGate><Dashboard /></OfficerGate>} />
+      <Route path="/ward/record/:id" element={<OfficerGate><CaseRecord /></OfficerGate>} />
       <Route path="/volunteer" element={<Volunteer />} />
       <Route path="/register" element={<Register />} />
       <Route path="/phone" element={<Phone />} />

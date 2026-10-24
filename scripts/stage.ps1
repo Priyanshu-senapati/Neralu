@@ -41,6 +41,37 @@ if (-not (Test-Path $py)) {
 }
 if (-not (Test-Path "backend\.env")) { Copy-Item backend\.env.example backend\.env; Write-Host "Created backend\.env from the example: fill in your keys (SETUP.md section 5)" -ForegroundColor Yellow }
 
+# The console passcode and Priya's private link live in backend\.env so they stay the same across
+# restarts. Missing (or a link short enough to guess): make a random one and save it there.
+$envPath = Join-Path $root "backend\.env"
+$utf8 = New-Object Text.UTF8Encoding $false  # no BOM: it would corrupt the first setting
+function EnvValue($name) {
+  $line = Get-Content $envPath | Where-Object { $_ -match "^$name=" } | Select-Object -First 1
+  if ($line) { return ($line -replace "^$name=", '' -replace '\s+#.*$', '').Trim() } else { return "" }
+}
+function NewSecret($n) {
+  $chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'.ToCharArray()
+  $bytes = New-Object byte[] $n
+  [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+  return -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+}
+function SaveEnv($name, $value) {
+  $text = [IO.File]::ReadAllText($envPath)
+  if ($text -match "(?m)^$name=.*$") { $text = [regex]::Replace($text, "(?m)^$name=[^\r\n]*", "$name=$value") }
+  else { if ($text.Length -and -not $text.EndsWith("`n")) { $text += "`r`n" }; $text += "$name=$value`r`n" }
+  [IO.File]::WriteAllText($envPath, $text, $utf8)
+}
+if ((EnvValue "OFFICER_PASSCODE").Length -lt 8) {
+  SaveEnv "OFFICER_PASSCODE" ((NewSecret 4) + "-" + (NewSecret 4) + "-" + (NewSecret 4))
+  Write-Host "Made a ward console passcode: OFFICER_PASSCODE in backend\.env" -ForegroundColor Yellow
+}
+if ((EnvValue "VOLUNTEER_DEMO_TOKEN").Length -lt 16) {
+  SaveEnv "VOLUNTEER_DEMO_TOKEN" (NewSecret 22)
+  Write-Host "Made a new private link for Priya (VOLUNTEER_DEMO_TOKEN in backend\.env): re-open it on her phone" -ForegroundColor Yellow
+}
+$officerPasscode = EnvValue "OFFICER_PASSCODE"
+$priyaToken = EnvValue "VOLUNTEER_DEMO_TOKEN"
+
 # PUBLIC_BASE_URL from backend\.env: the ngrok address Twilio uses, also Priya's link on any network
 $publicUrl = (Get-Content backend\.env | Where-Object { $_ -match '^PUBLIC_BASE_URL=' } | Select-Object -First 1) -replace '^PUBLIC_BASE_URL=', '' -replace '\s+#.*$', ''
 $publicUrl = $publicUrl.Trim().TrimEnd('/')
@@ -88,6 +119,7 @@ Step "Go / no-go"
 try {
   # WebClient with UTF-8: Windows PowerShell 5.1 would otherwise misread "·" in the JSON
   $wc = New-Object Net.WebClient; $wc.Encoding = [Text.Encoding]::UTF8
+  $wc.Headers.Add("X-Officer-Passcode", $officerPasscode)  # the status check is console-only
   $status = $wc.DownloadString("http://127.0.0.1:8000/api/status?fresh=1") | ConvertFrom-Json
   foreach ($c in $status.checks) {
     $mark = if (-not $c.ok) { "FAIL" } elseif ($c.warn) { "note" } else { " ok " }
@@ -103,8 +135,8 @@ $lan = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
 $phoneBase = if ($useNgrok) { $publicUrl } elseif ($lan) { "http://${lan}:8000" } else { "http://localhost:8000" }
 
 Write-Host ""
-Write-Host "  Ward console      http://localhost:8000/ward"
-Write-Host "  Priya (volunteer) $phoneBase/volunteer?token=priya-demo"
+Write-Host "  Ward console      http://localhost:8000/ward   (passcode: OFFICER_PASSCODE in backend\.env)"
+Write-Host "  Priya (volunteer) $phoneBase/volunteer#$priyaToken   (or console > Demo controls > Priya's volunteer phone)"
 Write-Host "  Registration      $phoneBase/register"
 Write-Host "  Kamala's family   console > Demo controls > Kamala's family view (opens a fresh private link)"
 if ($Browser) { Write-Host "  Kamala's phone    $phoneBase/phone   (open on the phone the judge holds)" }

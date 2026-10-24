@@ -10,7 +10,7 @@ from app.models import CheckIn, Elder, Event
 from tests.test_api import REGISTRATION
 from tests.test_voice_flow import HEATWAVE, end_call, post, stt  # noqa: F401  (fixture)
 
-PRIYA = {"volunteer_token": "priya-demo"}
+PRIYA = {"volunteer_token": "priya-test-link-0123456789"}
 
 
 def register(client, **changes) -> tuple[int, str]:

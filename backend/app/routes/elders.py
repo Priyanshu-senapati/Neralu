@@ -11,8 +11,9 @@ from app.erase import erase_elder
 from app.events import log_event
 from app.privacy import code_matches, hash_code, new_erasure_code
 from app.models import CODE_WORDS, LANGUAGES, ROOF_TYPES, Elder, Event
+from app.officer import require_officer
 from app.risk import vulnerability_score
-from app.views import elder_detail, elder_items
+from app.views import elder_detail, elder_items, public_households
 from seed.seed import CENTER_LAT, CENTER_LNG, HALF_LAT, HALF_LNG
 
 router = APIRouter(prefix="/api")
@@ -76,7 +77,13 @@ class RegisterElder(BaseModel):
         return v
 
 
-@router.get("/elders")
+@router.get("/households")
+def list_households(session: Session = Depends(get_session)) -> list[dict]:
+    """The ward for the public story page: no sign-in, so nothing that identifies a real person."""
+    return public_households(session)
+
+
+@router.get("/elders", dependencies=[Depends(require_officer)])
 def list_elders(status: str | None = None, session: Session = Depends(get_session)) -> list[dict]:
     items = elder_items(session)
     if status is None:
@@ -92,7 +99,7 @@ def list_elders(status: str | None = None, session: Session = Depends(get_sessio
     return [i for i in items if i["latest"]["outcome"] == status]
 
 
-@router.get("/elders/{elder_id}")
+@router.get("/elders/{elder_id}", dependencies=[Depends(require_officer)])
 def get_elder(elder_id: int, session: Session = Depends(get_session)) -> dict:
     e = session.get(Elder, elder_id)
     if e is None or e.run_id != current_run_id():

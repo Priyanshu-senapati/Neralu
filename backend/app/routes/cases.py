@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
@@ -7,11 +7,13 @@ from app.db import current_run_id, get_session
 from app.geo import km
 from app.escalation import AlreadyAccepted, NotAllowed, accept_case, decline_case, resolve_case, set_duty
 from app.models import RESOLUTIONS, Case, Elder, Volunteer
+from app.officer import require_officer
 from app.responders import load
 from app.record import case_record
 from app.views import case_brief, case_detail, elder_item_one
 
 router = APIRouter(prefix="/api")
+OFFICER = Depends(require_officer)  # console only: names, addresses, records
 
 
 class AcceptIn(BaseModel):
@@ -32,7 +34,7 @@ class ResolveIn(BaseModel):
 def _volunteer(session: Session, token: str) -> Volunteer:
     v = session.exec(select(Volunteer).where(Volunteer.run_id == current_run_id(),
                                              Volunteer.token == token)).first()
-    if v is None:
+    if not token or v is None:
         raise HTTPException(401, "Unknown volunteer link")
     return v
 
@@ -50,7 +52,7 @@ def case_list_item(session: Session, c: Case) -> dict:
     return {**case_brief(c, v.name if v else None), "elder": elder_item_one(session, e)}
 
 
-@router.get("/cases")
+@router.get("/cases", dependencies=[OFFICER])
 def list_cases(state: str = "open,assigned", session: Session = Depends(get_session)) -> list[dict]:
     states = [s for s in state.split(",") if s]
     rows = session.exec(select(Case).where(Case.run_id == current_run_id(),
@@ -58,12 +60,12 @@ def list_cases(state: str = "open,assigned", session: Session = Depends(get_sess
     return [case_list_item(session, c) for c in rows]
 
 
-@router.get("/cases/{case_id}")
+@router.get("/cases/{case_id}", dependencies=[OFFICER])
 def get_case(case_id: int, session: Session = Depends(get_session)) -> dict:
     return case_detail(session, _case(session, case_id))
 
 
-@router.get("/cases/{case_id}/record")
+@router.get("/cases/{case_id}/record", dependencies=[OFFICER])
 def get_case_record(case_id: int, session: Session = Depends(get_session)) -> dict:
     """The printable case record for the ward office."""
     return case_record(session, _case(session, case_id))
@@ -102,10 +104,10 @@ def duty(body: DutyIn, session: Session = Depends(get_session)):
     except NotAllowed:
         return JSONResponse({"error": "finish_your_case_first"}, status_code=409)
     session.commit()
-    return volunteer_me(body.volunteer_token, session)
+    return _me(session, body.volunteer_token)
 
 
-@router.get("/responders")
+@router.get("/responders", dependencies=[OFFICER])
 def responders(session: Session = Depends(get_session)) -> list[dict]:
     """Every responder with duty status and load: the cases they hold and the open ones they are asked to."""
     busy = load(session)
@@ -161,7 +163,14 @@ def volunteer_case(session: Session, c: Case, v: Volunteer) -> dict:
 
 
 @router.get("/volunteer/me")
-def volunteer_me(token: str, session: Session = Depends(get_session)) -> dict:
+def volunteer_me(x_volunteer_token: str | None = Header(None), token: str | None = None,
+                 session: Session = Depends(get_session)) -> dict:
+    """The phone sends its link's token in the X-Volunteer-Token header (kept out of URLs and logs);
+    ?token= still works for older links."""
+    return _me(session, x_volunteer_token or token or "")
+
+
+def _me(session: Session, token: str) -> dict:
     v = _volunteer(session, token)
     # Escalating adds responders: volunteers keep seeing a case after it moves up to ASHA.
     tiers = ("asha",) if v.role == "asha" else ("volunteer", "asha")

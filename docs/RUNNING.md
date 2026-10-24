@@ -41,8 +41,8 @@ npm run dev -- --port 5180
 | Page | URL |
 |---|---|
 | Story page | http://localhost:5180/ |
-| Ward console | http://localhost:5180/ward |
-| Volunteer (phone) | http://localhost:5180/volunteer?token=priya-demo |
+| Ward console | http://localhost:5180/ward (passcode: `OFFICER_PASSCODE` in `backend/.env`) |
+| Volunteer (phone) | console > Demo controls > Priya's volunteer phone (`/volunteer#` + `VOLUNTEER_DEMO_TOKEN`) |
 | Family registration (phone) | http://localhost:5180/register |
 
 Phones on the same network can open the same pages using the laptop's IP instead of `localhost`.

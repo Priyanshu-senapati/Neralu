@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import { Wordmark } from '../components/Brand'
 import { DrawnCheck } from '../components/Motion'
@@ -8,7 +7,7 @@ import { WaitingTimer } from '../components/WaitingTimer'
 import { callFindings } from '../loop'
 import { TIER_LABEL } from '../status'
 import { useScenarioNow } from '../time'
-import type { CaseDetail, Summary, VolunteerMe } from '../types'
+import type { CaseDetail, VolunteerMe } from '../types'
 import { useEventStream } from '../useEventStream'
 
 const RESOLUTIONS: { key: string; label: string }[] = [
@@ -34,15 +33,27 @@ function alertNewCase() {
   osc.stop(audioCtx.currentTime + 0.5)
 }
 
+/**
+ * The private token from this phone's link. New links carry it after '#', which a browser never
+ * sends to the server, so it stays out of server and tunnel logs. An older ?token= link still
+ * works, and is rewritten to the '#' form at once.
+ */
+function linkToken(): string {
+  const fromHash = decodeURIComponent(window.location.hash.slice(1))
+  const fromQuery = new URLSearchParams(window.location.search).get('token') ?? ''
+  const token = fromHash || fromQuery
+  if (fromQuery) window.history.replaceState(null, '', `${window.location.pathname}#${encodeURIComponent(token)}`)
+  return token
+}
+
 export default function Volunteer() {
-  const [params] = useSearchParams()
-  const token = params.get('token') ?? ''
+  const [token] = useState(linkToken)
   // 'checking': asking the server whether this person is on duty. 'resume': the server says on duty
   // but this page was just opened, so one tap is needed to allow sound. 'loggedOff': just logged off.
   const [mode, setMode] = useState<'checking' | 'off' | 'resume' | 'on' | 'loggedOff'>('checking')
   const onDuty = mode === 'on'
   const [me, setMe] = useState<VolunteerMe | null>(null)
-  const [summary, setSummary] = useState<Summary | null>(null)
+  const [clock, setClock] = useState<{ scenario_now: string; demo_speed: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -67,13 +78,13 @@ export default function Volunteer() {
 
   const load = useCallback(async () => {
     try {
-      const [m, s] = await Promise.all([api.volunteerMe(token), api.summary()])
+      const [m, c] = await Promise.all([api.volunteerMe(token), api.clock()])
       const open = m.cases.filter((c) => c.state === 'open')
       const before = seen.current
       if (before && open.some((c) => !before.has(c.id) || (c.alerted_you && !before.get(c.id)))) alertNewCase()
       seen.current = new Map(open.map((c) => [c.id, !!c.alerted_you]))
       setMe(m)
-      setSummary(s)
+      setClock(c)
       setError(null)
     } catch (e) {
       setError(e instanceof ApiError && e.status === 401 ? 'This volunteer link is not valid for the current run.' : 'Cannot reach Neralu · retrying')
@@ -91,7 +102,7 @@ export default function Volunteer() {
     if (onDuty) load()
   }, [onDuty, load])
 
-  const now = useScenarioNow(summary?.scenario_now, summary?.demo_speed ?? 1)
+  const now = useScenarioNow(clock?.scenario_now, clock?.demo_speed ?? 1)
 
   const goOnDuty = async () => {
     audioCtx = audioCtx ?? new AudioContext() // sound needs a tap on the page first

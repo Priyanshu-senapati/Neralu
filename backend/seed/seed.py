@@ -2,7 +2,10 @@
 
 400 simulated residents + the demo persona Kamala R. (real phone) + volunteers and ASHA workers.
 """
+import logging
 import random
+import secrets
+from functools import lru_cache
 
 from sqlmodel import Session
 
@@ -16,6 +19,9 @@ HALF_LAT, HALF_LNG = 0.009, 0.0092
 FICTIONAL_PHONE = "+910000000000"  # stands in for family/neighbour numbers; never dialled
 
 N_SIMULATED = 400
+MIN_TOKEN_LEN = 16  # a volunteer link must be impossible to guess
+
+log = logging.getLogger(__name__)
 
 
 def _pick(rng: random.Random, weights: dict):
@@ -75,17 +81,35 @@ def simulated_elder(rng: random.Random, run_id: str) -> Elder:
     )
 
 
+@lru_cache
+def _random_demo_token() -> str:
+    return secrets.token_urlsafe(16)
+
+
+def demo_volunteer_token() -> str:
+    """Priya's private link. VOLUNTEER_DEMO_TOKEN in backend/.env keeps it the same across restarts,
+    so a phone can bookmark it. Without one, or with one short enough to guess, a random token is
+    made for this server run. Either way it survives demo resets."""
+    configured = get_settings().volunteer_demo_token.strip()
+    if len(configured) >= MIN_TOKEN_LEN:
+        return configured
+    if configured:
+        log.warning("VOLUNTEER_DEMO_TOKEN is too short to keep private; using a random link instead "
+                    "(console > Demo controls > Priya's volunteer phone)")
+    return _random_demo_token()
+
+
 def volunteers(rng: random.Random, run_id: str) -> list[Volunteer]:
-    s = get_settings()
     out = [Volunteer(run_id=run_id, name="Priya", role="volunteer", phone="",
-                     token=s.volunteer_demo_token, lat=12.9241, lng=77.5822, is_simulated=False)]
-    for i, name in enumerate(["Ravi K.", "Shabnam A.", "Deepak M.", "Anitha S.", "Joseph D."], 1):
+                     token=demo_volunteer_token(), lat=12.9241, lng=77.5822, is_simulated=False)]
+    # Simulated responders get random links too: nobody can act as them by guessing a name.
+    for name in ["Ravi K.", "Shabnam A.", "Deepak M.", "Anitha S.", "Joseph D."]:
         lat, lng = _point(rng)
-        out.append(Volunteer(run_id=run_id, name=name, role="volunteer", token=f"sim-vol-{i}",
+        out.append(Volunteer(run_id=run_id, name=name, role="volunteer", token=secrets.token_urlsafe(16),
                              lat=lat, lng=lng))
-    for i, name in enumerate(["Mangala (ASHA)", "Rekha (ASHA)"], 1):
+    for name in ["Mangala (ASHA)", "Rekha (ASHA)"]:
         lat, lng = _point(rng)
-        out.append(Volunteer(run_id=run_id, name=name, role="asha", token=f"sim-asha-{i}",
+        out.append(Volunteer(run_id=run_id, name=name, role="asha", token=secrets.token_urlsafe(16),
                              lat=lat, lng=lng))
     return out
 

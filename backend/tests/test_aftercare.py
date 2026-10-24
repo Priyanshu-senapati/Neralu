@@ -8,7 +8,7 @@ from app.models import Case, CheckIn, Event
 from app.state import state
 from tests.test_api import kamala_id, red_case_for_kamala
 
-PRIYA = {"volunteer_token": "priya-demo"}
+PRIYA = {"volunteer_token": "priya-test-link-0123456789"}
 
 
 def close_case(client, resolution="safe_in_person") -> int:

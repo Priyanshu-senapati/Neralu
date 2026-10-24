@@ -4,12 +4,13 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
 
+from app.officer import require_officer
 from app.db import get_session
 from app.state import Weather, state
 from app.weather import ForecastUnavailable, bengaluru_tomorrow
 from app.whatif import compare
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", dependencies=[Depends(require_officer)])  # console only
 
 
 @router.get("/whatif")
