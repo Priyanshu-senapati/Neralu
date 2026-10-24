@@ -9,6 +9,7 @@ from sqlmodel import Session
 
 from app import browser_phone as bp
 from app import telephony as tw
+from app.audio import fallback_speech
 from app.calls import handle_call_ended
 from app.db import engine
 from app.models import CheckIn, Elder
@@ -26,6 +27,12 @@ CAPTIONS = {  # English captions shown on the phone screen while the Kannada pro
     "fan": "Is your fan or cooler working? Press 1 for yes, 2 for no.",
     "help": "If you need help now, press 2. If you are okay, press 1.",
     "orientation": "Please tell me, what day is it today?",
+    # Caregiver check: the call is about a person with memory difficulty, not to them
+    "cg_seen": "Are you with them now, or have you seen them in the last hour? Press 1 for yes, 2 for no.",
+    "cg_water": "Have they had water in the last hour? Press 1 for yes, 2 for no.",
+    "cg_unwell": "Do they seem more confused, drowsy or unwell than usual? Press 1 for yes, 2 for no.",
+    "cg_room": "Is their room very hot, with no fan or cooler working? Press 1 for yes, 2 for no.",
+    "cg_help": "If they need help now, press 2. If they are okay, press 1.",
 }
 MIME_EXT = {"audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "audio/mpeg": ".mp3",
             "audio/wav": ".wav", "audio/x-wav": ".wav"}
@@ -34,6 +41,15 @@ MIME_EXT = {"audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "au
 def _audio(name: str, lang: str) -> str:
     """Same-origin prompt URL; the audio route falls back to another language if `lang` lacks it."""
     return f"/audio/{lang}/{name}.mp3"
+
+
+def _speech(names: list[str], lang: str) -> dict[str, dict[str, str]]:
+    """Prompt URL -> text and language, for prompts with no clip yet: the page speaks them instead."""
+    out = {}
+    for n in names:
+        if not tw.has_audio(n, lang) and (speech := fallback_speech(lang, n)):
+            out[_audio(n, lang)] = {"text": speech[0], "lang": speech[1]}
+    return out
 
 
 def _call(session: Session, checkin_id: int) -> tuple[bp.BrowserCall, CheckIn]:
@@ -56,7 +72,7 @@ def current() -> dict:
         if c is None or elder is None or c.processed:
             return {"call": None}
         return {"call": {"checkin_id": c.id, "status": call.status, "attempt": c.attempt,
-                         "is_recall": c.is_recall, "elder_name": elder.name}}
+                         "is_recall": c.is_recall, "elder_name": elder.name, "callee": c.callee}}
 
 
 @router.post("/calls/{checkin_id}/answer")
@@ -68,17 +84,24 @@ def answer(checkin_id: int) -> dict:
         bp.answer(session, call)
         session.commit()
         elder = session.get(Elder, c.elder_id)
-        lang, first = c.language or elder.language, elder.name.split()[0].lower()
-        intro = ["greet"] + ([f"name_{first}"] if tw.has_audio(f"name_{first}", lang) else []) \
-            + ["code_intro", f"code_{elder.code_word}", "safety"]
+        lang = c.language or elder.language
+        intro = tw.intro_clips(elder.name.split()[0], elder.code_word, lang, c.callee)
+        _, order = tw.script(c.callee)
+        keypad, help_step = order[:-1], order[-1]
+        caregiver = c.callee == "caregiver"
         return {
+            "callee": c.callee,
             "intro": [_audio(n, lang) for n in intro],
             "code_word": elder.code_word.capitalize(),
             "steps": [{"step": s, "prompt": _audio(tw.PROMPTS[s], lang), "caption": CAPTIONS[s]}
-                      for s in tw.STEP_ORDER],
-            "orientation": {"prompt": _audio("q_orientation", lang), "caption": CAPTIONS["orientation"]},
-            "help": {"prompt": _audio("q_help", lang), "caption": CAPTIONS["help"]},
+                      for s in keypad],
+            # The day question is not asked about someone else: a caregiver call skips it.
+            "orientation": None if caregiver else
+            {"prompt": _audio("q_orientation", lang), "caption": CAPTIONS["orientation"]},
+            "help": {"step": help_step, "prompt": _audio(tw.PROMPTS[help_step], lang),
+                     "caption": CAPTIONS[help_step]},
             "reprompt": _audio("reprompt", lang),
+            "speech": _speech(intro + [tw.PROMPTS[s] for s in order] + ["reprompt"], lang),
         }
 
 
@@ -92,17 +115,21 @@ def key(checkin_id: int, body: KeyIn) -> dict:
     with Session(engine) as session:
         _, c = _call(session, checkin_id)
         extra = {"transport": "browser"}
-        if body.step == "help":
+        steps, _ = tw.script(c.callee)
+        if body.step in tw.HELP_STEPS:
             value = HELP_KEYPAD.get(body.digit or "", "none")
             _store(session, c, "self_report", value, "keypad", **extra)
             advice = (c.answers or {}).get("water") == "no"
             session.commit()
-            closing = (["advice"] if advice else []) + ["close_help" if value == "help" else "close_ok"]
+            if c.callee == "caregiver":
+                closing = tw.caregiver_closing(c.answers or {}, help_=value == "help")
+            else:
+                closing = (["advice"] if advice else []) + ["close_help" if value == "help" else "close_ok"]
             lang = c.language or session.get(Elder, c.elder_id).language
-            return {"closing": [_audio(n, lang) for n in closing]}
-        if body.step not in tw.STEPS:
+            return {"closing": [_audio(n, lang) for n in closing], "speech": _speech(closing, lang)}
+        if body.step not in steps:
             raise HTTPException(422, "Unknown step")
-        _store(session, c, tw.STEPS[body.step], KEYPAD.get(body.digit or "", "none"), "keypad", **extra)
+        _store(session, c, steps[body.step], KEYPAD.get(body.digit or "", "none"), "keypad", **extra)
         session.commit()
         return {"ok": True}
 

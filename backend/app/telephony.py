@@ -7,16 +7,30 @@ from twilio.request_validator import RequestValidator
 from twilio.rest import Client
 from twilio.twiml.voice_response import Gather, VoiceResponse
 
-from app.audio import resolve
+from app.audio import fallback_speech, resolve
 from app.config import get_settings
 
 
 # Keypad steps in call order: url step -> Signals field
 STEPS = {"water": "water", "symptoms": "symptoms", "room": "room_hot", "fan": "fan_working"}
 STEP_ORDER = list(STEPS)
+# Caregiver check (people with memory difficulty): url step -> CaregiverSignals field
+CG_STEPS = {"cg_seen": "seen", "cg_water": "water", "cg_unwell": "unwell", "cg_room": "room_no_cooling"}
+CG_STEP_ORDER = list(CG_STEPS)
 PROMPTS = {"water": "q_water", "symptoms": "q_symptoms", "room": "q_room", "fan": "q_fan",
            "day": "q_day_keypad",
-           "help": "q_help"}
+           "help": "q_help",
+           "cg_seen": "q_cg_seen", "cg_water": "q_cg_water", "cg_unwell": "q_cg_unwell",
+           "cg_room": "q_cg_room", "cg_help": "q_cg_help"}
+HELP_STEPS = ("help", "cg_help")
+SAY_VOICE = "Polly.Aditi"  # Indian English and Hindi: speaks a prompt whose clip is not generated yet
+
+
+def script(callee: str) -> tuple[dict[str, str], list[str]]:
+    """The keypad steps (url step -> answer field) in call order, and the help step, for this callee."""
+    if callee == "caregiver":
+        return CG_STEPS, CG_STEP_ORDER + ["cg_help"]
+    return STEPS, STEP_ORDER + ["help"]
 
 _client: Client | None = None
 # Twilio trial accounts reject some call options; once seen, place calls without them.
@@ -48,6 +62,14 @@ def audio(name: str, lang: str) -> str:
 
 def has_audio(name: str, lang: str) -> bool:
     return resolve(lang, name) is not None
+
+
+def play(target, name: str, lang: str) -> None:
+    """Play a recorded prompt; if no language has its clip yet, speak the prompt's text instead."""
+    if has_audio(name, lang):
+        target.play(audio(name, lang))
+    elif speech := fallback_speech(lang, name):
+        target.say(speech[0], voice=SAY_VOICE, language=speech[1])
 
 
 def place_call(to: str, checkin_id: int) -> str:
@@ -99,8 +121,8 @@ def keypad_gather(resp: VoiceResponse, step: str, checkin_id: int, *, reprompt: 
     g = Gather(input="dtmf", num_digits=1, timeout=8, action=url(f"/voice/gather/{step}", **params),
                method="POST")
     if reprompt:
-        g.play(audio("reprompt", lang))
-    g.play(audio(PROMPTS[step], lang))
+        play(g, "reprompt", lang)
+    play(g, PROMPTS[step], lang)
     resp.append(g)
     resp.redirect(url(f"/voice/gather/{step}", **params, timeout=1), method="POST")
 
@@ -121,16 +143,21 @@ def language_menu_twiml(checkin_id: int) -> str:
     return str(resp)
 
 
-def answer_twiml(checkin_id: int, first_name: str, code_word: str, lang: str) -> str:
+def intro_clips(first_name: str, code_word: str, lang: str, callee: str = "elder") -> list[str]:
+    """Greeting, who the call is about, the family code word and the safety line."""
+    if callee == "caregiver":
+        about = ["cg_intro"]  # the caregiver is told the call is about the person in their care
+    else:
+        name_clip = f"name_{first_name.lower()}"
+        about = [name_clip] if has_audio(name_clip, lang) else []
+    return ["greet", *about, "code_intro", f"code_{code_word}", "safety"]
+
+
+def answer_twiml(checkin_id: int, first_name: str, code_word: str, lang: str, callee: str = "elder") -> str:
     resp = VoiceResponse()
-    resp.play(audio("greet", lang))
-    name_clip = f"name_{first_name.lower()}"
-    if has_audio(name_clip, lang):
-        resp.play(audio(name_clip, lang))
-    resp.play(audio("code_intro", lang))
-    resp.play(audio(f"code_{code_word}", lang))
-    resp.play(audio("safety", lang))
-    keypad_gather(resp, "water", checkin_id, reprompt=False, lang=lang)
+    for clip in intro_clips(first_name, code_word, lang, callee):
+        play(resp, clip, lang)
+    keypad_gather(resp, script(callee)[1][0], checkin_id, reprompt=False, lang=lang)
     return str(resp)
 
 
@@ -158,6 +185,26 @@ def close_twiml(*, advice: bool, help_: bool, lang: str) -> str:
     if advice:
         resp.play(audio("advice", lang))
     resp.play(audio("close_help" if help_ else "close_ok", lang))
+    resp.hangup()
+    return str(resp)
+
+
+def caregiver_closing(answers: dict, *, help_: bool) -> list[str]:
+    """What the caregiver should do now, then goodbye. "Someone is being informed" whenever the
+    answers already mean a person will be sent (C1 help, C2 unwell)."""
+    clips = []
+    if answers.get("seen") != "yes":
+        clips.append("cg_advice_check")
+    if answers.get("water") == "no":
+        clips.append("cg_advice_water")
+    sending = help_ or answers.get("unwell") == "yes"
+    return clips + ["cg_close_help" if sending else "cg_close_ok"]
+
+
+def caregiver_close_twiml(answers: dict, *, help_: bool, lang: str) -> str:
+    resp = VoiceResponse()
+    for clip in caregiver_closing(answers, help_=help_):
+        play(resp, clip, lang)
     resp.hangup()
     return str(resp)
 

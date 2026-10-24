@@ -61,7 +61,20 @@ const SCRIPT: ScriptLine[] = [
     },
   },
 ]
-const QUESTION_KEYS = SCRIPT.filter((s) => s.answer).map((s) => s.key)
+
+/** A caregiver call about a person with memory difficulty: same opening, questions about them, no day question. */
+const CAREGIVER_SCRIPT: ScriptLine[] = [
+  SCRIPT[0],
+  { key: 'cg_intro', caption: 'We are calling about the person in your care who is registered with Neralu.' },
+  SCRIPT[1],
+  SCRIPT[2],
+  { key: 'seen', caption: 'Are you with them now, or have you seen them in the last hour?', answer: yesNo('seen', 'no') },
+  { key: 'water', caption: 'Have they had water in the last hour?', answer: yesNo('water', 'no') },
+  { key: 'unwell', caption: 'Do they seem more confused, drowsy or unwell than usual?', answer: yesNo('unwell', 'yes') },
+  { key: 'room_no_cooling', caption: 'Is their room very hot, with no fan or cooler working?', answer: yesNo('room_no_cooling', 'yes') },
+  { ...SCRIPT[SCRIPT.length - 1], caption: 'If they need help now, press 2. If they are okay, press 1.' },
+]
+const questionKeys = (script: ScriptLine[]) => script.filter((s) => s.answer).map((s) => s.key)
 
 /** Shown first when the call began with the language menu (1 Kannada, 2 Hindi, 3 English). */
 const LANG_LINE: ScriptLine = {
@@ -87,7 +100,9 @@ interface Props {
 
 export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProfile }: Props) {
   const book = useRuleBook()
-  const active = elders.find((e) => !e.is_simulated && e.current_call)
+  // With several real residents due, follow the one actually on the line, else the first calling.
+  const calling = elders.filter((e) => !e.is_simulated && e.current_call)
+  const active = calling.find((e) => e.current_call!.call_status === 'in-progress') ?? calling[0]
   const [focusId, setFocusId] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState<string | null>(null)
   const [minimised, setMinimised] = useState(false)
@@ -127,6 +142,8 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
   const placed = detail?.events.filter((e) => e.kind === 'call_placed' && (!call || e.checkin_id === call.id)).at(-1)
   const elapsed = placed && now ? Math.max(0, Math.round((now.getTime() - new Date(placed.ts_scenario).getTime()) / speed / 1000)) : 0
   const first = resident.name.split(' ')[0]
+  const caregiver = (cur?.callee ?? call?.callee) === 'caregiver'
+  const who = caregiver ? (detail?.family_name ?? 'Their caregiver') : first
 
   if (minimised) {
     return (
@@ -143,9 +160,10 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
   }
 
   // The language line appears once the caller has chosen (or the menu timed out).
-  const lines = call?.language ? [LANG_LINE, ...SCRIPT] : SCRIPT
+  const script = caregiver ? CAREGIVER_SCRIPT : SCRIPT
+  const lines = call?.language ? [LANG_LINE, ...script] : script
   const firstQuestion = lines.findIndex((l) => l.answer && l.key !== 'language')
-  const answeredCount = call ? QUESTION_KEYS.filter((k) => call.answers[k]).length : 0
+  const answeredCount = call ? questionKeys(script).filter((k) => call.answers[k]).length : 0
   const currentIdx = phase === 'connected' ? firstQuestion + answeredCount : -1
   const spoken = LANG[call?.language ?? resident.language] ?? resident.language
   const verdict = phase === 'done' && call?.classified ? call : null
@@ -171,6 +189,12 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
           <p className="mt-1 text-sm text-muted">
             <span className="num">{resident.age}</span> · {resident.lives_alone ? 'lives alone' : 'lives with family'} · {LANG[resident.language] ?? resident.language} · {mode === 'twilio' ? 'their own phone, any handset' : 'browser phone, no telecom'}
           </p>
+          {caregiver && (
+            <p className="mt-2 text-sm">
+              <span className="font-semibold">Caregiver call · {who}.</span>{' '}
+              <span className="text-muted">{first} has memory difficulty, so "what day is it?" cannot tell heat confusion apart; the caregiver answers about {first} instead.</span>
+            </p>
+          )}
 
           {detail && (
             <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-ui border border-line bg-line text-sm">
@@ -196,10 +220,10 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
               {(phase === 'ringing' || phase === 'connected') && <span className="num text-2xl tabular-nums">{clock(elapsed)}</span>}
             </div>
             <p className="mt-1 text-sm text-muted">
-              {phase === 'ringing' && `Attempt ${cur?.attempt ?? 1}${cur?.is_recall ? ' · follow-up call' : ''} · ${first}'s phone is ringing.`}
-              {phase === 'connected' && `${first} picked up. Neralu asks each question; ${first} answers on the keypad.`}
+              {phase === 'ringing' && `Attempt ${cur?.attempt ?? 1}${cur?.is_recall ? ' · follow-up call' : ''} · ${who}'s phone is ringing.`}
+              {phase === 'connected' && `${who} picked up. Neralu asks each question; ${who} answers on the keypad.`}
               {phase === 'between' && (
-                <>No answer on attempt {(cur?.attempt ?? 2) - 1}. Calling again at <span className="num">{fmtTime(nextAt)}</span>
+                <>{cur?.is_recall && cur.attempt === 1 ? 'Follow-up call booked' : `No answer on attempt ${(cur?.attempt ?? 2) - 1}. Calling again`} at <span className="num">{fmtTime(nextAt)}</span>
                   {nextIn !== null && <> · in <span className="num">{clock(nextIn)}</span></>}.</>
               )}
               {phase === 'done' && (verdict ? 'The call has ended and the rules have decided.' : 'Call ended.')}

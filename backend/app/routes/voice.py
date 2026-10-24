@@ -62,7 +62,7 @@ async def answer(request: Request, checkin_id: int) -> Response:
         elder = session.get(Elder, c.elder_id)
         if get_settings().language_menu:
             return twiml(tw.language_menu_twiml(c.id))
-        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, elder.language))
+        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, elder.language, c.callee))
 
 
 @router.post("/language")
@@ -83,7 +83,7 @@ async def language(request: Request, checkin_id: int) -> Response:
                   actor="twilio", elder_id=c.elder_id, checkin_id=c.id,
                   data={"language": c.language, "pressed": digits if chosen else None})
         session.commit()
-        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, c.language))
+        return twiml(tw.answer_twiml(c.id, elder.name.split()[0], elder.code_word, c.language, c.callee))
 
 
 @router.post("/gather/{step}")
@@ -92,25 +92,29 @@ async def gather(request: Request, step: str, checkin_id: int, r: int = 0) -> Re
     digits = (await request.form()).get("Digits")
     with Session(engine) as session:
         c = _live_checkin(session, checkin_id)
-        if c is None or (step not in tw.STEPS and step not in ("help", "day")):
+        steps, order = tw.script(c.callee) if c else ({}, [])
+        if c is None or (step not in order and not (step == "day" and c.callee == "elder")):
             return twiml(tw.hangup_twiml())
         if step == "day":
             return _day_keypad(session, c, digits, retried=bool(r))
-        if step == "help":
+        if step in tw.HELP_STEPS:
             value = HELP_KEYPAD.get(digits, "none")
             _store(session, c, "self_report", value, "keypad")
             advice = (c.answers or {}).get("water") == "no"
             session.commit()
+            if c.callee == "caregiver":
+                return twiml(tw.caregiver_close_twiml(c.answers or {}, help_=value == "help",
+                                                      lang=_lang(session, c)))
             return twiml(tw.close_twiml(advice=advice, help_=value == "help", lang=_lang(session, c)))
         value = KEYPAD.get(digits)
         if value is None and not r:
             return twiml(tw.gather_twiml(step, c.id, reprompt=True, lang=_lang(session, c)))
-        _store(session, c, tw.STEPS[step], value or "none", "keypad")
+        _store(session, c, steps[step], value or "none", "keypad")
         session.commit()
-        i = tw.STEP_ORDER.index(step)
-        if i + 1 < len(tw.STEP_ORDER):
-            return twiml(tw.gather_twiml(tw.STEP_ORDER[i + 1], c.id, reprompt=False, lang=_lang(session, c)))
-        return twiml(tw.orientation_twiml(c.id, _lang(session, c)))
+        nxt = order[order.index(step) + 1]
+        if nxt in tw.HELP_STEPS and c.callee != "caregiver":
+            return twiml(tw.orientation_twiml(c.id, _lang(session, c)))  # the day question comes before help
+        return twiml(tw.gather_twiml(nxt, c.id, reprompt=False, lang=_lang(session, c)))
 
 
 def _day_keypad(session: Session, c: CheckIn, digits: str | None, *, retried: bool) -> Response:
