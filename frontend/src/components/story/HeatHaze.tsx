@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { token, useTheme } from '@/theme'
+import { useTheme } from '@/theme'
 import { makeSimplex2 } from './noise'
 import { MAX_FRAME, heat01, mixRGB, parseColor, rgba, type RGB } from './orbitPhysics'
 import { heat } from './useScrollHeat'
@@ -15,7 +15,8 @@ const FLOW_SCALE = 0.0016 // noise-field zoom: one swirl is a few hundred pixels
 const FLOW_SPEED = 22 // px/s along the flow
 const RISE = 6 // px/s upward drift on a normal day
 const BUOYANCY = 38 // extra px/s upward at the full heatwave
-const ALPHA = [0.6, 1, 1.45] // three brightness groups, three fills per frame
+const ALPHA = [0.6, 1, 1.45] // three brightness groups
+const LIT = [1, 2.2, 3.6] // how strongly a mote is lit by the sun (far, near, close)
 
 export default function HeatHaze() {
   const theme = useTheme()
@@ -23,6 +24,8 @@ export default function HeatHaze() {
   const colors = useRef<{ brand: RGB; heat: RGB; dark: boolean } | null>(null)
 
   useEffect(() => {
+    const el = canvasRef.current ?? document.documentElement
+    const token = (name: string) => getComputedStyle(el).getPropertyValue(name).trim()
     colors.current = {
       brand: parseColor(token('--brand')),
       heat: parseColor(token('--heat')),
@@ -43,6 +46,7 @@ export default function HeatHaze() {
     let y = new Float32Array(0)
     let size = new Float32Array(0)
     let group = new Uint8Array(0)
+    let lit = new Uint8Array(0)
     let seed = 1
     const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646
 
@@ -52,6 +56,7 @@ export default function HeatHaze() {
       y = new Float32Array(n)
       size = new Float32Array(n)
       group = new Uint8Array(n)
+      lit = new Uint8Array(n)
       for (let i = 0; i < n; i++) {
         x[i] = rand() * width
         y[i] = rand() * height
@@ -121,15 +126,27 @@ export default function HeatHaze() {
       ctx.globalCompositeOperation = c.dark ? 'lighter' : 'source-over'
       const tone = mixRGB(c.brand, c.heat, hf)
       const base = 0.05 + 0.13 * hf
-      for (let g = 0; g < ALPHA.length; g++) {
-        ctx.beginPath()
-        for (let i = 0; i < count; i++) {
-          if (group[i] !== g) continue
-          ctx.moveTo(x[i] + size[i], y[i])
-          ctx.arc(x[i], y[i], size[i], 0, Math.PI * 2)
+      // Motes near the sun catch its light: brightness falls off with the square of the distance.
+      const sun = heat.sun
+      const sunTone = mixRGB(tone, [255, 214, 160], 0.7)
+      for (let i = 0; i < count; i++) {
+        const d2 = sun.on ? ((x[i] - sun.x) ** 2 + (y[i] - sun.y) ** 2) / (240 * 240) : 99
+        lit[i] = Math.min(LIT.length - 1, Math.floor(2.4 / (1 + d2)))
+      }
+      for (let l = 0; l < LIT.length; l++) {
+        for (let g = 0; g < ALPHA.length; g++) {
+          ctx.beginPath()
+          let any = false
+          for (let i = 0; i < count; i++) {
+            if (group[i] !== g || lit[i] !== l) continue
+            ctx.moveTo(x[i] + size[i], y[i])
+            ctx.arc(x[i], y[i], size[i], 0, Math.PI * 2)
+            any = true
+          }
+          if (!any) continue
+          ctx.fillStyle = rgba(l ? mixRGB(tone, sunTone, l / (LIT.length - 1)) : tone, Math.min(0.55, base * ALPHA[g] * LIT[l] * (c.dark ? 1 : 1.3)))
+          ctx.fill()
         }
-        ctx.fillStyle = rgba(tone, Math.min(0.3, base * ALPHA[g] * (c.dark ? 1 : 1.3)))
-        ctx.fill()
       }
     }
     const start = () => {

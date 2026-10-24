@@ -63,13 +63,34 @@ export default function CallOnScroll() {
   useLayoutEffect(() => {
     const el = root.current
     if (!el) return
+    let offPointer = () => {}
     const ctx = gsap.context(() => {
       const q = gsap.utils.selector(el)
       const caption = q('[data-caption]')[0] as HTMLElement
       const status = q('[data-status]')[0] as HTMLElement
-      const shake = q('[data-shake]')[0] as HTMLElement
       // Pin the stage, not the root: React keeps owning the root while the pin moves the stage.
       const stage = q('[data-stage]')[0] as HTMLElement
+      const shake = q('[data-shake]')[0] as HTMLElement
+      // While it waits the phone floats a little, and it leans toward the pointer (transforms only).
+      gsap.to('[data-float]', { y: -7, duration: 2.8, ease: 'sine.inOut', yoyo: true, repeat: -1 })
+      const tiltY = gsap.quickTo('[data-tilt]', 'rotationY', { duration: 0.7, ease: 'power3.out' })
+      const tiltX = gsap.quickTo('[data-tilt]', 'rotationX', { duration: 0.7, ease: 'power3.out' })
+      const lean = (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse') return
+        const r = stage.getBoundingClientRect()
+        tiltY(((e.clientX - r.left) / r.width - 0.5) * 16)
+        tiltX(-((e.clientY - r.top) / r.height - 0.5) * 10)
+      }
+      const rest = () => {
+        tiltY(0)
+        tiltX(0)
+      }
+      stage.addEventListener('pointermove', lean)
+      stage.addEventListener('pointerleave', rest)
+      offPointer = () => {
+        stage.removeEventListener('pointermove', lean)
+        stage.removeEventListener('pointerleave', rest)
+      }
       let lastCaption = ''
       let lastStatus = ''
       const render = (p: number) => {
@@ -79,8 +100,9 @@ export default function CallOnScroll() {
       }
 
       // The headline sharpens in as the section arrives, before the pin takes over.
+      // (Its own element: the pinned timeline below fades the outer one, so the two never fight.)
       gsap.fromTo(
-        '[data-headline]',
+        '[data-headline-in]',
         { opacity: 0, filter: 'blur(14px)', scale: 1.04 },
         { opacity: 1, filter: 'blur(0px)', scale: 1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 80%', end: 'top 15%', scrub: 0.8 } },
       )
@@ -93,18 +115,25 @@ export default function CallOnScroll() {
       tl.set({}, {}, 1) // the timeline runs exactly 0 → 1, so positions read as scroll progress
 
       // 0–0.12: the headline blurs away.
-      tl.fromTo('[data-headline]', { opacity: 1, filter: 'blur(0px)', scale: 1 }, { opacity: 0, filter: 'blur(14px)', scale: 0.94, duration: 0.06, immediateRender: false }, 0.06)
-      // 0.08–0.28: the phone rises and lands with a little overshoot.
-      tl.fromTo('[data-phone-rise]', { y: '55vh', rotateX: 22 }, { y: 0, rotateX: 0, ease: 'back.out(1.4)', duration: RISE[1] - RISE[0] }, RISE[0])
-      tl.fromTo('[data-phone-turn]', { rotateY: -18 }, { rotateY: -6, duration: 1 - RISE[0] }, RISE[0])
+      tl.fromTo('[data-headline]', { autoAlpha: 1, filter: 'blur(0px)', scale: 1 }, { autoAlpha: 0, filter: 'blur(14px)', scale: 0.94, duration: 0.06, immediateRender: false }, 0.06)
+      // 0.08–0.28: the phone rises from below, tips up to face us and lands; its shadow gathers under it.
+      tl.fromTo('[data-phone-rise]', { y: '58vh', rotateX: 26, scale: 0.86 }, { y: 0, rotateX: 0, scale: 1, ease: 'expo.out', duration: RISE[1] - RISE[0] }, RISE[0])
+      tl.fromTo('[data-phone-turn]', { rotateY: -20 }, { rotateY: -7, duration: 1 - RISE[0] }, RISE[0])
+      tl.fromTo('[data-contact]', { opacity: 0 }, { opacity: 1, ease: 'expo.out', duration: RISE[1] - RISE[0] }, RISE[0])
+      // The light on its glossy body slides across as it turns.
+      tl.fromTo('[data-sheen]', { xPercent: -28 }, { xPercent: 26, duration: 1 - RISE[0] }, RISE[0])
       tl.fromTo('[data-side]', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, ease: EASE, duration: 0.08 }, RISE[1] - 0.06)
-      // 0.28–0.34: it rings, a shake that decays: x = 6 sin(2π·9t) e^(−3t), on scroll, not on the clock.
+      // 0.28–0.34: it rings, a shake that decays: x = 6 sin(2π·9t) e^(−3t), on scroll, not on the clock;
+      // a neon halo breathes behind it, and the green key blinks.
       const ring = { t: 0 }
       tl.to(ring, {
         t: 1,
         duration: RING[1] - RING[0],
         onUpdate: () => gsap.set(shake, { x: 6 * Math.sin(2 * Math.PI * 9 * ring.t) * Math.exp(-3 * ring.t) }),
       }, RING[0])
+      tl.fromTo('[data-halo]', { opacity: 0 }, { opacity: 1, duration: (RING[1] - RING[0]) / 2 }, RING[0])
+      tl.to('[data-halo]', { opacity: 0.3, duration: 0.05 }, RING[1])
+      tl.to('[data-halo]', { opacity: 0.7, duration: 0.05 }, VERDICT[0])
       tl.fromTo('[data-key-call]', { opacity: 0.35 }, { opacity: 1, duration: 0.02, repeat: 2, yoyo: true }, RING[0])
 
       // 0.40–0.80: six questions. The key goes down, then the answer drops into the card.
@@ -130,17 +159,22 @@ export default function CallOnScroll() {
 
       render(0)
     }, el)
-    return () => ctx.revert()
+    return () => {
+      offPointer()
+      ctx.revert()
+    }
   }, [])
 
   return (
     <div ref={root}>
       <div data-stage className="relative flex h-svh flex-col justify-center overflow-hidden">
         <div data-headline className="pointer-events-none absolute inset-x-0 top-[16vh] z-20 px-5 text-center">
+          <div data-headline-in>
           <h2 className="display text-[2.4rem] font-medium leading-[1.05] sm:text-[3.6rem]">
-            Then Neralu calls <span className="oled italic text-brand">Kamala.</span>
+            Then Neralu calls <span className="italic neon-mint">Kamala.</span>
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[1.0625rem] text-ink/80">Keep scrolling: her call plays as you go, one keypad answer at a time.</p>
+          </div>
         </div>
 
         <p className="sr-only">
@@ -156,10 +190,17 @@ export default function CallOnScroll() {
           </div>
 
           <div className="order-1 flex justify-center [perspective:1400px] lg:order-2">
-            <div data-phone-rise aria-hidden="true" className="h-[256px] [transform-style:preserve-3d] sm:h-[440px]">
-              <div data-phone-turn className="origin-top scale-[0.58] [transform-style:preserve-3d] sm:scale-100">
-                <div data-shake className="[transform-style:preserve-3d]">
-                  <KeypadPhone3D />
+            <div data-phone-rise aria-hidden="true" className="relative h-[256px] [transform-style:preserve-3d] sm:h-[440px]">
+              <div data-halo className="pointer-events-none absolute -inset-16 -z-10 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_30%,transparent),transparent)] opacity-0 blur-2xl" />
+              <div className="origin-top scale-[0.58] [transform-style:preserve-3d] sm:scale-100">
+                <div data-phone-turn className="[transform-style:preserve-3d]">
+                  <div data-tilt className="[transform-style:preserve-3d]">
+                    <div data-shake className="[transform-style:preserve-3d]">
+                      <div data-float className="[transform-style:preserve-3d]">
+                        <KeypadPhone3D />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -180,7 +221,7 @@ export default function CallOnScroll() {
 
 function AnswerCard() {
   return (
-    <figure className="rounded-[8px] border border-line bg-surface">
+    <figure data-rim className="rounded-[8px] border border-line bg-surface">
       <figcaption className="border-b border-line px-4 py-2.5 sm:py-3">
         <div className="flex items-center justify-between gap-3">
           <span className="font-semibold">Kamala R.</span>
@@ -209,7 +250,7 @@ function Verdict() {
   return (
     <div>
       <div data-verdict className="inline-flex max-w-full flex-wrap items-center gap-x-2.5 rounded-[6px] border-[0.4px] border-ink bg-alert-bg px-3.5 py-2 text-alert">
-        <span className="font-semibold">RED</span>
+        <span className="font-semibold neon-alert">RED</span>
         <span className="num text-sm">· Rule R3 ·</span>
         <span className="font-semibold">Symptoms and no water</span>
       </div>
@@ -223,7 +264,7 @@ function Verdict() {
 
 function CaseCard() {
   return (
-    <div data-case className="rounded-[8px] border border-alert/50 bg-surface px-4 py-3.5 shadow-[0_24px_48px_-28px_rgba(0,0,0,0.7)]">
+    <div data-case data-rim className="rounded-[8px] border border-alert/50 bg-surface px-4 py-3.5 shadow-[0_24px_48px_-28px_rgba(0,0,0,0.7)]">
       <div className="font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-alert">Case opened · 11:03</div>
       <p className="mt-1 font-semibold leading-snug">A volunteer nearby is asked to go to the door</p>
       <p className="mt-1 text-sm leading-relaxed text-muted">Her son is told. Her address is shown only to the person who accepts.</p>

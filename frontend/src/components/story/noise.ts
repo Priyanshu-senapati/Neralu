@@ -1,7 +1,6 @@
 /*
- * Small seeded noise functions for the story page's canvases: 2D simplex noise (Gustavson's
- * public-domain algorithm) for the heat-haze flow field, and 1D value noise for the sun's shimmer.
- * Pure functions, no DOM.
+ * Seeded 2D simplex noise (Gustavson's public-domain algorithm) for the story page's heat-haze
+ * flow field. A pure function, no DOM.
  */
 
 import { mulberry32 } from './orbitPhysics'
@@ -49,17 +48,5 @@ export function makeSimplex2(seed = 47) {
       corner(perm[ii + i1 + perm[jj + j1]], x1, y1) +
       corner(perm[ii + 1 + perm[jj + 1]], x2, y2)
     )
-  }
-}
-
-/** Smooth 1D value noise in -1..1: a seeded random value per integer, eased between them. */
-export function makeValueNoise1(seed = 11) {
-  const rand = mulberry32(seed)
-  const v = Float32Array.from({ length: 256 }, () => rand() * 2 - 1)
-  return (x: number) => {
-    const i = Math.floor(x)
-    const f = x - i
-    const u = f * f * (3 - 2 * f)
-    return v[i & 255] * (1 - u) + v[(i + 1) & 255] * u
   }
 }

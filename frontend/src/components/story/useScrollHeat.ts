@@ -16,6 +16,10 @@ const state = {
   H: reducedMotion() ? H_END : H_START,
   /** True once the reader has scrolled past the hero: the haze settles to a slow drift. */
   settled: false,
+  /** How far through the hero's scroll the reader is, 0–1: the camera's script follows it. */
+  progress: reducedMotion() ? 1 : 0,
+  /** The sun on screen (viewport pixels), so the haze near it can catch its light. */
+  sun: { x: 0, y: 0, on: false },
 }
 const listeners = new Set<Listener>()
 
@@ -34,6 +38,17 @@ export const heat = {
   settle(settled: boolean) {
     state.settled = settled
   },
+  get progress() {
+    return state.progress
+  },
+  setProgress(p: number) {
+    if (p === state.progress) return
+    state.progress = p
+    listeners.forEach((l) => l())
+  },
+  get sun() {
+    return state.sun
+  },
   subscribe(l: Listener) {
     listeners.add(l)
     return () => {
@@ -48,4 +63,9 @@ export const useScrollHeat = () => heat
 /** A value derived from H (a count, a rounded label): re-renders only when it changes. */
 export function useHeatValue<T extends string | number | boolean>(derive: (H: number) => T): T {
   return useSyncExternalStore(heat.subscribe, () => derive(state.H), () => derive(state.H))
+}
+
+/** A value derived from the hero's scroll progress: re-renders only when it changes. */
+export function useProgressValue<T extends string | number | boolean>(derive: (p: number) => T): T {
+  return useSyncExternalStore(heat.subscribe, () => derive(state.progress), () => derive(state.progress))
 }

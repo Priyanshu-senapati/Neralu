@@ -100,10 +100,14 @@ Exact versions: `backend/requirements.txt`, `frontend/package-lock.json`.
 FlowButton, the shader animation behind the story page's hero and the "wireframe dotted globe" (rebuilt
 in three.js); a Spline demo kept for reference only, not used.
 
-**Story page motion** (written for Neralu, no code copied): the orbit hero takes its idea of
-helical wakes behind a drifting sun from Yura Dubinin's *Orbital Hero Section* (MIT), and the
-scroll-played call its pacing from Hossain Jahed's *Cinematic Landing Hero*, both on 21st.dev. The
-heat haze uses Stefan Gustavson's public-domain simplex noise.
+**Story page** (written for Neralu): the hero is one three.js scene (sun, Earth, Ward 47). Earth maps:
+NASA Blue Marble Next Generation, May 2004, and Black Marble 2016 city lights, and Blue Marble clouds
+(NASA Earth Observatory, public domain). Bengaluru and Ward 47 from orbit: *Sentinel-2 cloudless 2016*
+by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0, credited in the
+page footer. 3D simplex noise in the shaders: webgl-noise by Ian McEwan and Stefan Gustavson (MIT); the
+heat haze uses Gustavson's public-domain 2D simplex noise. Ideas only, no code copied: helical wakes and
+orbit motion from Yura Dubinin's *Orbital Hero Section* (MIT) and the scroll-played call from Hossain
+Jahed's *Cinematic Landing Hero*, both on 21st.dev. Fonts on that page: Geist, Geist Mono, Instrument Serif.
 
 **Fonts** (Google Fonts): Public Sans, IBM Plex Mono, Newsreader, Noto Sans Kannada.
 

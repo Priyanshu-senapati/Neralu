@@ -14,14 +14,17 @@ const KEYS: [string, string][] = [
   ['*', ''], ['0', '+'], ['#', ''],
 ]
 const DEPTH = 14 // px of body thickness
-const LAYERS = 7
+const LAYERS = 14
 
 const face: CSSProperties = { position: 'absolute', inset: 0, borderRadius: 34 }
 
 export default function KeypadPhone3D({ className = '' }: { className?: string }) {
   return (
     <div className={`relative h-[440px] w-[216px] [transform-style:preserve-3d] ${className}`} data-phone>
-      {/* The edge: layers stepping back give the body depth with its rounded corners intact. */}
+      {/* A soft contact shadow on the ground under the phone (CallOnScroll tightens it as it lands). */}
+      <div data-contact aria-hidden="true" className="absolute -bottom-10 left-1/2 h-8 w-[180px] -translate-x-1/2 rounded-[50%] bg-black/60 blur-xl" style={{ transform: 'translateZ(-40px) rotateX(80deg)' }} />
+      {/* The edge: thin layers stepping back, each a shade darker, so the side reads as one solid
+          surface with its rounded corners intact, with no light line along it. */}
       {Array.from({ length: LAYERS }, (_, i) => (
         <div
           key={i}
@@ -29,19 +32,20 @@ export default function KeypadPhone3D({ className = '' }: { className?: string }
           style={{
             ...face,
             transform: `translateZ(${-((i + 1) * DEPTH) / LAYERS}px)`,
-            background: 'var(--phone-edge)',
-            boxShadow: i === LAYERS - 1 ? '0 40px 80px -30px rgba(0,0,0,0.65)' : undefined,
+            background: `color-mix(in oklab, var(--phone-body), #000 ${28 + Math.round((i / (LAYERS - 1)) * 34)}%)`,
           }}
         />
       ))}
 
-      <div style={{ ...face, background: 'var(--phone-body)', boxShadow: 'inset 0 1px 0 var(--phone-shine), inset 0 0 0 1px var(--phone-line)' }}>
+      <div style={{ ...face, background: 'var(--phone-body)', overflow: 'hidden' }}>
+        {/* Glossy sheen: a band of reflected light that slides as the phone tilts (CallOnScroll moves it). */}
+        <div data-sheen aria-hidden="true" className="pointer-events-none absolute -inset-1/2 z-10 opacity-70 mix-blend-screen" style={{ background: 'linear-gradient(115deg, transparent 38%, rgba(255,236,210,0.16) 46%, rgba(255,255,255,0.07) 50%, transparent 58%)' }} />
         <div aria-hidden="true" className="mx-auto mt-4 h-1 w-12 rounded-full" style={{ background: 'var(--phone-line)' }} />
 
         {/* Screen */}
         <div className="relative mx-[22px] mt-3 h-[152px] overflow-hidden rounded-[8px] border" style={{ background: 'var(--phone-screen)', borderColor: 'var(--phone-line)' }}>
           <div data-tint aria-hidden="true" className="absolute inset-0 bg-alert-bg opacity-0" />
-          <div className="relative flex h-full flex-col px-3 py-2.5 text-[var(--phone-text)]">
+          <div className="lcd relative flex h-full flex-col px-3 py-2.5 text-[var(--phone-text)]">
             <div className="flex items-center justify-between font-mono text-[10px] opacity-70">
               <span className="flex items-end gap-[2px]" aria-hidden="true">
                 {[3, 5, 7, 9].map((h) => (

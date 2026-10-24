@@ -321,3 +321,151 @@ section[id] {
   --phone-key-shadow: color-mix(in oklab, var(--brand), #000 35%);
   --phone-key-text: var(--brand-ink);
 }
+
+/*
+ * Story page only (the public landing page): its own type and a neon colour profile, scoped to
+ * .story so the console and every working page keep the plain civic style. Geist for text and
+ * headlines, Instrument Serif italic for the accent words, Geist Mono for figures.
+ */
+.story {
+  --font-sans: "Geist", "Public Sans", system-ui, sans-serif;
+  --font-display: "Geist", "Public Sans", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-accent: "Instrument Serif", "Newsreader", Georgia, serif;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+.story .display {
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+/* Accent words in a headline: the serif italic, lit like a neon tube. */
+.story .display .italic,
+.story .accent {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  padding-right: 0.06em;
+}
+
+/* Dark: a cooler deep-space black, so warm neon reads hotter. */
+:root:not([data-theme='light']) .story {
+  --paper: #030406;
+  --surface: #0a0c11;
+  --sunken: #06070a;
+  --line: #171b23;
+  --line-strong: #252b36;
+  --shade: #04090b;
+  --brand-tint: #071612;
+  --brand: #5effc8;
+  --sun: #ffd27a;
+  --heat: #ff7a33;
+  --alert: #ff5b5b;
+  --neon-mint: #5effc8;
+  --neon-sun: #ffc861;
+  --neon-heat: #ff6a26;
+  --neon-alert: #ff4d5e;
+}
+
+/*
+ * Neon: a near-white core with the colour around it, then a wide soft bloom, the way a lit tube
+ * looks on a dark street. Light theme: the plain token colour, no glow.
+ */
+.neon-mint { color: var(--brand); }
+.neon-sun { color: var(--sun); }
+.neon-heat { color: var(--heat); }
+.neon-alert { color: var(--alert); }
+:root:not([data-theme='light']) .story .neon-mint {
+  color: color-mix(in oklab, var(--neon-mint) 55%, #fff);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--neon-mint) 90%, transparent), 0 0 10px color-mix(in srgb, var(--neon-mint) 70%, transparent), 0 0 28px color-mix(in srgb, var(--neon-mint) 45%, transparent), 0 0 64px color-mix(in srgb, var(--neon-mint) 25%, transparent);
+}
+:root:not([data-theme='light']) .story .neon-sun {
+  color: color-mix(in oklab, var(--neon-sun) 60%, #fff);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--neon-sun) 90%, transparent), 0 0 12px color-mix(in srgb, var(--neon-heat) 70%, transparent), 0 0 32px color-mix(in srgb, var(--neon-heat) 45%, transparent), 0 0 72px color-mix(in srgb, var(--neon-heat) 28%, transparent);
+}
+:root:not([data-theme='light']) .story .neon-heat {
+  color: color-mix(in oklab, var(--neon-heat) 62%, #fff);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--neon-heat) 90%, transparent), 0 0 10px color-mix(in srgb, var(--neon-heat) 75%, transparent), 0 0 30px color-mix(in srgb, var(--neon-heat) 45%, transparent), 0 0 70px color-mix(in srgb, var(--neon-heat) 25%, transparent);
+}
+:root:not([data-theme='light']) .story .neon-alert {
+  color: color-mix(in oklab, var(--neon-alert) 60%, #fff);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--neon-alert) 90%, transparent), 0 0 10px color-mix(in srgb, var(--neon-alert) 70%, transparent), 0 0 28px color-mix(in srgb, var(--neon-alert) 40%, transparent);
+}
+/*
+ * The hero is space: dark in both themes, so its copy takes the dark tokens and the neon whatever
+ * the page's theme is.
+ */
+.story .space-dark {
+  color-scheme: dark;
+  --paper: #030406;
+  --surface: #0a0c11;
+  --line: #171b23;
+  --line-strong: #252b36;
+  --ink: #f4f3ee;
+  --muted: #a6aea8;
+  --brand: #5effc8;
+  --brand-ink: #04140d;
+  --sun: #ffd27a;
+  --heat: #ff7a33;
+  --neon-mint: #5effc8;
+  --neon-sun: #ffc861;
+  --neon-heat: #ff6a26;
+  color: var(--ink);
+}
+.story .space-dark .neon-heat {
+  color: color-mix(in oklab, var(--neon-heat) 62%, #fff);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--neon-heat) 90%, transparent), 0 0 10px color-mix(in srgb, var(--neon-heat) 75%, transparent), 0 0 30px color-mix(in srgb, var(--neon-heat) 45%, transparent), 0 0 70px color-mix(in srgb, var(--neon-heat) 25%, transparent);
+}
+
+/* Accent words: from the sun's gold through its fire to Earth's atmosphere, as in the hero. */
+.story .neon-gradient,
+:root:not([data-theme='light']) .story .display .neon-mint,
+.story .space-dark .display .neon-mint {
+  background: linear-gradient(100deg, #fff1c9 0%, #ffc861 24%, #ff8a3d 48%, #7cc4ff 78%, #3d8bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 12px rgba(255, 150, 70, 0.4)) drop-shadow(0 0 30px rgba(90, 160, 255, 0.28));
+}
+:root[data-theme='light'] .story :not(.space-dark) .neon-gradient {
+  background-image: linear-gradient(100deg, #b45309 0%, #c2410c 45%, #1d4ed8 100%);
+  filter: none;
+}
+
+/*
+ * Rim light: story cards catch light along the edge nearest the pointer, as if a lamp moved with
+ * it. useRimLight sets --rx/--ry on pointer move; touch screens keep a light from the upper left.
+ */
+.story [data-rim] {
+  --rx: 18%;
+  --ry: 0%;
+  position: relative;
+}
+.story [data-rim]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(220px circle at var(--rx) var(--ry), rgba(255, 214, 160, 0.75), rgba(124, 196, 255, 0.25) 45%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.story [data-rim]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(380px circle at var(--rx) var(--ry), rgba(255, 220, 180, 0.07), transparent 60%);
+  pointer-events: none;
+}
+:root[data-theme='light'] .story [data-rim]::before { opacity: 0.5; }
+/* The keypad phone's screen glows like a backlit LCD. */
+:root:not([data-theme='light']) .story [data-phone] .lcd {
+  text-shadow: 0 0 6px color-mix(in srgb, var(--brand) 70%, transparent), 0 0 18px color-mix(in srgb, var(--brand) 35%, transparent);
+}

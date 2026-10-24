@@ -10,8 +10,10 @@ import { EXAMPLE_HEAT, personalThreshold } from '@/heat'
 import type { ElderListItem } from '@/types'
 import { useRuleBook } from '../rules'
 import CallOnScroll from '../components/story/CallOnScroll'
-import { countCalled, exampleHouseholds, H_END, H_START, householdsFrom, type Household } from '../components/story/orbitPhysics'
+import { countCalled, exampleHouseholds, H_START, householdsFrom, type Household } from '../components/story/orbitPhysics'
+import { heatAt } from '../components/story/space/cameraPath'
 import { heat, useHeatValue } from '../components/story/useScrollHeat'
+import { useRimLight } from '../components/story/useRimLight'
 
 /*
  * The product, explained with the product's own logic. Every number on this page comes from
@@ -21,11 +23,13 @@ import { heat, useHeatValue } from '../components/story/useScrollHeat'
 
 // Canvas-heavy pieces load after first paint, on this page only.
 const WardDiorama = lazy(() => import('@/components/WardDiorama'))
-const SunOrbits = lazy(() => import('../components/story/SunOrbits'))
+const HeroSpace = lazy(() => import('../components/story/HeroSpace'))
 const HeatHaze = lazy(() => import('../components/story/HeatHaze'))
 
 export default function Story() {
   const still = reducedMotion()
+  const page = useRef<HTMLDivElement>(null)
+  useRimLight(page)
   const [elders, setElders] = useState<ElderListItem[] | null>(null)
   useEffect(() => {
     api.elders().then(setElders).catch(() => setElders([]))
@@ -39,7 +43,7 @@ export default function Story() {
   }, [])
   return (
     // isolate: the haze canvas paints above the page colour and below everything else.
-    <div id="top" className="relative isolate min-h-dvh bg-paper text-ink">
+    <div id="top" ref={page} className="story relative isolate min-h-dvh bg-paper text-ink">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink">
         Skip to content
       </a>
@@ -79,23 +83,24 @@ function Hero({ households, example }: { households: Household[]; example: boole
     const off = heat.subscribe(write)
     if (still) return off
     const ctx = gsap.context(() => {
-      const proxy = { H: H_START }
+      const proxy = { p: 0 }
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
           trigger: section.current,
           pin: true,
           start: 'top top',
-          end: '+=180%',
+          end: '+=320%',
           scrub: 0.6,
           onLeave: () => heat.settle(true),
           onEnterBack: () => heat.settle(false),
         },
       })
-      tl.to(proxy, { H: H_END, duration: 1, onUpdate: () => heat.set(proxy.H) }, 0)
+      // One progress value drives the camera's flight (space/cameraPath.ts) and the heat with it.
+      tl.to(proxy, { p: 1, duration: 1, onUpdate: () => (heat.setProgress(proxy.p), heat.set(heatAt(proxy.p))) }, 0)
       // The headline turns from the problem to the answer as the heat rises.
-      tl.fromTo('[data-line-a]', { opacity: 1 }, { opacity: 0.38, duration: 0.4 }, 0.2)
-      tl.fromTo('[data-line-b]', { opacity: 0.22, filter: 'blur(5px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.4 }, 0.3)
+      tl.fromTo('[data-line-a]', { opacity: 1 }, { opacity: 0.38, duration: 0.3 }, 0.12)
+      tl.fromTo('[data-line-b]', { opacity: 0.22, filter: 'blur(5px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.3 }, 0.2)
     }, section)
     return () => {
       off()
@@ -127,11 +132,13 @@ function Hero({ households, example }: { households: Household[]; example: boole
   // The wrapper is React's: pinning moves the section into a spacer, and React must not lose track of it.
   return (
     <div>
-      <section ref={section} className="relative flex h-svh min-h-[600px] flex-col overflow-hidden">
+      <section ref={section} className="space-dark relative flex h-svh min-h-[600px] flex-col overflow-hidden bg-paper">
         <div className="absolute inset-0">
           <Suspense fallback={null}>
-            <SunOrbits households={households} className="h-full w-full" />
+            <HeroSpace households={households} className="h-full w-full" />
           </Suspense>
+          {/* A shade over the copy's side, so the text reads over space and the sun. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,color-mix(in_srgb,var(--paper)_88%,transparent)_0%,color-mix(in_srgb,var(--paper)_55%,transparent)_38%,transparent_62%)] max-lg:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--paper)_85%,transparent)_0%,color-mix(in_srgb,var(--paper)_40%,transparent)_45%,transparent_70%)]" />
         </div>
         <header className="relative mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 pt-5 sm:px-8">
           <Wordmark />
@@ -148,24 +155,24 @@ function Hero({ households, example }: { households: Household[]; example: boole
             <h1 className="display text-[2.2rem] font-medium leading-[1.05] text-ink sm:text-[3rem] xl:text-[3.4rem]">
               <RevealLines delay={0.15}>
                 <span data-line-a className="block">Heat warnings tell a city what's coming.</span>
-                <span data-line-b className="oled mt-1 block italic text-sun">Neralu checks who's safe.</span>
+                <span data-line-b className="mt-1 block"><span className="italic neon-gradient">Neralu checks who's safe.</span></span>
               </RevealLines>
             </h1>
             <p className="mt-5 text-base leading-[1.6] text-ink/85 sm:mt-6 sm:text-[1.0625rem]">
-              Each household orbits at its own heat threshold: the most at risk, closest to the sun. When the heat crosses
-              that threshold, Neralu calls them in their language, and if an answer is worrying, a person goes to the door.
+              When the heat crosses an older person's own threshold, Neralu calls them on whatever phone they have, in their
+              language. If an answer is worrying, or nobody picks up, a person nearby is asked to go to the door.
             </p>
 
             <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-3 border-t border-line pt-4">
               <div>
                 <div className="font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-muted">Heat index · example afternoon</div>
                 <div className="mt-1 leading-none text-heat">
-                  <span ref={heatLabel} className="num oled text-[2.4rem] font-medium sm:text-[2.8rem]">{H_START.toFixed(1)}</span>
+                  <span ref={heatLabel} className="num neon-heat text-[2.6rem] font-medium tracking-[-0.04em] sm:text-[3.1rem]">{H_START.toFixed(1)}</span>
                   <span className="num ml-1 text-lg">°C</span>
                 </div>
               </div>
               <p className="pb-1 text-[1.0625rem] leading-snug">
-                <span ref={countLabel} className="num font-semibold text-heat">{called}</span> of{' '}
+                <span ref={countLabel} className="num font-semibold neon-heat">{called}</span> of{' '}
                 <span className="num">{households.length}</span> households
                 <br />
                 get a call
@@ -174,8 +181,8 @@ function Hero({ households, example }: { households: Household[]; example: boole
             </div>
             <p ref={live} aria-live="polite" className="sr-only" />
             <p className="mt-2 hidden text-xs leading-relaxed text-muted sm:block">
-              {still ? 'Shown at the heatwave, 38 °C.' : 'Scroll to raise the heat.'} A warm night (26 °C or more) lowers every
-              threshold by 1 °C.
+              {still ? 'Ward 47 at the heatwave, 38 °C.' : 'Scroll to fly down to Ward 47; the heat rises when you arrive.'} A warm
+              night (26 °C or more) lowers every threshold by 1 °C.
             </p>
 
             <div className="mt-6 hidden sm:block">
@@ -207,7 +214,7 @@ const REPLAY: { q: string; a: string; concern?: boolean; via?: string }[] = [
 
 function CallReplay() {
   return (
-    <figure className="relative rounded-[8px] border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(0,0,0,0.55)]">
+    <figure data-rim className="relative rounded-[8px] border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(27,29,26,0.05),0_24px_48px_-24px_rgba(0,0,0,0.55)]">
       <figcaption className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 text-xs">
         <span className="inline-flex items-center gap-2 text-ink">
           <span className="inline-flex h-2 w-2 rounded-full bg-line-strong" aria-hidden="true" />
@@ -269,7 +276,7 @@ function Statement({ elders }: { elders: ElderListItem[] | null }) {
           <RevealLines stagger={0.35}>
             <span>A broadcast tells.</span>
             <span>A call checks.</span>
-            <span className="oled italic text-brand">A person goes.</span>
+            <span className="italic neon-mint">A person goes.</span>
           </RevealLines>
         </p>
         <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-ink/80">
@@ -326,9 +333,9 @@ function TheCall() {
       <section id="call" className="scroll-mt-6">
         <CallOnScroll />
         <div className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8">
-          <Reveal>
+          <Reveal blur={false}>
             <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
-              One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
+              One unanswered call is enough to send <span className="italic neon-mint">someone to the door.</span>
             </h2>
           </Reveal>
           {list}
@@ -341,7 +348,7 @@ function TheCall() {
         <div className="grid gap-x-14 gap-y-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div className="lg:sticky lg:top-8 lg:self-start">
             <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
-              One unanswered call is enough to send <span className="italic text-brand">someone to the door.</span>
+              One unanswered call is enough to send <span className="italic neon-mint">someone to the door.</span>
             </h2>
             <div className="mt-8">
               <CallReplay />
@@ -384,9 +391,9 @@ function Rules() {
     <section id="rules" className="scroll-mt-6 border-y border-line bg-surface">
       <div className="mx-auto grid max-w-6xl gap-x-14 gap-y-10 px-5 py-20 sm:px-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div className="lg:sticky lg:top-8 lg:self-start">
-          <Reveal>
+          <Reveal blur={false}>
             <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
-              Rules decide. <span className="italic text-brand">AI only listens.</span>
+              Rules decide. <span className="italic neon-mint">AI only listens.</span>
             </h2>
           </Reveal>
           <p className="mt-5 leading-relaxed text-ink/80">
@@ -440,9 +447,9 @@ function WhoGoes() {
   ]
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <Reveal>
+      <Reveal blur={false}>
         <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
-          Escalation goes to people, <span className="italic text-brand">one step at a time.</span>
+          Escalation goes to people, <span className="italic neon-mint">one step at a time.</span>
         </h2>
       </Reveal>
       <ol className="mt-12 grid gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -513,7 +520,7 @@ function Phones() {
           <KeypadPhone />
         </div>
         <div>
-          <Reveal>
+          <Reveal blur={false}>
             <h2 className="display text-[2.4rem] font-medium leading-[1.05]">
               Built for the phones <span className="italic">people actually have.</span>
             </h2>
@@ -535,9 +542,9 @@ function Phones() {
 function Honesty() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-      <Reveal>
+      <Reveal blur={false}>
         <h2 className="display max-w-3xl text-[2.4rem] font-medium leading-[1.05]">
-          What you are looking at <span className="italic text-brand">is a working prototype.</span>
+          What you are looking at <span className="italic neon-mint">is a working prototype.</span>
         </h2>
       </Reveal>
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
@@ -577,6 +584,10 @@ function Footer() {
         <div className="text-sm">
           <div className="font-semibold">Context</div>
           <p className="mt-2 leading-relaxed text-muted">Hack4SDG prototype. SDG targets 11.5, 3.d and 13.1.</p>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            Earth: NASA Blue Marble and Black Marble (public domain). Bengaluru and Ward 47: Sentinel-2 cloudless 2016 by
+            EOX IT Services GmbH, contains modified Copernicus Sentinel data 2016, CC BY 4.0.
+          </p>
           <Link to="/responsible" className="mt-2 inline-block text-muted underline underline-offset-2 hover:text-ink">
             Responsible by design: data, consent and risks
           </Link>
