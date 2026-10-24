@@ -54,3 +54,18 @@ def test_twilio_keypad_day_uses_the_real_date(client, keypad_mode, monkeypatch):
     _use_real_date(monkeypatch)
     c = keypad_call(client, day=str(person_today().weekday() + 1))
     assert c.answers["orientation"] == "correct"
+
+
+def test_a_pinned_demo_date_drives_the_console_and_the_day_check(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "demo_date", "2026-10-25")
+    assert state_mod._demo_start().date() == date(2026, 10, 25)  # the console shows Sunday 25 Oct
+    assert person_today() == date(2026, 10, 25)  # and "Sunday" is the correct answer
+
+
+def test_pilot_mode_ignores_the_pinned_demo_date(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "demo_date", "2026-10-25")
+    monkeypatch.setattr(get_settings(), "run_mode", "pilot")
+    monkeypatch.setattr(state.clock, "_now", lambda: datetime(2026, 11, 2, 6, 0, tzinfo=timezone.utc))
+    assert person_today() == date(2026, 11, 2)  # real time, always

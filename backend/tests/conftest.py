@@ -31,6 +31,7 @@ os.environ.update({
     "FRONTEND_DIST": "/nonexistent-neralu-dist",
     "FAMILY_SMS": "simulated",
     "RECORDINGS_DIR": f"{_tmp}/recordings",  # never the real recordings folder
+    "DEMO_DATE": "",
 })
 
 import pytest  # noqa: E402

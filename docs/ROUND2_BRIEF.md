@@ -36,7 +36,7 @@ Volunteer phone (/volunteer) · Family page (/family) · Registration (/register
 - **Public access for the demo:** ngrok tunnel (`deputy-folic-tiptop.ngrok-free.dev`).
 - **One command:** `scripts/stage.ps1` builds the site, starts server + ngrok, and runs a go/no-go
   check (server, scheduler, public link, Twilio, call audio).
-- **Tests:** 252 automated tests (`backend/tests`, pytest). Frontend: TypeScript strict build.
+- **Tests:** 254 automated tests (`backend/tests`, pytest). Frontend: TypeScript strict build.
 
 ---
 
@@ -282,6 +282,8 @@ recorded prompts. No AI makes any decision. Fixed rules do, and they're tested."
 - **"What day is it?" is checked against the real date in India**, not the demo clock. Before, the
   demo clock started on a fixed Friday (9 Oct) and runs ×60, so a person answering the real day was
   marked wrong. Now the demo also starts on today's date. Tests: `backend/tests/test_today.py`.
+  For judging the demo day is pinned to **Sunday 25 Oct** (`DEMO_DATE=2026-10-25` in `backend/.env`):
+  the console shows it and "Sunday" is the correct answer on the phone. Pilot mode ignores it.
 - **Volunteers can log off.** "Log off · stop alerts" on the volunteer page: no more alerts, and any
   case waiting for them goes straight to the next nearest volunteer. Blocked only while they hold a
   visit they haven't recorded. The page remembers duty from the server, so reopening it never shows
@@ -332,7 +334,7 @@ login, ASHA/resident-association onboarding, and a legal review of the DPDP mapp
 
 ## 13. Live checks you can show
 
-- `cd backend && .venv\Scripts\python.exe -m pytest -q` → 252 passed.
+- `cd backend && .venv\Scripts\python.exe -m pytest -q` → 254 passed.
 - Console `/ward` → click a resident → "Why Neralu calls" (score breakdown with data source) →
   "Case record · print or save".
 - `/responsible` → the privacy and risk page.

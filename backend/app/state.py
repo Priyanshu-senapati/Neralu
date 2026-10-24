@@ -42,11 +42,17 @@ def is_pilot() -> bool:
     return get_settings().run_mode == "pilot"
 
 
+def demo_day() -> date | None:
+    """The pinned demo day (DEMO_DATE), or None. Never in pilot mode, which is always real time."""
+    raw = get_settings().demo_date.strip()
+    return date.fromisoformat(raw) if raw and not is_pilot() else None
+
+
 def _demo_start() -> datetime:
-    """The demo scenario starts on today's real date (IST) at the configured time, so the console
-    shows today's date, the date the person on the phone is living in."""
+    """The demo scenario starts on the pinned demo day, else today's real date (IST), at the
+    configured time, so the console shows the date the person on the phone is asked about."""
     t = get_settings().scenario_start
-    return datetime.combine(datetime.now(IST).date(), t.time(), tzinfo=t.tzinfo or IST)
+    return datetime.combine(demo_day() or datetime.now(IST).date(), t.time(), tzinfo=t.tzinfo or IST)
 
 
 def _new_clock() -> DemoClock:
@@ -57,9 +63,10 @@ def _new_clock() -> DemoClock:
 
 
 def person_today() -> date:
-    """Today's real date in India: what "What day is it today?" is checked against. Never the demo
-    clock's date, which runs ×60 and crosses midnight within minutes; the person lives in real time."""
-    return state.clock.real_now().astimezone(IST).date()
+    """What "What day is it today?" is checked against: the pinned demo day if DEMO_DATE is set
+    (the console shows the same day), else today's real date in India. Never the demo clock's
+    running date, which goes ×60 and crosses midnight within minutes."""
+    return demo_day() or state.clock.real_now().astimezone(IST).date()
 
 
 state = RunState(clock=_new_clock())

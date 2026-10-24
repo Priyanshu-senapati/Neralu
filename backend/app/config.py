@@ -45,7 +45,10 @@ class Settings(BaseSettings):
     alert_nearest: int = 3  # volunteers/ASHAs alerted first, nearest to the person
     amber_recall_min: float = 30
     aftercare_min: float = 60  # E7: call again this long after a person checked in person (0: off)
-    scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")
+    scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")  # only its time is used
+    # Demo mode only: pin the demo day (YYYY-MM-DD), e.g. the judging day. Empty: today's real date.
+    # The console date and "what day is it?" both use it, so they always agree. Pilot mode ignores it.
+    demo_date: str = ""
 
     scheduler_enabled: bool = True
 
