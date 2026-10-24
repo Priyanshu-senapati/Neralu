@@ -87,7 +87,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
+    <div className="skin flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
       <h1 className="sr-only">Ward 47 heat welfare console</h1>
       <TopBar summary={summary} now={now} stream={stream} onPlan={() => { setSelected(null); setPanel('plan') }} onResponders={() => { setSelected(null); setPanel('responders') }} onImpact={() => { setSelected(null); setPanel('impact') }} />
       <StatusStrip />

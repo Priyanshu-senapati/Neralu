@@ -1,55 +1,174 @@
-# Neralu · ನೆರಳು ("shade")
+<div align="center">
+
+<img src="frontend/public/favicon.svg" alt="Neralu logo" width="72" />
+
+# Neralu &nbsp;·&nbsp; ನೆರಳು
 
 **Heat warnings tell a city what's coming. Neralu checks who's safe.**
 
-Hack4SDG 2026 finale entry · Ward 47 demo ward, Bengaluru
+A heatwave welfare-check system for older people who live alone: it phones them when the heat crosses
+*their own* threshold, asks a few keypad questions, and sends a person to the door when an answer is worrying.
+
+[![Hack4SDG 2026](https://img.shields.io/badge/Hack4SDG-2026%20finale-ff7a33?style=for-the-badge)](#sdgs)
+[![SDG 11.5](https://img.shields.io/badge/SDG-11.5-f99d26?style=for-the-badge)](#sdgs)
+[![SDG 3.d](https://img.shields.io/badge/SDG-3.d-4c9f38?style=for-the-badge)](#sdgs)
+[![SDG 13.1](https://img.shields.io/badge/SDG-13.1-3f7e44?style=for-the-badge)](#sdgs)
+
+![React](https://img.shields.io/badge/React_19-20232a?logo=react&logoColor=61dafb)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
+![three.js](https://img.shields.io/badge/three.js-000000?logo=threedotjs&logoColor=white)
+![GSAP](https://img.shields.io/badge/GSAP-0ae448?logo=greensock&logoColor=black)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003b57?logo=sqlite&logoColor=white)
+![Twilio](https://img.shields.io/badge/Twilio_Voice-f22f46?logo=twilio&logoColor=white)
+![Tests](https://img.shields.io/badge/backend_tests-254-5effc8)
+
+<br />
+
+<img src="docs/media/hero-sun.jpg" alt="The Neralu story page: a photographic sun with Earth on its orbit, beside the headline" width="100%" />
+
+[The problem](#the-problem) · [How it works](#how-it-works) · [Screens](#screens) · [Quick start](#quick-start) ·
+[Real and simulated](#what-is-real-and-what-is-simulated) · [Docs](#documentation) · [Team](#team) · [Credits](#built-honestly-credits-and-pre-existing-work)
+
+</div>
+
+---
 
 ## The problem
 
-In a heatwave the people most likely to be hurt are older people who live alone, often on a basic keypad
+In a heatwave the people most likely to be hurt are **older people who live alone**: often on a basic keypad
 phone, often on heat-sensitive medicines, often under sheet roofs. India broadcasts heat alerts, but a
-broadcast only *tells*: nobody *checks* whether a particular person is all right, and heat varies sharply
+broadcast only *tells*. **Nobody checks** whether a particular person is all right, and heat varies sharply
 within a single ward, so "it's fine today" for the city can be wrong for one house.
 
-## What Neralu does
+> India recorded **over 40,000 suspected heatstroke cases** between March and June 2024 (health ministry
+> figures). Official counts miss many heat deaths outside hospitals.
 
-1. **Works out who is at risk today**, from each person's own heat threshold (age, living alone, roof,
-   fan, heat-sensitive medicines), not one city-wide number.
-2. **Phones them on any phone**, in Kannada, Hindi or English, opening with a code word their family
-   chose so they know it is not a scam call. People with memory difficulty are checked **through their
-   caregiver** instead: a caregiver call with its own published rules (C0–C6), so nobody is skipped.
-3. **Asks a few keypad questions** (water, dizziness, a hot room, the fan, help) and **"What day is it
-   today?"**, because heat confusion can make someone say "I'm fine" when they are not.
-4. **Fixed, published rules decide** GREEN / AMBER / RED. AI never decides an outcome; anything unclear
-   is followed up, never assumed fine.
-5. **A person goes to the door when needed:** a neighbour, then the nearest volunteer, then an ASHA
-   worker, then the ward officer, each with a timer. Neralu never calls 108 itself; a human decides that.
-   After a person has checked on them, Neralu **calls again an hour later** (E7) to make sure they are
-   still okay; a worrying or missed after-care call sends a person again.
-6. **The family is told**, and the ward console shows who is fine, who needs follow-up and who is
-   waiting for a person, with the full record of every step. Families also get a **private status
-   link** at registration ("answered at 11:02 · all fine", "a volunteer is on the way"): read-only,
-   one person only, no address or phone numbers, and they can replace it or turn it off.
+## How it works
+
+```mermaid
+flowchart LR
+    A["Heat index crosses<br/>a person's own threshold"] --> B["Neralu phones them<br/>family code word · their language"]
+    B --> C{"Keypad answers<br/>+ what day is it?"}
+    C -- fixed rules --> G["GREEN<br/>all fine"]
+    C -- fixed rules --> Y["AMBER<br/>follow-up call"]
+    C -- fixed rules --> R["RED<br/>a person goes"]
+    R --> P["Neighbour → volunteer →<br/>ASHA worker → ward officer"]
+    P --> F["Family told ·<br/>after-care call an hour later"]
+    style G fill:#0b2618,stroke:#4fcf8e,color:#f4f3ee
+    style Y fill:#2a1c06,stroke:#f0a640,color:#f4f3ee
+    style R fill:#330e07,stroke:#ff6e52,color:#f4f3ee
+```
+
+| | |
+|---|---|
+| **1 · Personal risk** | Each person's own heat threshold, from age, living alone, roof, fan and heat-sensitive medicines: never one city-wide number. |
+| **2 · A call, not an app** | Any phone, in Kannada, Hindi or English, opening with a code word the family chose so it is never mistaken for a scam. People with memory difficulty are checked **through their caregiver** (rules C0–C6). |
+| **3 · The day check** | "What day is it today?" Heat confusion can make someone say "I'm fine" when they are not. |
+| **4 · Rules, not AI** | Fixed, published rules decide GREEN, AMBER or RED. Anything unclear is followed up, never assumed fine. |
+| **5 · A person goes** | Neighbour, then the nearest volunteer, then an ASHA worker, then the ward officer, each with a timer. Neralu **never calls 108** itself; a human decides that. |
+| **6 · Nobody is left** | After a visit Neralu calls again an hour later (E7). Families get a private, read-only status link. Every step is on the record. |
+
+## Screens
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/media/hero-india.jpg" alt="The story page descending toward India" /><br /><sub><b>Story, the descent.</b> Scrolling flies past the sun to Earth and down through India.</sub></td>
+    <td width="33%"><img src="docs/media/hero-ward.jpg" alt="Ward 47 from above with households lit orange" /><br /><sub><b>Ward 47 at 38 °C.</b> Each household lights up when the heat crosses its own threshold.</sub></td>
+    <td width="33%"><img src="docs/media/call-scene.jpg" alt="Kamala's call on a keypad phone, decided RED by Rule R3" /><br /><sub><b>The call, played by scroll.</b> Keypad answers, then RED by Rule R3, and a person is asked to go.</sub></td>
+  </tr>
+  <tr>
+    <td width="33%"><img src="docs/media/ward-console.jpg" alt="The ward console with heat index, call round, 3D ward and attention list" /><br /><sub><b>Ward console.</b> Who is fine, who needs a follow-up, who is waiting for a person.</sub></td>
+    <td width="33%"><img src="docs/media/register.jpg" alt="The registration form" /><br /><sub><b>Registration.</b> Five steps a family completes on any phone, with consent.</sub></td>
+    <td width="33%"><img src="docs/media/hero-sun.jpg" alt="The opening of the story page" /><br /><sub><b>The story page.</b> A real-time sun and Earth in three.js, holding 120 fps on an M4.</sub></td>
+  </tr>
+</table>
+
+### Pages
+
+| Page | Who it is for |
+|---|---|
+| `/` | The story: the problem, the call, the rules, who goes |
+| `/ward` | The ward officer's live console |
+| `/register` | A family registering an older relative |
+| `/volunteer?token=priya-demo` | A volunteer's phone: accept a case, record the visit |
+| `/phone` | The browser phone, when a real call cannot be made |
+| `/family#…` | A family's private, read-only status page |
+| `/ward/record/:id` | A printable case record |
+| `/responsible` | Data, consent and known risks |
+
+## Quick start
+
+```bash
+# macOS / Linux: one command builds the site and serves everything on :8000
+scripts/demo.sh
+
+# Windows, on stage: starts everything and prints a go / no-go check
+powershell -ExecutionPolicy Bypass -File scripts\stage.ps1
+```
+
+Development, real phone calls, environment switches and every console feature: **[docs/RUNNING.md](docs/RUNNING.md)**.
+A new laptop starts with **[SETUP.md](SETUP.md)**.
 
 ## SDGs
 
-- **SDG 11** Sustainable cities: an enhanced public service that sends scarce responders only where needed;
-  target **11.5**, reduce disaster deaths, focusing on the vulnerable.
-- **SDG 3** Good health: target **3.d**, early warning for health risks.
-- **SDG 13** Climate action: target **13.1**, resilience to climate hazards.
+| Goal | Target | How Neralu serves it |
+|---|---|---|
+| **SDG 11** Sustainable cities | **11.5** fewer disaster deaths among the vulnerable | Scarce responders go only where a check says they are needed |
+| **SDG 3** Good health | **3.d** early warning for health risks | A personal heat threshold turns a forecast into a call |
+| **SDG 13** Climate action | **13.1** resilience to climate hazards | A ward-level routine for every heatwave |
 
 ## What is real and what is simulated
 
 | Real | Simulated, and labelled so |
 |---|---|
-| The phone call (Twilio) to the demo phone; its keypad answers; the speech-to-text of a spoken day | Ward 47 and its ~400 residents (fictional names and places; no real people's data) |
+| The phone call (Twilio) to the demo phone, its keypad answers, the speech-to-text of a spoken day | Ward 47 and its ~400 residents (fictional names and places; no real people's data) |
 | The rules, the escalation, the timers, the volunteer accepting on a real phone | Their call outcomes, the weather presets (a live Bengaluru forecast is optional), the ×60 demo clock |
 | The live console, registration, the audit trail | Family notifications (real SMS is optional, off by default) |
 
-## Tech stack
+## Architecture
 
-Backend: Python 3.11, FastAPI, SQLModel + SQLite, Twilio Programmable Voice, Sarvam AI (speech).
-Frontend: React 19, TypeScript, Vite, Tailwind CSS, Leaflet, three.js, d3. Details: [SETUP.md](SETUP.md).
+```mermaid
+flowchart LR
+    subgraph Phone["Any phone"]
+        K["Keypad call"]
+    end
+    subgraph Backend["FastAPI · SQLite"]
+        T["Twilio webhooks"] --> RU["rules.py<br/>deterministic"]
+        RU --> ES["Escalation<br/>tiers and timers"]
+        ES --> EV["Event log<br/>live stream"]
+    end
+    subgraph Frontend["React 19 · Vite"]
+        ST["Story page<br/>three.js · GSAP"]
+        WC["Ward console"]
+        VO["Volunteer page"]
+    end
+    K <--> T
+    EV --> WC
+    ES --> VO
+```
+
+```
+backend/    FastAPI app: risk, rules, calls, escalation, pilot mode (pytest suite in backend/tests)
+frontend/   React app: story page, ward console, volunteer, registration, family view
+scripts/    one-command demo and stage scripts, voice prompt generation
+docs/       plan, pitch, Round 2 brief, running guide, screenshots
+```
+
+**Tech stack.** Python 3.11, FastAPI, SQLModel and SQLite, Twilio Programmable Voice, Sarvam AI speech ·
+React 19, TypeScript, Vite, Tailwind CSS, three.js, GSAP, Motion, Leaflet, d3.
+
+## Documentation
+
+| Document | What is in it |
+|---|---|
+| [docs/RUNNING.md](docs/RUNNING.md) | Running, real calls, switches, every console feature |
+| [SETUP.md](SETUP.md) | Installing on a new laptop, settings, common fixes |
+| [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md) | Full spec, design rules and decisions |
+| [docs/HACKATHON_PLAN.md](docs/HACKATHON_PLAN.md) · [docs/ROUND2_BRIEF.md](docs/ROUND2_BRIEF.md) | Finale plan and the Round 2 brief |
+| [docs/PITCH.md](docs/PITCH.md) | The pitch and demo script, with sources |
+| [docs/IDEATHON_IMPROVEMENTS.md](docs/IDEATHON_IMPROVEMENTS.md) | Improvements noted after the ideathon |
+| [CLAUDE.md](CLAUDE.md) | Rules for working in this repo |
 
 ## Team
 
@@ -58,15 +177,7 @@ Frontend: React 19, TypeScript, Vite, Tailwind CSS, Leaflet, three.js, d3. Detai
 | Priyanshu Kumar Senapati | [@Priyanshu-senapati](https://github.com/Priyanshu-senapati) |
 | Gourab Dash | [@gd23456](https://github.com/gd23456) |
 | Mohsin | [@mohsin200711](https://github.com/mohsin200711) |
-| | [@Vkun2508](https://github.com/Vkun2508) |
-
-## Run it
-
-**On stage:** `powershell -ExecutionPolicy Bypass -File scripts\stage.ps1` starts everything and prints a go / no-go check.
-**New laptop? Start with [SETUP.md](SETUP.md)**: everything to install, the settings, how to run it and fixes for common problems.
-
-Full spec and decisions: [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md) · finale plan: [docs/HACKATHON_PLAN.md](docs/HACKATHON_PLAN.md) ·
-rules for working in this repo: [CLAUDE.md](CLAUDE.md).
+| Vinochan R | [@Vkun2508](https://github.com/Vkun2508) |
 
 ## Built honestly: credits and pre-existing work
 
@@ -102,200 +213,21 @@ Exact versions: `backend/requirements.txt`, `frontend/package-lock.json`.
 FlowButton, the shader animation behind the story page's hero and the "wireframe dotted globe" (rebuilt
 in three.js); a Spline demo kept for reference only, not used.
 
+**Story page** (written for Neralu): the hero is one three.js scene (sun, Earth, Ward 47). Earth maps:
+NASA Blue Marble Next Generation, May 2004, and Black Marble 2016 city lights, and Blue Marble clouds
+(NASA Earth Observatory, public domain). Bengaluru and Ward 47 from orbit: *Sentinel-2 cloudless 2016*
+by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0, credited in the
+page footer. 3D simplex noise in the shaders: webgl-noise by Ian McEwan and Stefan Gustavson (MIT); the
+heat haze uses Gustavson's public-domain 2D simplex noise. Ideas only, no code copied: helical wakes and
+orbit motion from Yura Dubinin's *Orbital Hero Section* (MIT) and the scroll-played call from Hossain
+Jahed's *Cinematic Landing Hero*, both on 21st.dev. Fonts on that page: Geist, Geist Mono, Instrument Serif.
+
 **Fonts** (Google Fonts): Public Sans, IBM Plex Mono, Newsreader, Noto Sans Kannada.
 
 ---
 
-## One command (demo laptop)
+---
 
-Builds the website and serves everything (site, API, call audio) on one port, :8000, and prints
-the address for phones on the same Wi-Fi.
-
-```
-scripts/demo.sh                                              # Mac / Linux
-powershell -ExecutionPolicy Bypass -File scripts\demo.ps1    # Windows
-```
-
-## Run it locally for development (Windows)
-
-Needs Python 3.11+ and Node 20+.
-
-**Backend** (port 8000)
-
-```
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e ".[dev]"
-copy .env.example .env
-python -m uvicorn app.main:app --port 8000 --host 0.0.0.0 --timeout-graceful-shutdown 2
-```
-
-Do not use `--reload` on Windows: it can leave an old worker holding port 8000.
-Every server start begins a fresh demo run (new seed of 401 residents).
-
-**Frontend** (port 5180, proxies `/api` and `/audio` to the backend)
-
-```
-cd frontend
-npm install
-npm run dev -- --port 5180
-```
-
-| Page | URL |
-|---|---|
-| Story page | http://localhost:5180/ |
-| Ward console | http://localhost:5180/ward |
-| Volunteer (phone) | http://localhost:5180/volunteer?token=priya-demo |
-| Family registration (phone) | http://localhost:5180/register |
-
-Phones on the same network can open the same pages using the laptop's IP instead of `localhost`.
-
-**Tests**
-
-```
-cd backend
-.venv\Scripts\activate
-pytest
-```
-
-## Past rounds API
-
-`GET /api/rounds` returns one entry per round in the current run (a reset clears them):
-
-| Field | Meaning |
-|---|---|
-| `called`, `called_real`, `called_simulated` | people with a check-in this round |
-| `caregiver_route` | due, but not called directly (memory difficulty) |
-| `outcomes` | each person's final outcome this round: `GREEN` / `AMBER` / `RED` / `UNREACHED` |
-| `in_progress` | people whose call, retry or recall is still pending |
-| `red_cases`, `support_cases` | cases opened during the round (includes E1 "no answer" and E3 escalations) |
-| `accepted`, `accept_wait_median_min`, `accept_wait_max_min` | volunteer acceptance, in scenario minutes |
-| `overdue` | cases that reached the ward officer |
-| `resolutions` | e.g. `{"safe_in_person": 3, "called_108": 1}` |
-
-Counts mix real and simulated residents; `called_real` says how many were real phones.
-
-## Real phone calls
-
-Without Twilio settings everything works except the real call (it is logged as a failed attempt).
-To make real calls, fill these in `backend/.env` (never commit `.env`):
-
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`: an upgraded Twilio account, India enabled in Voice geo permissions
-- `KAMALA_PHONE`: the demo phone, in `+91...` form
-- `PUBLIC_BASE_URL`: the public https address Twilio can reach, e.g. `ngrok http 8000`
-- `SARVAM_API_KEY`: speech-to-text for the "What day is it?" answer
-
-Check everything before going on stage (read-only, never places a call):
-`.venv\Scripts\python scripts\preflight.py`
-
-### No Twilio? Use the browser phone
-
-Set `TELEPHONY_MODE=browser` in `backend/.env` and restart the backend. Kamala's call then rings the
-`/phone` page instead of a SIM: open `http://<laptop-ip>:5180/phone` on a teammate's phone, tap
-**Turn on phone**, and hand it to the judge. It plays the same prompts (with English captions), takes the
-same keypad answers and records the spoken day, and everything after that (rules, escalation,
-volunteer alert, dashboard) is the same code a real call uses. The call's events say "browser phone".
-
-- The microphone needs https (or localhost). Over plain http on a phone the page asks the judge to tap
-  the day instead, which is scored the same way.
-- Twilio settings are not needed in this mode, and the preflight skips them.
-
-## Layout
-
-```
-backend/   FastAPI + SQLModel + SQLite: rules, risk, calls, escalation, simulation
-  app/rules.py        the only place outcomes are decided (GREEN / AMBER / RED / UNREACHED)
-  static/audio/<lang>/  call prompts per language; missing clips fall back to English
-  scripts/make_audio.py regenerates prompts with Sarvam (Kannada, Hindi, Indian English)
-frontend/  Vite + React + TypeScript + Tailwind: dashboard, volunteer and registration pages
-docs/      the plan
-```
-
-## Optional real-world switches (backend/.env)
-
-| Setting | Effect |
-|---|---|
-| `FAMILY_SMS=twilio` | Families and neighbours of people registered through the app get a real SMS from `TWILIO_FROM_NUMBER`. Simulated residents never do. A trial account can text verified numbers only; any failure falls back to the simulated log. |
-| `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
-| `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
-
-### Missed-call check-in
-
-A registered person, or their family, gives a missed call to the Neralu number and Neralu calls back
-at once with the usual check. Neralu never answers the incoming call (it rejects it as busy), so it
-costs the caller nothing. The callback is an ordinary check: same rules, retries and escalation.
-Unknown numbers are not called back and not stored; one callback per person per 30 minutes. Callers
-with memory difficulty are checked through their caregiver, as on any call.
-- **Real phone:** in the Twilio console, set the Neralu number's "A call comes in" webhook to
-  `https://<public address>/voice/inbound` (HTTP POST). On a trial account Twilio plays its trial
-  notice to inbound callers first, so test it before relying on it on stage.
-- **Browser phone:** the `/phone` page has "Give Neralu a missed call" (simulated, labelled so).
-
-### Console: filters, data sources, case records
-
-The attention list filters by heat risk, where the call stands (calling, answered, not reached, not
-called yet) and who has the case, and shows who accepted each visit. Every risk factor says where it
-came from (family registration form, the demo persona, or a simulated resident) and where today's heat
-came from. Each case has a record the ward office can print or save as PDF (`/ward/record/<case id>`):
-what opened it, every call and its answers, the rule, the escalation, who accepted, how it closed and
-who was told what. No phone numbers; the address only once someone accepted.
-
-### Responsible by design
-
-`/responsible` sets out what Neralu stores, who sees what, how it lines up with India's DPDP Act 2023
-(our reading, not a legal review), accessibility, and each known risk with its mitigation and what
-remains. In the code: the family's erasure code is random, shown once and stored only as a hash;
-call recordings are deleted 7 days after the call (`RECORDING_RETENTION_DAYS`); only the weekday word
-is kept from a spoken answer; addresses appear only to the volunteer who accepts.
-
-### Family status link
-
-Registering gives the family a private link, shown once, that shows that one person's checks today in
-plain words: "Kamala answered at 11:02 · all fine", "A volunteer is on the way", "Checked in person at
-11:29 · safe". It updates by itself and shows nothing about anyone else (no address, no code word, no
-volunteer's name). Only a hash of the link is stored, and its secret stays out of server logs. From the
-page the family can replace the link, turn it off, or delete the registration with their erasure code.
-Demo: console > Demo controls > "Kamala's family view".
-
-### Impact: a heat alert against Neralu
-
-On the console, **Impact** puts the same day in two columns. A broadcast alert tells everyone and
-confirms nothing. Neralu shows who was called, confirmed safe, known to need a person and reached at
-the door, plus what a pilot would measure: confirmed safe by noon, time from a RED case to a person at
-the door, repeat-risk residents and volunteer load. Every number is counted live from the run's
-check-ins, cases and events; the panel says how each one is counted.
-
-### Responders: availability and live reassignment
-
-Volunteers go on and off duty from their page. **Can't go** tells Neralu, which asks the next nearest
-free responder at once; going off duty hands pending alerts on; if nobody is left at a tier, the case
-moves up (volunteers → ASHA workers → ward officer), so no case is left with nobody asked. Free
-responders are asked before those already on a visit. On the console, **Responders** shows who is on
-duty, on a visit, being asked, or said they can't go.
-
-### What-if planner: a forecast turned into a work plan
-
-On the console, **Plan ahead** opens the planner. Drag temperature, humidity and night minimum, or load
-tomorrow's real Bengaluru forecast, and see against today: residents over their own threshold, calls
-in each round, expected follow-ups and cases needing a person, and the responders needed at the busiest
-time against those on duty ("774 calls, ~40 cases, 5 responders on duty → 3 short from 11:00 to 13:00").
-Who is called uses exactly the rules a real round uses. What the calls would find is an estimate from
-the simulated residents' answer mix, labelled simulated; a pilot would replace it with measured rates.
-Nothing in the planner changes the run.
-
-### Pilot mode: a real day, run by itself
-
-`RUN_MODE=pilot` (or `scripts\stage.ps1 -Pilot`) turns the demo into a real day: the clock is real
-time (IST), today's Bengaluru forecast is fetched from Open-Meteo, and the call rounds start by
-themselves at `PILOT_ROUND_TIMES` (default 11:00 and 15:00). Safeguards: no automatic round without
-today's real forecast, none after `PILOT_CALLS_UNTIL` (18:00), and a late start runs only the latest
-round already due, so nobody is called twice minutes apart. A restart resumes the day; after
-midnight a new day's run begins and the people families registered carry over. The officer can
-still start a round by hand.
-
-Demo controls also offer **Today's real forecast, Bengaluru** (Open-Meteo, free, no key): the hottest
-forecast hour and the overnight low become the run's weather, labelled "live forecast".
-
-A family can remove a person they registered from the confirmation screen (`DELETE /api/elders/{id}`
-with the registration number): the person, their check-ins, recordings, cases and events are erased.
+<div align="center">
+<sub><span lang="kn">ನೆರಳು</span> (neralu) means <i>shade</i> in Kannada. Welfare checks for the people a heatwave hurts first.</sub>
+</div>

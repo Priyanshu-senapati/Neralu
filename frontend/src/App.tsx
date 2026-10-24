@@ -52,15 +52,39 @@ function PageTransitions() {
   if (reducedMotion()) return routes
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] } }}
+          exit={{ opacity: 0, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] } }}
+        >
+          {routes}
+        </motion.div>
+      </AnimatePresence>
+      <RouteSweep path={location.pathname} />
+    </>
+  )
+}
+
+/**
+ * Between pages, a line of light (sun gold to atmosphere blue, the story page's colours) runs
+ * across the top of the screen and fades: a small, quick cue that the page changed. It is its own
+ * fixed layer, so it never moves the page or the console's fixed panels.
+ */
+function RouteSweep({ path }: { path: string }) {
+  // initial={false}: no sweep on the first page load, only when the page changes.
+  return (
+    <AnimatePresence initial={false}>
       <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1, transition: { duration: 0.32, ease: [0.23, 1, 0.32, 1] } }}
-        exit={{ opacity: 0, transition: { duration: 0.18, ease: 'easeIn' } }}
-      >
-        {routes}
-      </motion.div>
+        key={path}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[2px] origin-left bg-[linear-gradient(90deg,#ffc861,#ff8a3d_45%,#7cc4ff)] shadow-[0_0_14px_rgba(255,150,70,0.7)]"
+        initial={{ scaleX: 0, opacity: 1 }}
+        animate={{ scaleX: 1, opacity: [1, 1, 0], transition: { duration: 1.1, ease: [0.23, 1, 0.32, 1], opacity: { duration: 1.4, times: [0, 0.6, 1] } } }}
+        exit={{ opacity: 0, transition: { duration: 0.1 } }}
+      />
     </AnimatePresence>
   )
 }
