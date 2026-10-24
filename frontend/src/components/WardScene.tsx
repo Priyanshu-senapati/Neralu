@@ -10,8 +10,9 @@ import type { ElderListItem } from '@/types'
 /*
  * The ward console's map, in 3D: every registered resident is a house on the Ward 47 plate at
  * their real position, as tall as their heat risk. In "Today's checks" the houses take their live
- * status colour; in "Heat risk" they show vulnerability. RED cases nobody has accepted get a
- * pulsing beacon and a floating label, real phones get a ring, hover shows who it is, click opens
+ * status colour; in "Heat risk" they show vulnerability. A home with a RED case is red in both
+ * views; cases nobody has accepted glow, pulse and get a floating label (faster when overdue), an
+ * accepted RED case keeps a steady glow. Real phones get a ring, hover shows who it is, click opens
  * the profile. Orbit with drag, zoom with the wheel, reset to the default view.
  *
  * The scene is built once per set of residents; refreshes (every ~0.7 s during a round) only
@@ -25,6 +26,36 @@ const HALF = { lat: 0.0102, lng: 0.0104 }
 const PLATE = 2.3
 const RISK = { high: '#e8622e', medium: '#ee9a45', low: '#59645e' }
 const MAX_LABELS = 6
+const BRIGHT_RED = new THREE.Color('#ffd0c4')
+
+/** A soft round light (white, tinted per use) for the glow over urgent homes. Additive, no bloom pass. */
+function glowTexture(): THREE.Texture {
+  const c = document.createElement('canvas')
+  c.width = c.height = 128
+  const g = c.getContext('2d')!
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64)
+  grd.addColorStop(0, 'rgba(255,255,255,1)')
+  grd.addColorStop(0.22, 'rgba(255,255,255,0.6)')
+  grd.addColorStop(0.55, 'rgba(255,255,255,0.15)')
+  grd.addColorStop(1, 'rgba(255,255,255,0)')
+  g.fillStyle = grd
+  g.fillRect(0, 0, 128, 128)
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+/**
+ * Homes marked on the map: every case waiting for someone to accept (RED or support), plus RED cases
+ * already accepted (a volunteer is on the way: steady, not pulsing), most urgent first.
+ */
+function marked(elders: ElderListItem[]) {
+  return elders
+    .filter((e) => e.open_case && (e.open_case.state === 'open' || e.open_case.level === 'red'))
+    .sort((a, b) => Number(b.open_case!.state === 'open') - Number(a.open_case!.state === 'open') ||
+      Number(b.open_case!.level === 'red') - Number(a.open_case!.level === 'red') ||
+      Number(b.open_case!.overdue) - Number(a.open_case!.overdue))
+}
 
 interface Props {
   elders: ElderListItem[]
@@ -137,23 +168,40 @@ export default function WardScene({ elders, selectedId, onSelect, view, now, cla
         scene.add(ring)
         return ring
       })
+    // Beacons: a light beam, a glowing halo over the roof, a glow on the ground and two rings that
+    // spread out, so a RED home reads from the back of a room on a projector. Normal blending, not
+    // additive: additive red over the green homes would turn yellow.
+    const glow = glowTexture()
+    const additive = (opacity: number) =>
+      ({ transparent: true, opacity, depthWrite: false, blending: THREE.NormalBlending }) as const
     const beaconPool = Array.from({ length: 12 }, () => {
       const g = new THREE.Group()
-      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.5, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.9 }))
-      beam.position.y = 0.25
-      const pulse = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, transparent: true, depthWrite: false }))
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.6, 10, 1, true), new THREE.MeshBasicMaterial(additive(0.75)))
+      beam.position.y = 0.3
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, ...additive(0.95) }))
+      halo.scale.setScalar(0.45)
+      halo.position.y = 0.02
+      const ground = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, ...additive(0.7) }))
+      ground.scale.setScalar(0.8)
+      const pulse = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, ...additive(1) }))
       pulse.rotation.x = -Math.PI / 2
       pulse.position.y = 0.005
-      g.add(beam, pulse)
+      const pulse2 = pulse.clone()
+      pulse2.material = (pulse.material as THREE.MeshBasicMaterial).clone()
+      g.add(beam, halo, pulse, pulse2)
       g.visible = false
-      scene.add(g)
-      return { g, beam, pulse }
+      ground.visible = false
+      scene.add(g, ground)
+      return { g, beam, halo, ground, pulse, pulse2 }
     })
 
     const m = new THREE.Matrix4()
     const q = new THREE.Quaternion()
     const col = new THREE.Color()
-    let beacons: { b: (typeof beaconPool)[number]; it: Placed }[] = []
+    // live: waiting for someone to accept (pulses); overdue: officer action needed (pulses faster);
+    // idx: the home's instance, recoloured every frame while it pulses.
+    let beacons: { b: (typeof beaconPool)[number]; it: Placed; idx: number; red: boolean; live: boolean; overdue: boolean }[] = []
+    const redCol = new THREE.Color()
 
     const update = () => {
       const { elders: list, selectedId: sel, view: v } = latest.current
@@ -168,7 +216,10 @@ export default function WardScene({ elders, selectedId, onSelect, view, now, cla
         const w = it.w * (selected ? 1.5 : 1)
         m.compose(new THREE.Vector3(it.x, h / 2, it.z), q, new THREE.Vector3(w, h, w))
         houses.setMatrixAt(i, m)
-        if (v === 'risk') col.set(e.risk_score >= 60 ? RISK.high : e.risk_score >= 35 ? RISK.medium : RISK.low)
+        // A home with a RED case is red in both views: in "Heat risk" it would otherwise look like any
+        // other high-risk home.
+        if (e.open_case?.level === 'red') col.set(toneCol.alert)
+        else if (v === 'risk') col.set(e.risk_score >= 60 ? RISK.high : e.risk_score >= 35 ? RISK.medium : RISK.low)
         else col.set(toneCol[s.tone])
         if (selected) col.lerp(new THREE.Color('#ffffff'), 0.35)
         houses.setColorAt(i, col)
@@ -176,19 +227,25 @@ export default function WardScene({ elders, selectedId, onSelect, view, now, cla
       houses.instanceMatrix.needsUpdate = true
       if (houses.instanceColor) houses.instanceColor.needsUpdate = true
 
-      const waiting = urgent(list).slice(0, beaconPool.length)
-      beaconPool.forEach((b) => (b.g.visible = false))
+      const waiting = marked(list).slice(0, beaconPool.length)
+      redCol.set(toneCol.alert)
+      beaconPool.forEach((b) => (b.g.visible = b.ground.visible = false))
       beacons = waiting.flatMap((e, k) => {
         const i = index.get(e.id)
         if (i === undefined) return []
         const it = items[i]
         const b = beaconPool[k]
-        const c = e.open_case!.level === 'red' ? toneCol.alert : toneCol.support
-        ;(b.beam.material as THREE.MeshBasicMaterial).color.set(c)
-        ;(b.pulse.material as THREE.MeshBasicMaterial).color.set(c)
+        const red = e.open_case!.level === 'red'
+        const live = e.open_case!.state === 'open'
+        const c = red ? toneCol.alert : toneCol.support
+        for (const mat of [b.beam.material, b.halo.material, b.ground.material, b.pulse.material, b.pulse2.material])
+          (mat as THREE.MeshBasicMaterial | THREE.SpriteMaterial).color.set(c)
         b.g.position.set(it.x, it.h, it.z)
-        b.g.visible = true
-        return [{ b, it }]
+        b.ground.position.set(it.x, 0.01, it.z)
+        b.beam.visible = live // accepted: a volunteer is on the way, so no beam calling for one
+        b.pulse.visible = b.pulse2.visible = live
+        b.g.visible = b.ground.visible = true
+        return [{ b, it, idx: i, red, live, overdue: !!e.open_case!.overdue }]
       })
     }
 
@@ -263,11 +320,35 @@ export default function WardScene({ elders, selectedId, onSelect, view, now, cla
     const draw = () => {
       t += 1 / 60
       controls.update()
-      beacons.forEach(({ b }, k) => {
-        const p = (t * 0.7 + k * 0.17) % 1
-        b.pulse.scale.setScalar(1 + p * 2.6)
-        ;(b.pulse.material as THREE.MeshBasicMaterial).opacity = 1 - p
+      let recoloured = false
+      beacons.forEach(({ b, idx, red, live, overdue }, k) => {
+        const halo = b.halo.material as THREE.SpriteMaterial
+        const ground = b.ground.material as THREE.SpriteMaterial
+        if (!live) {
+          // Accepted: a steady glow, no pulse.
+          halo.opacity = 0.55
+          ground.opacity = 0.35
+          return
+        }
+        const speed = overdue ? 1.5 : 0.8
+        const p = (t * speed + k * 0.17) % 1
+        const p2 = (p + 0.5) % 1
+        b.pulse.scale.setScalar(1 + p * 4)
+        b.pulse2.scale.setScalar(1 + p2 * 4)
+        ;(b.pulse.material as THREE.MeshBasicMaterial).opacity = (1 - p) * 0.9
+        ;(b.pulse2.material as THREE.MeshBasicMaterial).opacity = (1 - p2) * 0.9
+        const beat = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * speed + k)
+        halo.opacity = 0.7 + 0.3 * beat
+        b.halo.scale.setScalar(0.38 + 0.2 * beat)
+        ground.opacity = 0.55 + 0.4 * beat
+        if (red) {
+          // The home itself breathes between its RED and a light red.
+          col.copy(redCol).lerp(BRIGHT_RED, 0.55 * beat)
+          houses.setColorAt(idx, col)
+          recoloured = true
+        }
       })
+      if (recoloured && houses.instanceColor) houses.instanceColor.needsUpdate = true
       realRings.forEach((r) => ((r.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 2.4) * 0.35))
       renderer.render(scene, camera)
 
@@ -355,6 +436,7 @@ export default function WardScene({ elders, selectedId, onSelect, view, now, cla
         if (Array.isArray(mat)) mat.forEach((x) => x.dispose())
         else mat?.dispose()
       })
+      glow.dispose()
       renderer.dispose()
     }
   }, [roster])

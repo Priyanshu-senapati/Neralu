@@ -8,6 +8,8 @@ Rules for working in this repo:
 - The system never calls 108/emergency services. Only a human records "called 108".
 - No placeholder UI. If a button exists, it works. If it doesn't work yet, it doesn't exist.
 - No emoji, no gradients, no glassmorphism, no "AI-powered" marketing copy. Follow §8 design rules.
+  Exception (team lead, 25 Oct): on the console's 3D ward map, homes with a RED case glow and pulse
+  in the status red, because the glow carries meaning (someone needs a person now). Nothing else glows.
 - Everything simulated (weather, demo clock, the ~400 seeded residents' responses, family notifications) is labelled as simulated in data and UI.
 - Keep files small and single-purpose. Backend: FastAPI + SQLModel + SQLite. Frontend: Vite + React + TypeScript + Tailwind.
 
