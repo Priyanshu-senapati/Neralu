@@ -1,15 +1,103 @@
-# Neralu
+# Neralu · ನೆರಳು ("shade")
 
-Heatwave welfare checks for elderly people who live alone. On a hot day Neralu works out who is at
-risk, phones them on any phone in their language, asks a few keypad questions plus "What day is it
-today?", and escalates to a neighbour, volunteer or ASHA worker when something looks wrong.
-Deterministic rules decide every outcome; the system never calls 108 itself.
+**Heat warnings tell a city what's coming. Neralu checks who's safe.**
 
-Full spec, decisions and build order: [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md).
-Rules for working in this repo: [CLAUDE.md](CLAUDE.md).
+Hack4SDG 2026 finale entry · Ward 47 demo ward, Bengaluru
+
+## The problem
+
+In a heatwave the people most likely to be hurt are older people who live alone, often on a basic keypad
+phone, often on heat-sensitive medicines, often under sheet roofs. India broadcasts heat alerts, but a
+broadcast only *tells*: nobody *checks* whether a particular person is all right, and heat varies sharply
+within a single ward, so "it's fine today" for the city can be wrong for one house.
+
+## What Neralu does
+
+1. **Works out who is at risk today**, from each person's own heat threshold (age, living alone, roof,
+   fan, heat-sensitive medicines), not one city-wide number.
+2. **Phones them on any phone**, in Kannada, Hindi or English, opening with a code word their family
+   chose so they know it is not a scam call.
+3. **Asks a few keypad questions** (water, dizziness, a hot room, the fan, help) and **"What day is it
+   today?"**, because heat confusion can make someone say "I'm fine" when they are not.
+4. **Fixed, published rules decide** GREEN / AMBER / RED. AI never decides an outcome; anything unclear
+   is followed up, never assumed fine.
+5. **A person goes to the door when needed:** a neighbour, then the nearest volunteer, then an ASHA
+   worker, then the ward officer, each with a timer. Neralu never calls 108 itself; a human decides that.
+6. **The family is told**, and the ward console shows who is fine, who needs follow-up and who is
+   waiting for a person, with the full record of every step.
+
+## SDGs
+
+- **SDG 11** Sustainable cities: an enhanced public service that sends scarce responders only where needed;
+  target **11.5**, reduce disaster deaths, focusing on the vulnerable.
+- **SDG 3** Good health: target **3.d**, early warning for health risks.
+- **SDG 13** Climate action: target **13.1**, resilience to climate hazards.
+
+## What is real and what is simulated
+
+| Real | Simulated, and labelled so |
+|---|---|
+| The phone call (Twilio) to the demo phone; its keypad answers; the speech-to-text of a spoken day | Ward 47 and its ~400 residents (fictional names and places; no real people's data) |
+| The rules, the escalation, the timers, the volunteer accepting on a real phone | Their call outcomes, the weather presets (a live Bengaluru forecast is optional), the ×60 demo clock |
+| The live console, registration, the audit trail | Family notifications (real SMS is optional, off by default) |
+
+## Tech stack
+
+Backend: Python 3.11, FastAPI, SQLModel + SQLite, Twilio Programmable Voice, Sarvam AI (speech).
+Frontend: React 19, TypeScript, Vite, Tailwind CSS, Leaflet, three.js, d3. Details: [SETUP.md](SETUP.md).
+
+## Team
+
+| Name | GitHub |
+|---|---|
+| Priyanshu Kumar Senapati | [@Priyanshu-senapati](https://github.com/Priyanshu-senapati) |
+| Gourab Dash | [@gd23456](https://github.com/gd23456) |
+| Mohsin | [@mohsin200711](https://github.com/mohsin200711) |
+| | [@Vkun2508](https://github.com/Vkun2508) |
+
+## Run it
 
 **On stage:** `powershell -ExecutionPolicy Bypass -File scripts\stage.ps1` starts everything and prints a go / no-go check.
 **New laptop? Start with [SETUP.md](SETUP.md)**: everything to install, the settings, how to run it and fixes for common problems.
+
+Full spec and decisions: [docs/NERALU_PLAN.md](docs/NERALU_PLAN.md) · finale plan: [docs/HACKATHON_PLAN.md](docs/HACKATHON_PLAN.md) ·
+rules for working in this repo: [CLAUDE.md](CLAUDE.md).
+
+## Built honestly: credits and pre-existing work
+
+**Pre-existing work.** Neralu was designed for the Hack4SDG ideathon (prelims, 9 Oct 2026) and built
+before the finale: the git history starts on 8 Oct 2026 and is public. Everything up to the git tag
+**`pre-finale`** existed before the finale began (12:00, 24 Oct 2026); everything after it was built at
+the finale. `git log pre-finale..main` lists the finale work.
+
+**AI tools.**
+- **Claude Code** (Anthropic): wrote most of the code under the team's direction and review, and helped
+  plan, test and debug.
+- **ChatGPT** (OpenAI): brainstorming and reviewing the feature plan.
+- **Sarvam AI**: *Bulbul* text-to-speech generated the call prompts (Kannada, Hindi, Indian English);
+  *Saaras* speech-to-text transcribes a spoken day during calls. The Kannada wording still needs
+  review by a native speaker.
+- AI never decides an outcome in Neralu: `backend/app/rules.py` does, with tests.
+
+**APIs and services.** Twilio (calls, optional SMS) · Sarvam AI (speech) · Open-Meteo (optional live
+forecast, free, no key) · ngrok (public tunnel for the demo) · Google Maps (volunteer "Open in Maps" link).
+
+**Data, maps and methods.** Basemap tiles © Esri, HERE, Garmin, © OpenStreetMap contributors (Esri
+World Light Gray Base) · heat index by the US National Weather Service Rothfusz regression · all
+residents, addresses and phone numbers in the demo ward are fictional.
+
+**Open-source libraries.** Backend: FastAPI, Uvicorn, SQLModel / SQLAlchemy, Pydantic, Twilio Python SDK,
+HTTPX, sse-starlette, python-multipart, pytest. Frontend: React, React Router, Vite, TypeScript,
+Tailwind CSS, Leaflet and react-leaflet, three.js, d3, GSAP, Motion, lucide-react, clsx, tailwind-merge.
+Exact versions: `backend/requirements.txt`, `frontend/package-lock.json`.
+
+**Borrowed UI components** (adapted, credited in each file): from [21st.dev](https://21st.dev) the
+FlowButton, the shader animation behind the story page's hero and the "wireframe dotted globe" (rebuilt
+in three.js); a Spline demo kept for reference only, not used.
+
+**Fonts** (Google Fonts): Public Sans, IBM Plex Mono, Newsreader, Noto Sans Kannada.
+
+---
 
 ## One command (demo laptop)
 
@@ -49,7 +137,8 @@ npm run dev -- --port 5180
 
 | Page | URL |
 |---|---|
-| Ward dashboard | http://localhost:5180/ |
+| Story page | http://localhost:5180/ |
+| Ward console | http://localhost:5180/ward |
 | Volunteer (phone) | http://localhost:5180/volunteer?token=priya-demo |
 | Family registration (phone) | http://localhost:5180/register |
 
@@ -96,7 +185,7 @@ Check everything before going on stage (read-only, never places a call):
 ### No Twilio? Use the browser phone
 
 Set `TELEPHONY_MODE=browser` in `backend/.env` and restart the backend. Kamala's call then rings the
-`/phone` page instead of a SIM: open `http://<laptop-ip>:5173/phone` on a teammate's phone, tap
+`/phone` page instead of a SIM: open `http://<laptop-ip>:5180/phone` on a teammate's phone, tap
 **Turn on phone**, and hand it to the judge. It plays the same prompts (with English captions), takes the
 same keypad answers and records the spoken day, and everything after that (rules, escalation,
 volunteer alert, dashboard) is the same code a real call uses. The call's events say "browser phone".
@@ -111,7 +200,7 @@ volunteer alert, dashboard) is the same code a real call uses. The call's events
 backend/   FastAPI + SQLModel + SQLite: rules, risk, calls, escalation, simulation
   app/rules.py        the only place outcomes are decided (GREEN / AMBER / RED / UNREACHED)
   static/audio/<lang>/  call prompts per language; missing clips fall back to English
-  scripts/make_audio.py regenerates prompts: English with Kokoro, Hindi with Sarvam
+  scripts/make_audio.py regenerates prompts with Sarvam (Kannada, Hindi, Indian English)
 frontend/  Vite + React + TypeScript + Tailwind: dashboard, volunteer and registration pages
 docs/      the plan
 ```
@@ -129,9 +218,3 @@ forecast hour and the overnight low become the run's weather, labelled "live for
 
 A family can remove a person they registered from the confirmation screen (`DELETE /api/elders/{id}`
 with the registration number): the person, their check-ins, recordings, cases and events are erased.
-
-## What is simulated
-
-The weather (unless the live forecast is chosen), the demo clock (×60), the ~400 seeded residents'
-answers and family notifications (unless `FAMILY_SMS=twilio`). Each is labelled "simulated" in the
-data and the UI. The call, the answers, the rules and the escalation are real.
