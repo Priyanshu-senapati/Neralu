@@ -19,7 +19,7 @@ EVENT_KINDS = (
     "call_answered", "answer_recorded", "call_ended", "attempt_failed", "retry_scheduled",
     "checkin_classified", "recall_scheduled", "case_opened", "tier_alerted", "tier_skipped",
     "tier_overdue", "case_accepted", "case_resolved", "family_notified", "elder_registered",
-    "elder_deleted", "language_chosen", "case_declined", "volunteer_duty",
+    "elder_deleted", "language_chosen", "family_link_changed", "case_declined", "volunteer_duty",
 )
 
 
@@ -49,6 +49,7 @@ class Elder(SQLModel, table=True):
     lat: float = 0.0
     lng: float = 0.0
     is_simulated: bool = True
+    family_token_hash: str | None = Field(default=None, index=True)  # private family link (app/family.py)
     consent_given_at: datetime = Field(default_factory=utcnow)
     created_at: datetime = Field(default_factory=utcnow)
 

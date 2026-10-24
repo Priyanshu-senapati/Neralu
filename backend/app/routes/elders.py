@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from sqlmodel import Session, select
 
+from app import family
 from app.db import current_run_id, get_session
 from app.events import log_event
 from app.erase import erase_elder
@@ -135,6 +136,7 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
     e = Elder(run_id=current_run_id(), is_simulated=False,
               lat=round(CENTER_LAT + rng.uniform(-HALF_LAT, HALF_LAT) * 0.6, 6),
               lng=round(CENTER_LNG + rng.uniform(-HALF_LNG, HALF_LNG) * 0.6, 6), **data)
+    token = family.issue(e)  # shown once, on the confirmation screen; only its hash is kept
     session.add(e)
     session.flush()
     score, _ = vulnerability_score(e)
@@ -143,4 +145,4 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
               actor="family", elder_id=e.id, data={"risk_score": score})
     session.commit()
     session.refresh(e)
-    return elder_detail(session, e)
+    return {**elder_detail(session, e), "family_token": token}

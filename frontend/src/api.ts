@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, FamilyStatus, NeraluEvent, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -37,6 +37,7 @@ export const api = {
   setLiveHeat: () => post<Summary>('/api/sim/heat/live', {}),
   startRound: (round_no: number) => post<{ created: number }>('/api/sim/round', { round_no }),
   reset: () => post<{ run_id: string }>('/api/sim/reset', {}),
+  demoFamilyLink: () => post<{ family_token: string }>('/api/sim/family-link', {}),
   whatIf: (
     q: { temp_c: number; humidity_pct: number; night_min_c: number; responders?: number } | { forecast: 'tomorrow'; responders?: number },
     signal?: AbortSignal,
@@ -53,9 +54,17 @@ export const api = {
   impact: () => request<Impact>('/api/impact'),
   resolve: (id: number, token: string, resolution: string, note?: string) =>
     post<CaseDetail>(`/api/cases/${id}/resolve`, { volunteer_token: token, resolution, note }),
-  register: (body: unknown) => post<ElderDetail>('/api/elders', body),
+  register: (body: unknown) => post<ElderDetail & { family_token: string }>('/api/elders', body),
   removeRegistration: (id: number, registration: string) =>
     request<{ deleted: true }>(`/api/elders/${id}`, { method: 'DELETE', body: JSON.stringify({ registration }) }),
+  // The family link's secret goes in a header, never in a URL (it stays out of server and tunnel logs).
+  family: {
+    status: (token: string) => request<FamilyStatus>('/api/family/status', { headers: { 'X-Family-Token': token } }),
+    renew: (token: string) =>
+      request<{ family_token: string }>('/api/family/renew', { method: 'POST', headers: { 'X-Family-Token': token } }),
+    revoke: (token: string) =>
+      request<{ revoked: true }>('/api/family/revoke', { method: 'POST', headers: { 'X-Family-Token': token } }),
+  },
   phone: {
     current: () => request<{ call: PhoneCall | null }>('/api/phone/current'),
     answer: (id: number) => post<PhoneScript>(`/api/phone/calls/${id}/answer`, {}),

@@ -27,7 +27,9 @@ within a single ward, so "it's fine today" for the city can be wrong for one hou
    After a person has checked on them, Neralu **calls again an hour later** (E7) to make sure they are
    still okay; a worrying or missed after-care call sends a person again.
 6. **The family is told**, and the ward console shows who is fine, who needs follow-up and who is
-   waiting for a person, with the full record of every step.
+   waiting for a person, with the full record of every step. Families also get a **private status
+   link** at registration ("answered at 11:02 · all fine", "a volunteer is on the way"): read-only,
+   one person only, no address or phone numbers, and they can replace it or turn it off.
 
 ## SDGs
 
