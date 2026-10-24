@@ -169,6 +169,22 @@ export interface NeraluEvent {
   simulated: boolean
 }
 
+/** The private family view of one person (GET /api/family/status). Never an address, phone or code word. */
+export interface FamilyStatus {
+  name: string
+  first_name: string
+  headline: string
+  tone: 'ok' | 'watch' | 'alert' | 'neutral'
+  last_check: { at: string; text: string; outcome: Outcome | null; by_caregiver: boolean } | null
+  next_call: { at: string; kind: 'check' | 'retry' | 'follow-up' | 'after-care'; to_caregiver: boolean } | null
+  through_caregiver: boolean
+  heat: { heat_index_c: number; threshold_c: number; above_threshold: boolean; source: string }
+  today: { at: string; text: string; tone: 'ok' | 'watch' | 'alert' | 'neutral' }[]
+  as_of: string
+  pilot: boolean
+  registered: boolean
+}
+
 /** caregiver: a person with memory difficulty is checked through their caregiver (the family contact). */
 export type Callee = 'elder' | 'caregiver'
 

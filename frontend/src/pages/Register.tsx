@@ -66,7 +66,7 @@ export default function Register() {
   const [dir, setDir] = useState(1)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<ElderDetail | null>(null)
+  const [done, setDone] = useState<(ElderDetail & { family_token?: string }) | null>(null)
   const audio = useRef<HTMLAudioElement | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }))
@@ -413,7 +413,7 @@ function MobileProgress({ step, score, answered }: { step: number; score: number
 
 /* ---------- Confirmation ---------- */
 
-function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () => void }) {
+function Confirmation({ done, onAnother }: { done: ElderDetail & { family_token?: string }; onAnother: () => void }) {
   const dn = done.name.split(' ')[0]
   const still = reducedMotion()
   const item = (i: number) => (still ? {} : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0, transition: { delay: 0.25 + i * 0.12, duration: 0.5, ease: EASE } } })
@@ -459,6 +459,12 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
           <p className="mt-1 text-sm text-ink/80">Every Neralu call starts with it. A call without it is not from Neralu.</p>
         </motion.div>
 
+        {done.family_token && (
+          <motion.div {...item(1)}>
+            <FamilyLink token={done.family_token} first={dn} />
+          </motion.div>
+        )}
+
         <motion.h2 {...item(2)} className="display mt-10 text-[1.6rem] font-medium">What happens next</motion.h2>
         <ol className="mt-4">
           {[
@@ -485,6 +491,39 @@ function Confirmation({ done, onAnother }: { done: ElderDetail; onAnother: () =>
         </div>
         <RemoveRegistration done={done} onRemoved={onAnother} />
       </div>
+    </div>
+  )
+}
+
+/** The family's private status page, shown once: only a hash of the link is kept, so it cannot be shown again. */
+function FamilyLink({ token, first }: { token: string; first: string }) {
+  const url = `${window.location.origin}/family#${token}`
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+    } catch {
+      setCopied(false) // no clipboard (http on a phone): the link is selectable below
+    }
+  }
+  return (
+    <div className="mt-4 rounded-[10px] border border-line bg-surface px-5 py-4">
+      <div className="text-sm font-semibold">Your private link to {first}'s checks</div>
+      <p className="mt-1 text-sm text-ink/80">
+        See how today's calls went, if a volunteer is on the way, and when Neralu calls next. No address or phone
+        numbers are shown. Save it now: it is shown only once.
+      </p>
+      <p className="num mt-3 select-all break-all rounded-[6px] border border-line bg-paper px-3 py-2 text-xs">{url}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" onClick={copy} className="press min-h-11 rounded-full border border-line-strong px-4 text-sm">
+          {copied ? 'Copied' : 'Copy link'}
+        </button>
+        <a href={url} target="_blank" rel="noreferrer" className="press inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-brand">
+          Open it
+        </a>
+      </div>
+      <p className="mt-2 text-xs text-muted">Share it only with family. You can replace it or turn it off from the page itself.</p>
     </div>
   )
 }

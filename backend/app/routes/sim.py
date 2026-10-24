@@ -1,11 +1,13 @@
 """Demo controls. Everything here is simulated and labelled as such."""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlmodel import Session
+from sqlmodel import Session, select
 
+from app import family
 from app.calls import start_round
-from app.db import get_session
+from app.db import current_run_id, get_session
 from app.events import log_event
+from app.models import Elder
 from app.runs import start_new_run
 from app.state import Weather, state
 from app.weather import ForecastUnavailable, bengaluru_today
@@ -51,6 +53,19 @@ def set_live_heat(session: Session = Depends(get_session)) -> dict:
 @router.post("/reset")
 def reset(session: Session = Depends(get_session)) -> dict:
     return {"run_id": start_new_run(session)}
+
+
+@router.post("/family-link")
+def demo_family_link(session: Session = Depends(get_session)) -> dict:
+    """A fresh family link for the demo persona only (fictional), so the pitch can show her family's
+    view. Registered people's links are only ever given to their family, at registration."""
+    kamala = session.exec(select(Elder).where(Elder.run_id == current_run_id(), Elder.name == "Kamala R.",
+                                              Elder.is_simulated == False)).first()  # noqa: E712
+    if kamala is None:
+        raise HTTPException(404, "No demo persona in this run")
+    token = family.issue(kamala)
+    session.commit()
+    return {"family_token": token}
 
 
 class RoundIn(BaseModel):

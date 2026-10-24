@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { reducedMotion } from './motion'
 import Dashboard from './pages/Dashboard'
+import Family from './pages/Family'
 import Phone from './pages/Phone'
 import Register from './pages/Register'
 import Story from './pages/Story'
@@ -40,6 +41,7 @@ function PageTransitions() {
       <Route path="/volunteer" element={<Volunteer />} />
       <Route path="/register" element={<Register />} />
       <Route path="/phone" element={<Phone />} />
+      <Route path="/family" element={<Family />} />
     </Routes>
   )
   // Reduced motion: switch pages instantly (a fade that cannot run must never leave a blank page).
