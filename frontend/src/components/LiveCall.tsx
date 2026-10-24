@@ -81,7 +81,7 @@ export function LiveCall({ elders, refreshKey, onOpen }: Props) {
         <span className="text-lg font-semibold">{resident.name}</span>{' '}
         <span className="num text-sm text-muted">{resident.age}</span>
         <span className="block text-xs text-muted">
-          {call ? `${call.is_recall ? 'Follow-up call' : `Attempt ${call.attempt}`} · ` : ''}
+          {call ? `${call.requested ? 'Callback after a missed call' : call.is_recall ? 'Follow-up call' : `Attempt ${call.attempt}`} · ` : ''}
           {resident.risk_factors.slice(0, 3).join(', ')}
         </span>
       </button>

@@ -82,7 +82,9 @@ the finale. `git log pre-finale..main` lists the finale work.
 - **Sarvam AI**: *Bulbul* text-to-speech generated the call prompts (Kannada, Hindi, Indian English);
   *Saaras* speech-to-text transcribes a spoken day during calls. The Kannada wording still needs
   review by a native speaker.
-- AI never decides an outcome in Neralu: `backend/app/rules.py` does, with tests.
+- **Amazon Polly** (through Twilio `<Say>`) and the browser's built-in voice speak a prompt only when
+  its recorded clip does not exist yet (the caregiver prompts today). Same fixed text; nothing is generated.
+- No language model runs anywhere in Neralu. AI never decides an outcome in Neralu: `backend/app/rules.py` does, with tests.
 
 **APIs and services.** Twilio (calls, optional SMS) · Sarvam AI (speech) · Open-Meteo (optional live
 forecast, free, no key) · ngrok (public tunnel for the demo) · Google Maps (volunteer "Open in Maps" link).
@@ -226,6 +228,18 @@ docs/      the plan
 | `FAMILY_SMS=twilio` | Families and neighbours of people registered through the app get a real SMS from `TWILIO_FROM_NUMBER`. Simulated residents never do. A trial account can text verified numbers only; any failure falls back to the simulated log. |
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
+
+### Missed-call check-in
+
+A registered person, or their family, gives a missed call to the Neralu number and Neralu calls back
+at once with the usual check. Neralu never answers the incoming call (it rejects it as busy), so it
+costs the caller nothing. The callback is an ordinary check: same rules, retries and escalation.
+Unknown numbers are not called back and not stored; one callback per person per 30 minutes. Callers
+with memory difficulty are checked through their caregiver, as on any call.
+- **Real phone:** in the Twilio console, set the Neralu number's "A call comes in" webhook to
+  `https://<public address>/voice/inbound` (HTTP POST). On a trial account Twilio plays its trial
+  notice to inbound callers first, so test it before relying on it on stage.
+- **Browser phone:** the `/phone` page has "Give Neralu a missed call" (simulated, labelled so).
 
 ### Console: filters, data sources, case records
 

@@ -20,7 +20,7 @@ EVENT_KINDS = (
     "checkin_classified", "recall_scheduled", "case_opened", "tier_alerted", "tier_skipped",
     "tier_overdue", "case_accepted", "case_resolved", "family_notified", "elder_registered",
     "elder_deleted", "language_chosen", "family_link_changed", "case_declined", "volunteer_duty",
-    "recordings_deleted",
+    "recordings_deleted", "missed_call",
 )
 
 
@@ -63,6 +63,7 @@ class CheckIn(SQLModel, table=True):
     round_no: int
     attempt: int = 1
     is_recall: bool = False
+    requested: bool = False  # asked for with a missed call (app/missed_call.py), not from a round
     callee: str = "elder"  # "caregiver": the family contact is called about the person (CALLEES)
     scheduled_for_real: datetime = Field(default_factory=utcnow)
     started: bool = False
@@ -100,6 +101,7 @@ class Case(SQLModel, table=True):
     resolution_note: str | None = None
     opened_real: datetime = Field(default_factory=utcnow)
     resolved_real: datetime | None = None
+    accepted_real: datetime | None = None  # when the current assignee accepted (E8 visit timer)
     sim_accept_at_real: datetime | None = None  # simulated cases only: when a sim volunteer accepts
     sim_visit_done_real: datetime | None = None  # simulated cases only: when that visit is recorded
     alerted_ids: list[int] = Field(default_factory=list, sa_column=Column(JSON))  # nearest responders alerted

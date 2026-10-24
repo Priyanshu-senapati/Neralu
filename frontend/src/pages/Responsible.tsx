@@ -16,7 +16,7 @@ const STORE: [string, string][] = [
 ]
 
 const WHO: [string, string][] = [
-  ['Ward officer (console)', 'Every registered person, their risk factors, call answers, decisions and cases. The address only once a volunteer has accepted a visit.'],
+  ['Ward officer (console)', 'Every registered person, their risk factors, call answers, decisions and cases, each placed on the map to about 100 m. The address only once a volunteer has accepted a visit, and never the family code word.'],
   ['Volunteer or ASHA worker', 'Why someone needs a visit and roughly how far away they are. Address and phone appear only after they accept that one case.'],
   ['Family', 'A private link with that one person\'s status today. Nothing about anyone else, and no address, code word or volunteer\'s name. They can replace the link or turn it off.'],
   ['Nobody', 'The erasure code and the family link\'s secret: each is shown once to the family and kept only in a scrambled form (a hash).'],
@@ -33,6 +33,7 @@ const DPDP: [string, string][] = [
 const ACCESS: string[] = [
   'Works on any phone, including basic keypad phones. No app, no smartphone, no internet needed by the person called.',
   'Answers are single key presses. No reading, no typing.',
+  'A missed call to the Neralu number asks for a check at any time. Neralu calls back; the caller pays nothing.',
   'Kannada, Hindi and English, chosen at the start of every call (1, 2 or 3), in a slowed-down voice for older listeners.',
   'A question with no answer is asked again before moving on.',
   'People with memory difficulty are checked through their caregiver rather than asked questions they cannot fairly answer.',

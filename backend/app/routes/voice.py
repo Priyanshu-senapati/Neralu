@@ -10,9 +10,10 @@ from app.calls import handle_call_ended
 from app.config import get_settings
 from app.db import current_run_id, engine
 from app.events import log_event
+from app.missed_call import handle as handle_missed_call
 from app.models import TERMINAL_CALL_STATUSES, CheckIn, Elder
 from app.orientation import day_word, score_orientation
-from app.state import state
+from app.state import person_today, state
 from app.transcribe import fetch_recording, transcribe
 
 log = logging.getLogger(__name__)
@@ -118,13 +119,13 @@ async def gather(request: Request, step: str, checkin_id: int, r: int = 0) -> Re
 
 
 def _day_keypad(session: Session, c: CheckIn, digits: str | None, *, retried: bool) -> Response:
-    """Orientation by keypad: 1 = Monday … 7 = Sunday, scored against the scenario day."""
+    """Orientation by keypad: 1 = Monday … 7 = Sunday, scored against today's real date (IST)."""
     valid = digits is not None and digits in "1234567" and len(digits) == 1
     if not valid and not retried:
         return twiml(tw.gather_twiml("day", c.id, reprompt=True, lang=_lang(session, c)))
     if valid:
         pressed = int(digits) - 1
-        today = state.clock.scenario_now().date().weekday()
+        today = person_today().weekday()
         value = "correct" if pressed == today else "wrong"
         _store(session, c, "orientation", value, "keypad", weekday_pressed=pressed)
     else:
@@ -162,8 +163,7 @@ async def score_audio(checkin_id: int, audio: bytes | None, lang: str,
                       filename: str = "answer.wav", mime: str = "audio/wav") -> None:
     """Transcribe a spoken day and store the orientation score. Unclear audio is never 'fine'."""
     transcript = await transcribe(audio, lang, filename, mime) if audio else None
-    today = state.clock.scenario_now().date()
-    value = score_orientation(transcript, today)
+    value = score_orientation(transcript, person_today())
     if transcript is None:
         value = "uncertain"  # a recording exists but could not be understood: never "fine"
     with Session(engine) as session:
@@ -212,3 +212,14 @@ async def status(request: Request, checkin_id: int) -> Response:
         handle_call_ended(session, checkin_id, call_status)
         session.commit()
     return Response(status_code=204)
+
+
+@router.post("/inbound")
+async def inbound(request: Request) -> Response:
+    """Someone rang the Neralu number: a missed call. Never answered (rejected as busy, so the caller
+    pays nothing); a registered person, or their family, gets a check call back at once."""
+    await tw.validate_signature(request)
+    number = (await request.form()).get("From", "")
+    with Session(engine) as session:
+        handle_missed_call(session, str(number))
+    return twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Reject reason="busy"/></Response>')

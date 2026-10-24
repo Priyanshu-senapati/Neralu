@@ -462,7 +462,7 @@ function Confirmation({ done, onAnother }: { done: ElderDetail & { family_token?
 
         <motion.div {...item(1)} className="mt-6 rounded-[10px] border border-brand bg-brand-tint px-5 py-4">
           <div className="text-sm font-semibold">Tell {dn} the code word today</div>
-          <div className="oled mt-1 text-[2.4rem] font-semibold leading-tight text-brand">{cap(done.code_word)}</div>
+          <div className="oled mt-1 text-[2.4rem] font-semibold leading-tight text-brand">{done.code_word ? cap(done.code_word) : ''}</div>
           <p className="mt-1 text-sm text-ink/80">Every Neralu call starts with it. A call without it is not from Neralu.</p>
         </motion.div>
 

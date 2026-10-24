@@ -153,6 +153,22 @@ def test_new_day_starts_a_new_run_and_carries_registrations(session, fake):
                                             Elder.name == "Test Carryover Person")).one()
 
 
+def test_reset_in_pilot_mode_keeps_registered_people(session, fake):
+    from app.routes import sim
+
+    e = Elder(run_id=current_run_id(), name="Test Reset Person", age=78, phone="+919845012345",
+              is_simulated=False, address="#9", family_name="Latha", family_phone="+919845000000")
+    session.add(e)
+    session.flush()
+    log_event(session, "elder_registered", "registered", actor="family", elder_id=e.id)
+    session.commit()
+    old_run = current_run_id()
+    sim.reset(session=session)  # the demo control, pressed in pilot mode
+    assert current_run_id() != old_run
+    assert session.exec(select(Elder).where(Elder.run_id == current_run_id(),
+                                            Elder.name == "Test Reset Person")).one()
+
+
 def test_demo_mode_is_untouched(session, monkeypatch):
     monkeypatch.setattr(get_settings(), "run_mode", "demo")
     runs.start_new_run(session)

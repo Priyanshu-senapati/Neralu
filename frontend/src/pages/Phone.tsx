@@ -310,6 +310,7 @@ export default function Phone() {
         {phase === 'idle' && (
           <Center>
             <p className="text-sm text-ink/60">Waiting for a call</p>
+            <MissedCall />
           </Center>
         )}
 
@@ -319,7 +320,7 @@ export default function Phone() {
             <div className="mt-2 text-3xl font-semibold">Neralu</div>
             <div className="mt-1 text-sm text-ink/60">Heat care service · Ward 47</div>
             <div className="mt-1 text-xs text-ink/40">
-              {call.callee === 'caregiver' ? `to ${call.elder_name}'s caregiver` : `to ${call.elder_name}`} · {call.is_recall ? 'recall' : `attempt ${call.attempt}`}
+              {call.callee === 'caregiver' ? `to ${call.elder_name}'s caregiver` : `to ${call.elder_name}`} · {call.requested ? 'calling you back' : call.is_recall ? 'recall' : `attempt ${call.attempt}`}
             </div>
           </div>
         )}
@@ -380,6 +381,36 @@ export default function Phone() {
 }
 
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
+
+/** A missed call to Neralu, the way people in India ask for a call back for free (simulated here). */
+function MissedCall() {
+  const [note, setNote] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const give = async () => {
+    setBusy(true)
+    try {
+      const { outcome } = await api.phone.missedCall()
+      setNote({
+        calling: 'Missed call given. Neralu will call back now.',
+        sooner: 'Missed call given. Neralu is bringing its next call forward to now.',
+        in_progress: 'Neralu is already calling.',
+        cooldown: 'Neralu called back a short while ago, so not again yet.',
+      }[outcome] ?? 'Neralu could not call back this phone.')
+    } catch {
+      setNote('Could not reach Neralu. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="mt-10 text-center">
+      <button type="button" onClick={give} disabled={busy} className="press min-h-11 rounded-full border border-ink/30 px-5 text-sm disabled:opacity-60">
+        Give Neralu a missed call
+      </button>
+      <p role="status" className="mt-2 min-h-5 text-xs text-ink/60">{note ?? 'Free for the caller: Neralu never picks up, it calls back.'}</p>
+    </div>
+  )
+}
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-1 flex-col items-center justify-center">{children}</div>

@@ -381,6 +381,7 @@ const RULE_OUTCOME: Record<string, { label: string; dot: string; text: string }>
   E1: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
   E3: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
   E7: { label: 'Call again', dot: 'bg-watch', text: 'text-watch' },
+  E8: { label: 'Officer', dot: 'bg-alert', text: 'text-alert' },
   C0: { label: 'Not reached', dot: 'bg-ink/60', text: 'text-ink' },
   C1: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },
   C2: { label: 'RED', dot: 'bg-alert', text: 'text-alert' },

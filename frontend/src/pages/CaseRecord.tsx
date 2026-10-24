@@ -221,7 +221,7 @@ function Call({ c, trigger }: { c: CheckInOut; trigger: boolean }) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
         <span className="font-semibold">
           <span className="num">{fmtTime(c.at_scenario)}</span> · round {c.round_no} ·{' '}
-          {c.is_recall ? 'follow-up call' : `attempt ${c.attempt}`}
+          {c.requested ? 'callback after a missed call' : c.is_recall ? 'follow-up call' : `attempt ${c.attempt}`}
           {c.callee === 'caregiver' && ' · to the caregiver'}
           {c.is_simulated && <> <SimTag /></>}
         </span>

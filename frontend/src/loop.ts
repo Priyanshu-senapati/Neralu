@@ -81,6 +81,8 @@ export function episode(events: NeraluEvent[]): NeraluEvent[] {
   events.forEach((e, i) => {
     if (e.kind === 'call_placed' && Number(e.data.attempt) === 1 && !String(e.message).startsWith('Recall')) start = i
   })
+  // A callback starts with the missed call that asked for it.
+  if (start > 0 && events[start - 1].kind === 'missed_call') start -= 1
   return start < 0 ? events : events.slice(start)
 }
 
@@ -103,6 +105,9 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
   const caseEv = (kind: string) => (redOpen ? ev.filter((e) => e.kind === kind && e.case_id === redOpen.case_id).at(-1) ?? null : null)
   const alerted = caseEv('tier_alerted')
   const overdue = caseEv('tier_overdue')
+  // E8: accepted, but no visit recorded in time; otherwise nobody accepted at all (E5)
+  const visitOverdue = overdue?.data.visit === true ? overdue : null
+  const ackOverdue = visitOverdue ? null : overdue
   const accepted = caseEv('case_accepted')
   const resolvedAll = redOpen ? ev.filter((e) => e.kind === 'case_resolved' && e.case_id === redOpen.case_id) : []
   const resolved = resolvedAll.filter((e) => e.data.resolution !== 'not_found_escalate').at(-1) ?? null
@@ -143,10 +148,10 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
     at: redOpen?.ts_scenario ?? recall?.ts_scenario ?? null,
     state: redOpen ? 'done' : noPerson ? 'skipped' : 'pending',
     detail: redOpen
-      ? overdue ? 'Nobody accepted · ward officer alerted' : alerted ? alertedText(alerted, ev) : 'Case opened'
+      ? ackOverdue ? 'Nobody accepted · ward officer alerted' : alerted ? alertedText(alerted, ev) : 'Case opened'
       : noPerson ? (outcome === 'AMBER' && recall ? `Not yet · follow-up call at ${atTime(recall.message)}` : 'Not needed')
         : '—',
-    tone: overdue ? 'alert' : undefined,
+    tone: ackOverdue ? 'alert' : undefined,
   })
 
   // 4. Someone accepts
@@ -162,8 +167,10 @@ export function closedLoop(all: NeraluEvent[]): LoopStep[] {
     key: 'resolved', label: 'Checked in person',
     at: resolved?.ts_scenario ?? null,
     state: resolved ? 'done' : accepted ? 'current' : noPerson ? 'skipped' : 'pending',
-    detail: resolved ? resolved.message.replace(/^[^:]+: /, '') : accepted ? 'On the way' : noPerson ? 'Not needed' : '—',
-    tone: resolved ? (resolved.data.resolution === 'called_108' ? 'alert' : 'ok') : undefined,
+    detail: resolved ? resolved.message.replace(/^[^:]+: /, '')
+      : accepted ? (visitOverdue ? 'No visit recorded yet · ward officer alerted' : 'On the way')
+        : noPerson ? 'Not needed' : '—',
+    tone: resolved ? (resolved.data.resolution === 'called_108' ? 'alert' : 'ok') : visitOverdue ? 'alert' : undefined,
   })
 
   // 6. Family told
@@ -209,6 +216,8 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
         const callee = caregiver ? `${firstName}'s caregiver` : firstName
         add(e, String(e.message).startsWith('Recall')
           ? `Neralu made a follow-up call to ${callee}.`
+          : String(e.message).startsWith('Calling back')
+            ? `Neralu called ${callee} back.`
           : String(e.message).startsWith('Call failed')
             ? `The call to ${callee} could not be placed.`
             : `Neralu called ${callee}${Number(d.attempt) > 1 ? ` again (attempt ${d.attempt})` : ''}.`)
@@ -262,7 +271,9 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
         break
       }
       case 'tier_overdue':
-        add(e, 'Nobody has taken this visit yet. The ward officer was alerted.', 'alert')
+        add(e, d.visit === true
+          ? 'No visit was recorded in time after it was accepted. The ward officer was alerted.'
+          : 'Nobody has taken this visit yet. The ward officer was alerted.', 'alert')
         break
       case 'case_accepted':
         add(e, `${e.message.replace(' · waited', ' after waiting')}.`, 'ok')
@@ -272,6 +283,11 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
         break
       case 'family_notified':
         add(e, `${e.message.split(' notified')[0]} was told.`, 'muted')
+        break
+      case 'missed_call':
+        add(e, d.from === 'family'
+          ? `${firstName}'s family gave Neralu a missed call to ask for a check.`
+          : `${firstName} gave Neralu a missed call to ask for a check.`, 'watch')
         break
       case 'elder_registered':
         add(e, `${e.message}.`, 'muted')

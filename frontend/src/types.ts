@@ -94,6 +94,8 @@ export interface CurrentCall {
   checkin_id: number
   attempt: number
   is_recall: boolean
+  /** asked for with a missed call */
+  requested?: boolean
   callee?: Callee
   started: boolean
   call_status: string | null
@@ -199,6 +201,8 @@ export interface CheckInOut {
   round_no: number
   attempt: number
   is_recall: boolean
+  /** asked for with a missed call */
+  requested?: boolean
   callee?: Callee
   call_status: string | null
   answers: Record<string, string>
@@ -264,7 +268,8 @@ export interface CaseRecord {
 
 export interface ElderDetail extends ElderListItem, RiskDetail {
   address: string | null
-  code_word: string
+  /** only in the registration response, to the family who chose it; never sent to the console */
+  code_word?: string
   family_name: string | null
   /** only in the registration response, shown once: the secret of the family's private status link */
   family_token?: string
@@ -292,7 +297,10 @@ export interface CaseDetail {
   resolution: string | null
   resolution_note: string | null
   assignee_id: number | null
-  elder: ElderListItem & RiskDetail & { address: string | null; phone?: string | null; maps_url?: string | null }
+  /** lat/lng only once this volunteer has accepted; before that just distance_km */
+  elder: Omit<ElderListItem, 'lat' | 'lng'> & RiskDetail & {
+    lat?: number; lng?: number; address: string | null; phone?: string | null; maps_url?: string | null
+  }
   checkins: CheckInOut[]
   events: NeraluEvent[]
   mine?: boolean

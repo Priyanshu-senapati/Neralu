@@ -83,6 +83,8 @@ export const api = {
     },
     hangup: (id: number) => post<{ ok: boolean }>(`/api/phone/calls/${id}/hangup`, {}),
     decline: (id: number) => post<{ ok: boolean }>(`/api/phone/calls/${id}/decline`, {}),
+    /** Demo: this phone gives Neralu a missed call (simulated); Neralu calls back at once. */
+    missedCall: () => post<{ outcome: string }>('/api/phone/missed-call', {}),
   },
 }
 
@@ -91,6 +93,7 @@ export interface PhoneCall {
   status: 'ringing' | 'in-progress'
   attempt: number
   is_recall: boolean
+  requested?: boolean
   elder_name: string
   callee?: 'elder' | 'caregiver'
 }

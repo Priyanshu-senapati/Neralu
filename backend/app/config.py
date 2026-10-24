@@ -22,8 +22,6 @@ class Settings(BaseSettings):
 
     stt_provider: str = "sarvam"
     sarvam_api_key: str = ""
-    bhashini_api_key: str = ""
-    anthropic_api_key: str = ""
     stt_timeout_s: float = 6
     # "voice": spoken day recorded + transcribed. "keypad": press 1-7 (Twilio trials cannot record).
     orientation_mode: str = "voice"
@@ -41,10 +39,16 @@ class Settings(BaseSettings):
     ring_timeout_s: int = 15
     retry_gap_min: float = 15
     ack_timeout_min: float = 15
+    # E8: an accepted RED case with no visit recorded this long after acceptance goes to the ward officer.
+    # 120 scenario minutes is 2 real minutes on stage (the pitch records Safe ~45 s after accepting).
+    visit_timeout_min: float = 120
     alert_nearest: int = 3  # volunteers/ASHAs alerted first, nearest to the person
     amber_recall_min: float = 30
     aftercare_min: float = 60  # E7: call again this long after a person checked in person (0: off)
-    scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")
+    scenario_start: datetime = datetime.fromisoformat("2026-10-09T10:55:00+05:30")  # only its time is used
+    # Demo mode only: pin the demo day (YYYY-MM-DD), e.g. the judging day. Empty: today's real date.
+    # The console date and "what day is it?" both use it, so they always agree. Pilot mode ignores it.
+    demo_date: str = ""
 
     scheduler_enabled: bool = True
 
