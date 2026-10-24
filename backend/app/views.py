@@ -208,6 +208,18 @@ def impact(session: Session) -> dict[str, int]:
             "people_helped": len(set(helped))}
 
 
+def pilot_info(session: Session) -> dict[str, Any]:
+    from app.pilot import calls_until, has_todays_forecast, next_round, round_times, started_rounds
+
+    now = state.clock.scenario_now()
+    nxt = next_round(now, started_rounds(session))
+    return {"day": state.run_day.isoformat() if state.run_day else None,
+            "round_times": [at.strftime("%H:%M") for _, at in round_times()],
+            "calls_until": calls_until().strftime("%H:%M"),
+            "next_round": nxt.strftime("%H:%M") if nxt else None,
+            "forecast_loaded": has_todays_forecast()}
+
+
 def summary(session: Session) -> dict[str, Any]:
     s = get_settings()
     elders = run_elders(session)
@@ -238,7 +250,8 @@ def summary(session: Session) -> dict[str, Any]:
         "impact": impact(session),
         "run_id": current_run_id(),
         "scenario_now": scenario_iso(state.clock.scenario_now()),
-        "demo_speed": s.demo_speed, "max_attempts": s.max_attempts,
+        "demo_speed": state.clock.speed, "max_attempts": s.max_attempts,
+        "run_mode": s.run_mode, "pilot": pilot_info(session) if s.run_mode == "pilot" else None,
         "weather": state.weather.as_dict(), "round_no": state.round_no, "counts": counts,
         "telephony_mode": s.telephony_mode,
     }

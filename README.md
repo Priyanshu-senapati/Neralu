@@ -213,6 +213,16 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Pilot mode: a real day, run by itself
+
+`RUN_MODE=pilot` (or `scripts\stage.ps1 -Pilot`) turns the demo into a real day: the clock is real
+time (IST), today's Bengaluru forecast is fetched from Open-Meteo, and the call rounds start by
+themselves at `PILOT_ROUND_TIMES` (default 11:00 and 15:00). Safeguards: no automatic round without
+today's real forecast, none after `PILOT_CALLS_UNTIL` (18:00), and a late start runs only the latest
+round already due, so nobody is called twice minutes apart. A restart resumes the day; after
+midnight a new day's run begins and the people families registered carry over. The officer can
+still start a round by hand.
+
 Demo controls also offer **Today's real forecast, Bengaluru** (Open-Meteo, free, no key): the hottest
 forecast hour and the overnight low become the run's weather, labelled "live forecast".
 

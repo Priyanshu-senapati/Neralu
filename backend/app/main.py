@@ -11,7 +11,7 @@ from sqlmodel import Session
 from app.config import get_settings
 from app.db import create_tables, engine
 from app.routes import audio, cases, elders, phone, recordings, sim, stream, summary, voice
-from app.runs import start_new_run
+from app.runs import resume_or_start
 from app.scheduler import run_scheduler
 
 
@@ -19,7 +19,7 @@ from app.scheduler import run_scheduler
 async def lifespan(app: FastAPI):
     create_tables()
     with Session(engine) as session:
-        start_new_run(session)
+        resume_or_start(session)
     task = asyncio.create_task(run_scheduler()) if get_settings().scheduler_enabled else None
     yield
     if task:

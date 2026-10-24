@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     # Start each call with "1 Kannada · 2 Hindi · 3 English"; no key keeps the registered language.
     language_menu: bool = True
 
+    # "demo": a ×DEMO_SPEED scenario that resets on every start (stage).
+    # "pilot": real time, today's real forecast, rounds placed automatically, resumes after restarts.
+    run_mode: str = "demo"
+    pilot_round_times: str = "11:00,15:00"   # round 1, round 2 (IST)
+    pilot_calls_until: str = "18:00"         # no automatic rounds after this
+
     demo_speed: int = 60
     max_attempts: int = 2
     ring_timeout_s: int = 15

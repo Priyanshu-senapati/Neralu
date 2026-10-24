@@ -2,6 +2,8 @@
 
 The system never calls 108. Only a human records "called 108" as a resolution.
 """
+import logging
+
 from sqlalchemy import update
 from sqlmodel import Session, select
 
@@ -175,7 +177,13 @@ def sync_tick(session: Session) -> None:
     from app.sim_caller import step_simulation
 
     from app import browser_phone
+    from app.pilot import pilot_tick
 
+    try:
+        pilot_tick(session)  # pilot mode only: new day, today's forecast, scheduled rounds
+    except Exception:
+        session.rollback()
+        logging.getLogger(__name__).exception("Pilot schedule step failed; calls and escalation continue")
     dispatch_due_calls(session)
     if get_settings().telephony_mode == "browser":
         browser_phone.tick(session)  # ring timeout and idle hang-up for the browser phone

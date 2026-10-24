@@ -118,9 +118,27 @@ def _twilio(client: httpx.Client) -> list[Check]:
     return out
 
 
+def _pilot() -> Check:
+    from app.pilot import has_todays_forecast, next_round, started_rounds
+    from app.db import engine
+    from app.state import state
+    from sqlmodel import Session
+
+    if not has_todays_forecast():
+        return Check("pilot", "Pilot schedule", False,
+                     "today's forecast has not loaded: no automatic calls until it does (retries every 15 min)")
+    with Session(engine) as session:
+        nxt = next_round(state.clock.scenario_now(), started_rounds(session))
+    return Check("pilot", "Pilot schedule", True,
+                 f"today's forecast loaded · next automatic round {nxt.strftime('%H:%M')}" if nxt
+                 else "today's forecast loaded · no more automatic rounds today")
+
+
 def run_checks() -> list[dict]:
     s = get_settings()
     checks = [Check("server", "Server", True, "running"), _scheduler()]
+    if s.run_mode == "pilot":
+        checks.append(_pilot())
     if s.telephony_mode == "browser":
         checks.append(Check("phone", "Phone line", True, "browser phone (no telecom): open /phone", warn=True))
     else:

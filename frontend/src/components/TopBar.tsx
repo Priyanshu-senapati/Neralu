@@ -5,6 +5,33 @@ import type { StreamStatus } from '../useEventStream'
 import { setTheme, useTheme } from '../theme'
 import { Wordmark } from './Brand'
 
+/** Demo or pilot, said plainly: how time runs and when calls happen. */
+function ModeBadge({ summary }: { summary: Summary }) {
+  const p = summary.pilot
+  if (summary.run_mode === 'pilot' && p) {
+    const rounds = p.round_times.join(' and ')
+    const next = !p.forecast_loaded
+      ? "waiting for today's forecast"
+      : p.next_round ? `next ${p.next_round}` : 'no more rounds today'
+    return (
+      <span
+        className="hidden rounded-[3px] border border-line-strong px-2 py-0.5 text-xs text-muted md:inline"
+        title={`Pilot mode: real time. Rounds start by themselves at ${rounds} on today's real forecast; no automatic calls after ${p.calls_until}.`}
+      >
+        Pilot · real time · rounds {rounds} · {next}
+      </span>
+    )
+  }
+  return (
+    <span
+      className="hidden rounded-[3px] border border-line-strong px-2 py-0.5 text-xs text-muted md:inline"
+      title="Timers run faster than real time so a whole day fits in the demo"
+    >
+      Demo · time ×{summary.demo_speed} · {summary.max_attempts} call attempts (production 3)
+    </span>
+  )
+}
+
 /** The console's identity bar: brand, where we are, what time it is in the scenario, and honesty. */
 export function TopBar({ summary, now, stream }: { summary: Summary; now: Date | null; stream: StreamStatus }) {
   const live = stream === 'live'
@@ -21,12 +48,7 @@ export function TopBar({ summary, now, stream }: { summary: Summary; now: Date |
         </span>
       </div>
       <div className="flex items-center gap-5 text-sm">
-        <span
-          className="hidden rounded-[3px] border border-line-strong px-2 py-0.5 text-xs text-muted md:inline"
-          title="Timers run faster than real time so a whole day fits in the demo"
-        >
-          Demo · time ×{summary.demo_speed} · {summary.max_attempts} call attempts (production 3)
-        </span>
+        <ModeBadge summary={summary} />
         <span className="flex items-baseline gap-2 leading-none">
           <span className="text-xs text-muted">{now ? fmtDay(now) : '—'}</span>
           <span className="num text-lg font-medium">{now ? fmtTime(now.toISOString()) : '—'}</span>

@@ -119,6 +119,7 @@ Twilio trial accounts also need **India** ticked under Voice → Settings → Ge
 ```
 powershell -ExecutionPolicy Bypass -File scripts\stage.ps1            # real calls: server + ngrok
 powershell -ExecutionPolicy Bypass -File scripts\stage.ps1 -Browser   # no telecom: calls ring /phone
+powershell -ExecutionPolicy Bypass -File scripts\stage.ps1 -Pilot     # pilot mode: a real day, rounds start by themselves
 powershell -ExecutionPolicy Bypass -File scripts\stage-stop.ps1       # stop everything
 ```
 

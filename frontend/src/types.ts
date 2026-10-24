@@ -24,6 +24,15 @@ export interface Summary {
   weather: Weather
   round_no: number | null
   telephony_mode?: 'twilio' | 'browser'
+  run_mode?: 'demo' | 'pilot'
+  /** present in pilot mode: the real-time daily schedule */
+  pilot?: {
+    day: string | null
+    round_times: string[]
+    calls_until: string
+    next_round: string | null
+    forecast_loaded: boolean
+  } | null
   counts: {
     registered: number
     due_today: number

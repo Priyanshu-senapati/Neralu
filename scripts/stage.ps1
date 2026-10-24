@@ -2,11 +2,12 @@
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\stage.ps1            real phone calls (Twilio + ngrok)
 #   powershell -ExecutionPolicy Bypass -File scripts\stage.ps1 -Browser   no telecom: calls ring the /phone page
+#   add -Pilot to run a real day: real time, rounds start by themselves (PILOT_ROUND_TIMES in backend\.env)
 #   add -SkipBuild to reuse the last website build (faster restarts)
 #
 # The server and ngrok open in their own windows, so they keep running if this one closes.
 # Stop everything with scripts\stage-stop.ps1.
-param([switch]$Browser, [switch]$SkipBuild)
+param([switch]$Browser, [switch]$SkipBuild, [switch]$Pilot)
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $root
@@ -47,6 +48,7 @@ $useNgrok = (-not $Browser) -and $publicUrl -match '^https://[^<]+$'
 
 Step "Starting the server (own window: 'Neralu server')"
 $modeLine = if ($Browser) { "`$env:TELEPHONY_MODE='browser'; " } else { "" }
+if ($Pilot) { $modeLine += "`$env:RUN_MODE='pilot'; " }
 $serverCmd = "`$host.UI.RawUI.WindowTitle='Neralu server'; $modeLine Set-Location '$root\backend'; & '$py' -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-graceful-shutdown 2"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $serverCmd -WindowStyle Minimized
 

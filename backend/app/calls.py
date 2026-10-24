@@ -29,8 +29,9 @@ def _hhmm(real_ts) -> str:
     return state.clock.to_scenario(real_ts).strftime("%H:%M")
 
 
-def start_round(session: Session, round_no: int) -> int:
-    """Create check-ins for every elder due a call this round. Returns how many were created."""
+def start_round(session: Session, round_no: int, *, auto: bool = False) -> int:
+    """Create check-ins for every elder due a call this round. Returns how many were created.
+    `auto`: started by pilot mode's schedule rather than by an officer."""
     state.round_no = round_no
     already = {c.elder_id for c in session.exec(select(CheckIn).where(
         CheckIn.run_id == current_run_id(), CheckIn.round_no == round_no))}
@@ -49,10 +50,10 @@ def start_round(session: Session, round_no: int) -> int:
                             scheduled_for_real=now, is_simulated=e.is_simulated))
         created += 1
     log_event(session, "round_started",
-              f"Round {round_no} started · {created} calls" +
+              f"Round {round_no} started{' automatically (pilot schedule)' if auto else ''} · {created} calls" +
               (f" · {caregiver} on caregiver route" if caregiver else ""),
-              actor="officer", data={"round_no": round_no, "created": created,
-                                     "caregiver_route": caregiver})
+              actor="system" if auto else "officer",
+              data={"round_no": round_no, "created": created, "caregiver_route": caregiver, "auto": auto})
     session.commit()
     return created
 

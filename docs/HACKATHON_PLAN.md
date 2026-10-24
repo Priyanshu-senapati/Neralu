@@ -75,13 +75,17 @@ the line still stands on its own.
 
 ### Round 2 (overnight, 8:30 PM → 4:00 AM freeze), in this order
 
-**R2-1 · Pilot mode: Neralu runs a real day by itself** · feasibility (biggest gap) · 2 h
+**R2-1 · Pilot mode: Neralu runs a real day by itself** · feasibility (biggest gap) · 2 h · **done**
 - A switch from "demo run" to **pilot mode**: real clock (no ×60), today's real forecast fetched each
   morning, calls scheduled automatically at 11:00 and 15:00 for everyone over their threshold,
   data kept across restarts (no reset).
 - *Why it matters:* answers "does it work outside the demo?" with "it is running right now."
 - *Done when:* with pilot mode on, the scheduler places the day's calls without anyone pressing a button.
 - *Risk:* low; it reuses the same rounds and rules. Demo mode stays the default for the stage.
+- *Built:* `RUN_MODE=pilot` (or `scripts\stage.ps1 -Pilot`). Automatic rounds only on today's real
+  forecast (retried every 15 min), none after 18:00, a late start runs only the latest due round,
+  a restart resumes the day, each new day carries over registered people. Top bar and status strip
+  show the schedule. Tests: `backend/tests/test_pilot.py`.
 
 **R2-2 · What-if simulator with volunteer workload (the wow moment)** · originality, feasibility · 2.5 h
 - On the console: drag temperature, humidity and night minimum (or load tomorrow's real forecast) and

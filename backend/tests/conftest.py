@@ -21,6 +21,7 @@ os.environ.update({
     "RETRY_GAP_MIN": "15",
     "ACK_TIMEOUT_MIN": "15",
     "LANGUAGE_MENU": "false",
+    "RUN_MODE": "demo",
     "AMBER_RECALL_MIN": "30",
     "VOLUNTEER_DEMO_TOKEN": "priya-demo",
     "STT_PROVIDER": "sarvam",
