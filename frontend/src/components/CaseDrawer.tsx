@@ -187,9 +187,9 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
       <section className="text-sm">
         <h3 className="mb-1 font-semibold">How {first} knows the call is real</h3>
         <p>
-          Every call starts with the family code word{' '}
-          <span className="font-semibold">{d.code_word[0].toUpperCase() + d.code_word.slice(1)}</span>, chosen by{' '}
-          {d.family_name ?? 'their family'}, and says Neralu never asks for money, OTP, Aadhaar or bank details.
+          Every call starts with a code word chosen by {d.family_name ?? 'their family'}, and says Neralu never
+          asks for money, OTP, Aadhaar or bank details. The word is not shown here: it only protects {first} if
+          the household alone knows it.
         </p>
       </section>
 

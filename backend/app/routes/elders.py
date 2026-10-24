@@ -149,5 +149,7 @@ def register(body: RegisterElder, session: Session = Depends(get_session)) -> di
     session.commit()
     session.refresh(e)
     # The family link and the erasure code are shown once, here, to the person who registered; only
-    # their hashes are kept, so nothing can show them again.
-    return {**elder_detail(session, e), "family_token": token, "erasure_code": erasure_code}
+    # their hashes are kept, so nothing can show them again. The code word is echoed back to the family
+    # who just chose it, so they can tell their parent; no other response ever carries it.
+    return {**elder_detail(session, e), "family_token": token, "erasure_code": erasure_code,
+            "code_word": e.code_word}

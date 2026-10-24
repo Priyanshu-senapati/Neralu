@@ -273,7 +273,8 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
                   const ans = call && line.answer ? line.answer(call, detail?.events ?? []) : null
                   const played = phase === 'connected' && (i < currentIdx || (line.answer && ans))
                   const isNow = i === currentIdx && !ans
-                  const caption = line.key === 'code' && detail ? `Your family's code word is: ${cap(detail.code_word)}` : line.caption
+                  // The code word is played on the call but never shown on the console (only the household knows it).
+                  const caption = line.key === 'code' ? "Your family's code word is: (played on the call, not shown here)" : line.caption
                   return (
                     <li key={line.key} className={`grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-2 transition-colors ${isNow ? 'bg-brand-tint -mx-3 px-3' : ''}`}>
                       <span className={`text-[15px] ${isNow ? 'font-semibold' : played || ans ? '' : 'text-muted'}`}>
@@ -326,5 +327,3 @@ function tint(o: string | null) {
 function clock(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
-
-const cap = (w: string) => w[0].toUpperCase() + w.slice(1)

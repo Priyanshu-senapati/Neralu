@@ -109,10 +109,20 @@ def data_source(e: Elder) -> dict[str, str]:
     return {"kind": "family", "label": "Family registration form"}
 
 
+def shown_position(e: Elder) -> tuple[float, float]:
+    """Where a person's dot goes in shared views. Real people (registered or the demo persona) are
+    placed to about 100 m, never their exact point: the exact location goes only to the volunteer
+    who accepted their visit (the Maps link). Simulated residents are fictional and kept as seeded."""
+    if e.is_simulated:
+        return e.lat, e.lng
+    return round(e.lat, 3), round(e.lng, 3)
+
+
 def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
                pending: CheckIn | None = None, resolved: Case | None = None,
                names: dict[int, str] | None = None) -> dict[str, Any]:
     score, breakdown = vulnerability_score(e)
+    lat, lng = shown_position(e)
     return {
         "id": e.id, "name": e.name, "age": e.age, "language": e.language,
         "lives_alone": e.lives_alone, "roof_type": e.roof_type, "risk_score": score,
@@ -120,7 +130,7 @@ def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
         "threshold_c": personal_threshold_c(score, state.weather.night_min_c),
         "caregiver_route": e.cognitive_flag and bool(e.family_phone), "due_calls": due_count(e),
         "has_neighbour": e.neighbour_phone is not None,
-        "lat": e.lat, "lng": e.lng, "is_simulated": e.is_simulated,
+        "lat": lat, "lng": lng, "is_simulated": e.is_simulated,
         "latest": latest_out(latest), "current_call": current_call_out(pending),
         "open_case": case_brief(case, (names or {}).get(case.assignee_id) if case else None),
         "source": data_source(e)["kind"],
@@ -189,8 +199,9 @@ def elder_detail(session: Session, e: Elder, *, reveal_address: bool | None = No
     if reveal_address is None:
         reveal_address = case is not None and case["state"] == "assigned"
     item.update(risk_detail(e))
-    item.update({"address": e.address if reveal_address else None,
-                 "code_word": e.code_word, "family_name": e.family_name})
+    # Never the code word: it only protects the person if the household alone knows it. The call
+    # plays it, and the family sees it once when they choose it (the registration response).
+    item.update({"address": e.address if reveal_address else None, "family_name": e.family_name})
     item["checkins"] = [checkin_out(c) for c in elder_checkins(session, e.id)]
     item["events"] = [event_out(ev) for ev in run_events(session, elder_id=e.id)]
     return item
