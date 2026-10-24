@@ -207,19 +207,25 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
           : `Support needed: ${String(d.reason).toLowerCase()}.`, d.level === 'red' ? 'alert' : undefined)
         break
       case 'tier_skipped':
-        add(e, 'No neighbour on file, so volunteers were asked directly.', 'muted')
+        add(e, d.tier === 'neighbour'
+          ? 'No neighbour on file, so volunteers were asked directly.'
+          : `No ${d.tier === 'asha' ? 'ASHA worker' : 'volunteer'} was available, so the next tier was asked.`, 'muted')
+        break
+      case 'case_declined':
+        add(e, `${e.message.replace(' · ', '. ').replace('now asking', 'Now asking')}.`, 'watch')
         break
       case 'tier_alerted': {
         const onDuty = e.message.match(/(\d+) on duty/)?.[1]
         const who = d.tier === 'asha' ? 'ASHA workers' : d.tier === 'neighbour' ? 'The neighbour' : 'volunteers'
-        const why = e.message.includes('not accepted') ? ' because nobody had accepted yet' : ''
+        const why = e.message.includes('not accepted') ? ' because nobody had accepted yet'
+          : / available| left to ask/.test(e.message) ? ' because no volunteer could go' : ''
         add(e, d.tier === 'neighbour'
           ? 'The neighbour on file was asked to check.'
           : `${onDuty ? `${onDuty} ${who} on duty in Ward 47` : who[0].toUpperCase() + who.slice(1)} were alerted${why}.`)
         break
       }
       case 'tier_overdue':
-        add(e, 'Nobody accepted in time. The ward officer was alerted.', 'alert')
+        add(e, 'Nobody has taken this visit yet. The ward officer was alerted.', 'alert')
         break
       case 'case_accepted':
         add(e, `${e.message.replace(' · waited', ' after waiting')}.`, 'ok')

@@ -18,7 +18,7 @@ EVENT_KINDS = (
     "call_answered", "answer_recorded", "call_ended", "attempt_failed", "retry_scheduled",
     "checkin_classified", "recall_scheduled", "case_opened", "tier_alerted", "tier_skipped",
     "tier_overdue", "case_accepted", "case_resolved", "family_notified", "elder_registered",
-    "elder_deleted", "language_chosen",
+    "elder_deleted", "language_chosen", "case_declined", "volunteer_duty",
 )
 
 
@@ -96,7 +96,9 @@ class Case(SQLModel, table=True):
     opened_real: datetime = Field(default_factory=utcnow)
     resolved_real: datetime | None = None
     sim_accept_at_real: datetime | None = None  # simulated cases only: when a sim volunteer accepts
+    sim_visit_done_real: datetime | None = None  # simulated cases only: when that visit is recorded
     alerted_ids: list[int] = Field(default_factory=list, sa_column=Column(JSON))  # nearest responders alerted
+    declined_ids: list[int] | None = Field(default_factory=list, sa_column=Column(JSON))  # said "Can't go"
 
 
 class Volunteer(SQLModel, table=True):

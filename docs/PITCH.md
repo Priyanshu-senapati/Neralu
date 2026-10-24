@@ -87,6 +87,11 @@ The live call spotlight opens. The judge answers, presses any key after the tria
 **4:00 · The human handoff.** Priya's phone buzzes.
 > **"Priya is a volunteer 400 metres away. She sees why, but not the address, until she accepts."**
 Priya taps **Accept · I'll go**, shows the address, then **Safe, confirmed in person**.
+*Optional, 20 s, before accepting:* Priya taps **Can't go**. The console's activity shows
+"Priya can't go · now asking …, 0.4 km away"; open **Responders** to show who is free and who is on a visit.
+> **"Volunteers have lives. If Priya can't go, the next nearest free person is asked within a second;
+> if nobody can, it climbs to the ASHA worker and then the ward officer. A case is never left alone."**
+Then Priya taps **I can go after all** (the case stays at the bottom of her list) and the demo carries on.
 
 **4:45 · The loop closes.** Console: the spotlight shows every step ticked. Open the profile:
 "What happened to Kamala today", the plain-English record.
@@ -105,7 +110,7 @@ Priya taps **Accept · I'll go**, shows the address, then **Safe, confirmed in p
 | Originality | Personal heat thresholds plus a phone call that ends with a person at the door, adapted for basic phones, Indian languages and scam-wary users. |
 | SDG relevance and impact | SDG 11.5 / 3.d / 13.1. Pilot measure: % of vulnerable residents confirmed safe by noon, time from RED to a person at the door. |
 | Feasibility | Runs today on Twilio and a laptop; needs no app, no smartphone, no new hardware; plugs into ASHA lists, RWAs and family registration. |
-| Execution | Every step you saw is live; 163 automated tests; one command starts it and checks itself. |
+| Execution | Every step you saw is live; 172 automated tests; one command starts it and checks itself. |
 | Responsible technology | Rules not AI; unclear means follow-up; consent; addresses hidden; never auto-calls 108; right to erasure; everything simulated labelled. |
 | Presentation | "Heat warnings tell a city what's coming. Neralu checks who's safe." |
 

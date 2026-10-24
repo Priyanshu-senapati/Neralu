@@ -13,6 +13,7 @@ from app.events import log_event
 from app.geo import km
 from app.models import RESOLUTIONS, Case, Elder, Volunteer
 from app.notify import notify_family, notify_neighbour
+from app.responders import on_duty_count, ranked
 from app.state import state
 
 NEXT_TIER = {"neighbour": "volunteer", "volunteer": "asha"}
@@ -45,20 +46,33 @@ def _alert_tier(session: Session, case: Case, elder: Elder, *, how: str = "") ->
         notify_neighbour(session, elder, f"Please check on {elder.name} now.", case_id=case.id)
         msg = "Neighbour alerted"
     else:
-        role = "asha" if case.tier == "asha" else "volunteer"
-        on_duty = list(session.exec(select(Volunteer).where(
-            Volunteer.run_id == current_run_id(), Volunteer.role == role, Volunteer.on_duty)))
-        ranked = sorted(on_duty, key=lambda v: (km(v.lat, v.lng, elder.lat, elder.lng), v.id))
-        nearest = ranked[:max(1, get_settings().alert_nearest)]
+        role = _role(case)
+        available = ranked(session, role, elder, exclude=set(case.declined_ids or []))
+        if not available:
+            # Never leave a case with nobody asked: everyone is off duty or said they can't go.
+            label = TIER_LABEL[case.tier].lower()
+            log_event(session, "tier_skipped", f"No {label} available → skipped", actor="system",
+                      elder_id=elder.id, case_id=case.id, data={"tier": case.tier},
+                      simulated=elder.is_simulated)
+            case.alerted_ids = []
+            _advance(session, case, elder, why=f"no {label} available")
+            return
+        nearest = available[:max(1, get_settings().alert_nearest)]
         case.alerted_ids = [v.id for v in nearest]
-        if nearest and len(nearest) < len(on_duty):
+        on_duty = on_duty_count(session, role)
+        if len(nearest) < on_duty:
             far = km(nearest[-1].lat, nearest[-1].lng, elder.lat, elder.lng)
-            msg = (f"{TIER_LABEL[case.tier]} tier alerted · {len(nearest)} nearest of {len(on_duty)} on duty"
+            msg = (f"{TIER_LABEL[case.tier]} tier alerted · {len(nearest)} nearest of {on_duty} on duty"
                    f" (within {far:g} km)")
         else:
-            msg = f"{TIER_LABEL[case.tier]} tier alerted · {len(on_duty)} on duty"
+            msg = f"{TIER_LABEL[case.tier]} tier alerted · {on_duty} on duty"
     log_event(session, "tier_alerted", msg + how, actor="system", elder_id=elder.id,
-              case_id=case.id, data={"tier": case.tier}, simulated=elder.is_simulated)
+              case_id=case.id, data={"tier": case.tier, "alerted_ids": list(case.alerted_ids or [])},
+              simulated=elder.is_simulated)
+
+
+def _role(case: Case) -> str:
+    return "asha" if case.tier == "asha" else "volunteer"
 
 
 def open_case(session: Session, elder_id: int, level: str, rule_id: str, reason: str) -> Case:
@@ -124,6 +138,71 @@ def accept_case(session: Session, case_id: int, volunteer_id: int) -> Case:
               data={"volunteer_id": vol.id, "volunteer": vol.name, "waited_min": round(waited, 1)},
               simulated=vol.is_simulated)
     return case
+
+
+def _replace(session: Session, case: Case, elder: Elder, vol: Volunteer) -> str:
+    """Take `vol` off this case's alert list and ask the next nearest available responder instead.
+    Returns what happened, for the event message. If nobody is left asked, the case moves up a tier."""
+    alerted = [i for i in (case.alerted_ids or []) if i != vol.id]
+    if len(alerted) == len(case.alerted_ids or []):
+        return ""  # they were not among those asked; nothing to hand on
+    nxt = ranked(session, _role(case), elder, exclude=set(case.declined_ids or []) | set(alerted) | {vol.id})
+    if nxt:
+        case.alerted_ids = alerted + [nxt[0].id]
+        d = km(nxt[0].lat, nxt[0].lng, elder.lat, elder.lng)
+        return f" · now asking {nxt[0].name}, {d:g} km away"
+    case.alerted_ids = alerted
+    if alerted:
+        return f" · {len(alerted)} still asked"
+    _advance(session, case, elder, why=f"no {TIER_LABEL[case.tier].lower()} left to ask")
+    return " · nobody else available, moved up a tier"
+
+
+def decline_case(session: Session, case_id: int, volunteer_id: int) -> Case:
+    """'Can't go': recorded, and the case is offered at once to the next nearest available responder."""
+    case = session.get(Case, case_id)
+    if case is None or case.state != "open":
+        raise NotAllowed()
+    if volunteer_id in (case.declined_ids or []):
+        return case
+    vol = session.get(Volunteer, volunteer_id)
+    elder = session.get(Elder, case.elder_id)
+    case.declined_ids = [*(case.declined_ids or []), vol.id]
+    what = _replace(session, case, elder, vol)
+    log_event(session, "case_declined", f"{vol.name} can't go{what}", actor="volunteer",
+              elder_id=elder.id, case_id=case.id,
+              data={"volunteer_id": vol.id, "volunteer": vol.name,
+                    "alerted_ids": list(case.alerted_ids or [])},
+              simulated=vol.is_simulated)
+    return case
+
+
+def set_duty(session: Session, vol: Volunteer, on_duty: bool) -> None:
+    """On or off duty. Going off duty hands this responder's pending alerts to the next nearest;
+    a case they already accepted stays theirs until they record what they found."""
+    if vol.on_duty == on_duty:
+        return
+    holds = session.exec(select(Case).where(
+        Case.run_id == current_run_id(), Case.state == "assigned", Case.assignee_id == vol.id)).first()
+    if not on_duty and holds:
+        raise NotAllowed()
+    vol.on_duty = on_duty
+    session.add(vol)
+    session.flush()
+    handed = 0
+    if not on_duty:
+        open_cases = list(session.exec(select(Case).where(
+            Case.run_id == current_run_id(), Case.state == "open")))
+        for case in open_cases:
+            if vol.id in (case.alerted_ids or []):
+                _replace(session, case, session.get(Elder, case.elder_id), vol)
+                handed += 1
+    plural = "s" if handed != 1 else ""
+    log_event(session, "volunteer_duty",
+              f"{vol.name} is {'on' if on_duty else 'off'} duty"
+              + (f" · {handed} pending alert{plural} handed to the next nearest" if handed else ""),
+              actor="volunteer", data={"volunteer_id": vol.id, "on_duty": on_duty},
+              simulated=vol.is_simulated)
 
 
 def resolve_case(session: Session, case_id: int, volunteer_id: int, resolution: str,

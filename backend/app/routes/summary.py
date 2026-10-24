@@ -34,7 +34,7 @@ def get_events(limit: int = 40, session: Session = Depends(get_session)) -> list
 
     rows = session.exec(select(Event).where(
         Event.run_id == current_run_id(),
-        (Event.simulated == False) | Event.kind.in_(("case_opened", "case_resolved", "tier_overdue")),  # noqa: E712
+        (Event.simulated == False) | Event.kind.in_(("case_opened", "case_resolved", "tier_overdue", "case_declined", "volunteer_duty")),  # noqa: E712
     ).order_by(Event.id.desc()).limit(min(limit, 200))).all()
     return [event_out(e) for e in rows]
 

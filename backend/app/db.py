@@ -24,16 +24,21 @@ _run_id: str | None = None
 
 
 def create_tables() -> None:
-    """Create tables, rebuilding them if an older schema is on disk (e.g. a neralu.db from before a
-    column was added). Safe because every start begins a fresh demo run; old runs are never read."""
-    from sqlalchemy import inspect
+    """Create tables, adding any column a newer version introduced (pilot days keep their data).
+    If a column cannot be added in place, the tables are rebuilt as a last resort."""
+    from sqlalchemy import inspect, text
 
     existing = inspect(engine)
-    stale = [t.name for t in SQLModel.metadata.sorted_tables
-             if existing.has_table(t.name)
-             and {c.name for c in t.columns} - {c["name"] for c in existing.get_columns(t.name)}]
-    if stale:
-        log.warning("Database schema is out of date (%s); rebuilding tables", ", ".join(stale))
+    missing = [(t, c) for t in SQLModel.metadata.sorted_tables if existing.has_table(t.name)
+               for c in t.columns if c.name not in {x["name"] for x in existing.get_columns(t.name)}]
+    try:
+        with engine.begin() as conn:
+            for t, c in missing:
+                log.warning("Adding column %s.%s", t.name, c.name)
+                conn.execute(text(f'ALTER TABLE "{t.name}" ADD COLUMN "{c.name}" '
+                                  f'{c.type.compile(dialect=engine.dialect)}'))
+    except Exception:
+        log.exception("Could not add columns in place; rebuilding tables")
         SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
 

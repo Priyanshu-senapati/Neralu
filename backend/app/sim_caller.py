@@ -1,8 +1,9 @@
 """SimulatedCaller: resolves check-ins for the ~400 seeded residents (all events labelled simulated).
 
 Their answers go through the same rules and escalation as a real call. Simulated RED/support
-cases are accepted by a simulated volunteer after 3–12 scenario minutes — never the demo
-persona's case, which only a real person can accept.
+cases are accepted by a simulated volunteer after 3–12 scenario minutes (a free one if there is one)
+and the visit is recorded 20–45 minutes later, which frees them. Never the demo persona's case,
+which only a real person can accept.
 """
 import random
 
@@ -10,12 +11,14 @@ from sqlmodel import Session, select
 
 from app.calls import handle_call_ended
 from app.db import current_run_id
-from app.escalation import accept_case
+from app.escalation import accept_case, resolve_case
 from app.models import Case, CheckIn, Elder, Volunteer
+from app.responders import load
 from app.state import state
 
 RESOLVE_WINDOW_MIN = (1.0, 40.0)
 SIM_ACCEPT_MIN = (3.0, 12.0)
+SIM_VISIT_MIN = (20.0, 45.0)  # a simulated volunteer's visit, door to recorded outcome
 
 FINE = {"water": "yes", "symptoms": "no", "room_hot": "no", "fan_working": "yes",
         "orientation": "correct", "self_report": "ok"}
@@ -87,9 +90,31 @@ def _auto_accept(session: Session, now) -> None:
             continue
         role = "asha" if case.tier == "asha" else "volunteer"
         pool = list(session.exec(select(Volunteer).where(
-            Volunteer.run_id == current_run_id(), Volunteer.role == role,
+            Volunteer.run_id == current_run_id(), Volunteer.role == role, Volunteer.on_duty == True,  # noqa: E712
             Volunteer.is_simulated == True)))  # noqa: E712
-        accept_case(session, case.id, rng.choice(pool).id)
+        pool = [v for v in pool if v.id not in (case.declined_ids or [])]
+        if not pool:
+            continue  # nobody simulated left to go: the case waits for a person or the next tier
+        # Whoever is free goes, those asked first; if everyone is on a visit, the least busy takes it.
+        busy = load(session)
+        asked = [v for v in pool if v.id in (case.alerted_ids or [])]
+        free = [v for v in asked if not busy[v.id]] or [v for v in pool if not busy[v.id]]
+        least = min(busy[v.id] for v in pool)
+        vol = rng.choice(free or [v for v in pool if busy[v.id] == least])
+        accept_case(session, case.id, vol.id)
+        case.sim_visit_done_real = now + state.clock.real_delta(rng.uniform(*SIM_VISIT_MIN))
+
+
+def _finish_visits(session: Session, now) -> None:
+    """Simulated volunteers record what they found when their visit is done, which frees them."""
+    cases = list(session.exec(select(Case).where(
+        Case.run_id == current_run_id(), Case.state == "assigned",
+        Case.sim_visit_done_real != None, Case.sim_visit_done_real <= now)))  # noqa: E711
+    for case in cases:
+        if not session.get(Volunteer, case.assignee_id).is_simulated:
+            continue
+        resolve_case(session, case.id, case.assignee_id,
+                     "support_delivered" if case.level == "support" else "safe_in_person", None)
 
 
 def step_simulation(session: Session) -> None:
@@ -97,5 +122,7 @@ def step_simulation(session: Session) -> None:
     _start_due(session, now)
     session.flush()
     _resolve_due(session, now)
+    session.flush()
+    _finish_visits(session, now)
     session.flush()
     _auto_accept(session, now)

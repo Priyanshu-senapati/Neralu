@@ -228,9 +228,31 @@ export interface CaseDetail {
   distance_km?: number
   /** this volunteer is one of the nearest alerted first */
   alerted_you?: boolean
+  /** this volunteer said "Can't go"; they can still accept */
+  declined_by_you?: boolean
+}
+
+export interface ResponderCase {
+  case_id: number
+  elder_id: number
+  elder: string | null
+  level: 'red' | 'support'
+}
+
+/** GET /api/responders: each volunteer / ASHA worker, duty, and the cases they hold or are asked to. */
+export interface Responder {
+  id: number
+  name: string
+  role: 'volunteer' | 'asha'
+  on_duty: boolean
+  is_simulated: boolean
+  load: number
+  holding: ResponderCase[]
+  asked: ResponderCase[]
+  declined: ResponderCase[]
 }
 
 export interface VolunteerMe {
-  volunteer: { id: number; name: string; role: 'volunteer' | 'asha' }
+  volunteer: { id: number; name: string; role: 'volunteer' | 'asha'; on_duty: boolean }
   cases: CaseDetail[]
 }

@@ -79,5 +79,5 @@ const EVENT_KINDS = [
   'run_reset', 'sim_weather_set', 'round_started', 'call_placed', 'call_ringing', 'call_answered',
   'answer_recorded', 'call_ended', 'attempt_failed', 'retry_scheduled', 'checkin_classified',
   'recall_scheduled', 'case_opened', 'tier_alerted', 'tier_skipped', 'tier_overdue',
-  'case_accepted', 'case_resolved', 'family_notified', 'elder_registered',
+  'case_accepted', 'case_resolved', 'family_notified', 'elder_registered', 'case_declined', 'volunteer_duty',
 ]

@@ -41,16 +41,18 @@ export default function Volunteer() {
   const [me, setMe] = useState<VolunteerMe | null>(null)
   const [summary, setSummary] = useState<Summary | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set())
   const [notice, setNotice] = useState<string | null>(null)
-  const seen = useRef<Set<number> | null>(null)
+  // Open cases this phone already knew about, and whether it was asked: a new case, or one handed
+  // to this person after someone else said "Can't go", buzzes the phone.
+  const seen = useRef<Map<number, boolean> | null>(null)
 
   const load = useCallback(async () => {
     try {
       const [m, s] = await Promise.all([api.volunteerMe(token), api.summary()])
-      const ids = new Set(m.cases.map((c) => c.id))
-      if (seen.current && m.cases.some((c) => !seen.current!.has(c.id) && c.state === 'open')) alertNewCase()
-      seen.current = ids
+      const open = m.cases.filter((c) => c.state === 'open')
+      const before = seen.current
+      if (before && open.some((c) => !before.has(c.id) || (c.alerted_you && !before.get(c.id)))) alertNewCase()
+      seen.current = new Map(open.map((c) => [c.id, !!c.alerted_you]))
       setMe(m)
       setSummary(s)
       setError(null)
@@ -61,7 +63,7 @@ export default function Volunteer() {
 
   const onEvent = useCallback(
     (e: { kind: string }) => {
-      if (['case_opened', 'tier_alerted', 'case_accepted', 'case_resolved', 'tier_overdue', 'run_reset'].includes(e.kind)) load()
+      if (['case_opened', 'tier_alerted', 'case_accepted', 'case_resolved', 'tier_overdue', 'run_reset', 'case_declined', 'volunteer_duty'].includes(e.kind)) load()
     },
     [load],
   )
@@ -71,6 +73,20 @@ export default function Volunteer() {
   }, [onDuty, load])
 
   const now = useScenarioNow(summary?.scenario_now, summary?.demo_speed ?? 1)
+
+  const goOffDuty = async () => {
+    try {
+      await api.duty(token, false)
+      seen.current = null
+      setMe(null)
+      setNotice(null)
+      setOnDuty(false)
+    } catch (e) {
+      setNotice(e instanceof ApiError && e.status === 409
+        ? 'Record what you found on your current visit before going off duty.'
+        : 'Could not go off duty. Check your connection and try again.')
+    }
+  }
 
   if (!token) return <Shell><p className="text-sm">Open the link from your invite. This page needs a volunteer token.</p></Shell>
 
@@ -96,6 +112,7 @@ export default function Volunteer() {
           onClick={() => {
             audioCtx = new AudioContext()
             navigator.vibrate?.(50)
+            api.duty(token, true).catch(() => undefined) // a bad link shows its own error once loaded
             setOnDuty(true)
           }}
           className="press mt-8 w-full rounded-[5px] bg-brand py-4 text-base font-semibold text-brand-ink"
@@ -106,11 +123,11 @@ export default function Volunteer() {
     )
   }
 
-  const cases = (me?.cases ?? []).filter((c) => c.mine || !dismissed.has(c.id))
+  const cases = me?.cases ?? []
   const mine = cases.find((c) => c.mine)
 
   return (
-    <Shell name={me?.volunteer.name}>
+    <Shell name={me?.volunteer.name} onOffDuty={mine ? undefined : goOffDuty}>
       {error && <p className="mb-3 rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
       {notice && (
         <p key={notice} className="card-enter mb-3 flex items-center gap-2 rounded-ui border border-line bg-surface px-3 py-2 text-sm">
@@ -119,7 +136,7 @@ export default function Volunteer() {
         </p>
       )}
       {!me && !error && <div className="h-40 animate-pulse rounded-ui bg-line" />}
-      {me && cases.length === 0 && (
+      {me && cases.every((c) => c.declined_by_you) && (
         <p className="py-16 text-center text-sm text-muted">On duty · no cases near you right now</p>
       )}
       {/* Screen readers announce a new or changed case, not just the vibration. */}
@@ -127,7 +144,15 @@ export default function Volunteer() {
         {mine ? (
           <AssignedCase c={mine} token={token} now={now} onDone={(msg) => { setNotice(msg); load() }} />
         ) : (
-          cases.map((c) => (
+          cases.map((c) => c.declined_by_you ? (
+            <DeclinedCase
+              key={c.id}
+              c={c}
+              token={token}
+              onAccepted={() => { setNotice(null); load() }}
+              onTaken={() => { setNotice('Someone else accepted this case'); load() }}
+            />
+          ) : (
             <OpenCase
               key={c.id}
               c={c}
@@ -135,7 +160,10 @@ export default function Volunteer() {
               now={now}
               onAccepted={() => { setNotice(null); load() }}
               onTaken={() => { setNotice('Someone else accepted this case'); load() }}
-              onDismiss={() => setDismissed(new Set([...dismissed, c.id]))}
+              onDeclined={() => {
+                setNotice(`Thanks for saying so. The next nearest ${me?.volunteer.role === 'asha' ? 'ASHA worker' : 'volunteer'} is being asked instead.`)
+                load()
+              }}
             />
           ))
         )}
@@ -144,7 +172,7 @@ export default function Volunteer() {
   )
 }
 
-function Shell({ children, name }: { children: React.ReactNode; name?: string }) {
+function Shell({ children, name, onOffDuty }: { children: React.ReactNode; name?: string; onOffDuty?: () => void }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-paper">
       <header className="flex items-center justify-between border-b border-line bg-surface px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-ink">
@@ -154,6 +182,11 @@ function Shell({ children, name }: { children: React.ReactNode; name?: string })
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden="true" />
               {name} · on duty
+              {onOffDuty && (
+                <button onClick={onOffDuty} className="press ml-1 rounded-ui border border-line px-2 py-0.5 text-xs text-ink">
+                  Go off duty
+                </button>
+              )}
             </span>
           ) : (
             'Volunteer · Ward 47'
@@ -220,11 +253,12 @@ interface OpenProps {
   now: Date | null
   onAccepted: () => void
   onTaken: () => void
-  onDismiss: () => void
+  onDeclined: () => void
 }
 
-function OpenCase({ c, token, now, onAccepted, onTaken, onDismiss }: OpenProps) {
+function OpenCase({ c, token, now, onAccepted, onTaken, onDeclined }: OpenProps) {
   const [busy, setBusy] = useState(false)
+  const [declining, setDeclining] = useState(false)
   const [failed, setFailed] = useState(false)
   const first = c.elder.name.split(' ')[0]
   const accept = async () => {
@@ -240,6 +274,19 @@ function OpenCase({ c, token, now, onAccepted, onTaken, onDismiss }: OpenProps) 
       setBusy(false)
     }
   }
+  const decline = async () => {
+    setDeclining(true)
+    setFailed(false)
+    try {
+      await api.decline(c.id, token)
+      onDeclined()
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) onTaken()
+      else setFailed(true)
+    } finally {
+      setDeclining(false)
+    }
+  }
   return (
     <article className="card-enter rounded-ui border border-line bg-surface p-4">
       <p className="mb-2 text-sm font-semibold">
@@ -253,15 +300,45 @@ function OpenCase({ c, token, now, onAccepted, onTaken, onDismiss }: OpenProps) 
       <p className="mt-1 text-xs text-muted">
         The address appears after you accept · {TIER_LABEL[c.tier]} tier{c.overdue ? ' · ward officer alerted' : ''}
       </p>
-      {failed && <p className="mt-2 text-sm text-alert">Could not accept. Check your connection and try again.</p>}
+      {failed && <p className="mt-2 text-sm text-alert">That did not go through. Check your connection and try again.</p>}
       <div className="mt-4 grid grid-cols-[2fr_1fr] gap-2">
         <button onClick={accept} disabled={busy} className="press rounded-ui bg-ink py-3.5 text-base font-semibold text-paper disabled:opacity-60">
           {busy ? 'Accepting…' : `Accept · I'll go`}
         </button>
-        <button onClick={onDismiss} className="press rounded-ui border border-line py-3.5 text-base">
-          Can't go
+        <button onClick={decline} disabled={busy || declining} className="press rounded-ui border border-line py-3.5 text-base disabled:opacity-60">
+          {declining ? 'Passing on…' : "Can't go"}
         </button>
       </div>
+    </article>
+  )
+}
+
+/** A case this person said they can't go to: kept small at the bottom, in case they can after all. */
+function DeclinedCase({ c, token, onAccepted, onTaken }: { c: CaseDetail; token: string; onAccepted: () => void; onTaken: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const accept = async () => {
+    setBusy(true)
+    setFailed(false)
+    try {
+      await api.accept(c.id, token)
+      onAccepted()
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) onTaken()
+      else setFailed(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <article className="flex items-center justify-between gap-3 rounded-ui border border-line bg-surface px-3 py-2.5 text-sm">
+      <span className="text-muted">
+        You said you can't go to {c.elder.name.split(' ')[0]}. Others are being asked.
+        {failed && <span className="block text-alert">That did not go through. Try again.</span>}
+      </span>
+      <button onClick={accept} disabled={busy} className="press shrink-0 rounded-ui border border-line px-2.5 py-1.5 text-ink disabled:opacity-60">
+        {busy ? 'Accepting…' : 'I can go after all'}
+      </button>
     </article>
   )
 }

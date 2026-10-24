@@ -33,7 +33,15 @@ function ModeBadge({ summary }: { summary: Summary }) {
 }
 
 /** The console's identity bar: brand, where we are, what time it is in the scenario, and honesty. */
-export function TopBar({ summary, now, stream, onPlan }: { summary: Summary; now: Date | null; stream: StreamStatus; onPlan: () => void }) {
+interface Props {
+  summary: Summary
+  now: Date | null
+  stream: StreamStatus
+  onPlan: () => void
+  onResponders: () => void
+}
+
+export function TopBar({ summary, now, stream, onPlan, onResponders }: Props) {
   const live = stream === 'live'
   const theme = useTheme()
   return (
@@ -59,6 +67,13 @@ export function TopBar({ summary, now, stream, onPlan }: { summary: Summary; now
           title="Turn a heat forecast into the ward's work plan: calls, cases and responders needed"
         >
           Plan ahead
+        </button>
+        <button
+          onClick={onResponders}
+          className="press rounded-[3px] border border-line-strong px-2 py-0.5 text-xs hover:bg-paper"
+          title="Volunteers and ASHA workers: who is on duty, on a visit, or being asked"
+        >
+          Responders
         </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

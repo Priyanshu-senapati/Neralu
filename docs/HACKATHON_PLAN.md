@@ -101,12 +101,20 @@ the line still stands on its own.
   outcomes are the simulated answer mix through the same rules, labelled simulated. `GET /api/whatif`,
   `backend/app/whatif.py`, tests in `backend/tests/test_whatif.py`.
 
-**R2-3 · Volunteer availability and live reassignment** · execution, feasibility · 2 h
+**R2-3 · Volunteer availability and live reassignment** · execution, feasibility · 2 h · **done**
 - Volunteers toggle **available / not available**. "Can't go" now tells the system: the case is offered
   at once to the next nearest available volunteer, and the console shows who holds each case and each
   volunteer's current load.
 - *Demo moment:* Priya taps "Can't go", and within seconds Ravi's phone buzzes with the case.
 - *Done when:* tests cover decline → next nearest, and no case is ever left with nobody alerted.
+- *Built:* "Go on duty" / "Go off duty" and "Can't go" now reach the server. A decline goes at once to
+  the next nearest free responder ("Priya can't go · now asking Ravi K., 0.5 km away"); going off duty
+  hands pending alerts on; if nobody is left at a tier the case moves up, then to the ward officer.
+  The declined case stays at the bottom of the volunteer's list with **I can go after all**.
+  Free responders are asked before busy ones. Console top bar → **Responders**: who is on duty, on a
+  visit, being asked, or said can't go. Simulated volunteers now finish visits (20–45 min) instead of
+  holding cases forever. Tests: `backend/tests/test_reassign.py` (including a randomized check that
+  an open case always has someone asked or is with the officer).
 
 **R2-4 · Impact panel: broadcast vs Neralu** · SDG impact, presentation · 1.5 h
 - Same heatwave, two columns. Broadcast: "401 alerted · 0 confirmed safe · unknown who needs help".

@@ -64,7 +64,7 @@ def test_unknown_event_kind_rejected(session):
         log_event(session, "called_ambulance", "x", actor="system")
 
 
-def test_create_tables_rebuilds_an_out_of_date_schema(session):
+def test_create_tables_adds_new_columns_and_keeps_the_data(session):
     from sqlalchemy import inspect, text
 
     from app.db import create_tables, engine
@@ -72,6 +72,9 @@ def test_create_tables_rebuilds_an_out_of_date_schema(session):
     with engine.begin() as conn:  # simulate a neralu.db from before a column existed
         conn.execute(text("DROP TABLE checkin"))
         conn.execute(text("CREATE TABLE checkin (id INTEGER PRIMARY KEY, run_id VARCHAR)"))
+        conn.execute(text("INSERT INTO checkin (id, run_id) VALUES (7, 'pilot-day')"))
     create_tables()
     cols = {c["name"] for c in inspect(engine).get_columns("checkin")}
     assert {"placed_real", "ring_timed_out", "answers"} <= cols
+    with engine.connect() as conn:  # a pilot day's records survive an upgrade
+        assert conn.execute(text("SELECT run_id FROM checkin WHERE id = 7")).scalar() == "pilot-day"

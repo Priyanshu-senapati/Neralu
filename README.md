@@ -213,6 +213,14 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Responders: availability and live reassignment
+
+Volunteers go on and off duty from their page. **Can't go** tells Neralu, which asks the next nearest
+free responder at once; going off duty hands pending alerts on; if nobody is left at a tier, the case
+moves up (volunteers → ASHA workers → ward officer), so no case is left with nobody asked. Free
+responders are asked before those already on a visit. On the console, **Responders** shows who is on
+duty, on a visit, being asked, or said they can't go.
+
 ### What-if planner: a forecast turned into a work plan
 
 On the console, **Plan ahead** opens the planner. Drag temperature, humidity and night minimum, or load
