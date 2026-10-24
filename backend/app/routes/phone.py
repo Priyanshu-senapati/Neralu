@@ -17,7 +17,7 @@ from app.missed_call import demo_missed_call
 from app.models import CheckIn, Elder
 from app.routes.voice import HELP_KEYPAD, KEYPAD, _await_orientation, _live_checkin, _store, \
     orientation_tasks, score_audio
-from app.state import state
+from app.state import person_today, state
 
 router = APIRouter(prefix="/api/phone")
 
@@ -146,7 +146,7 @@ async def orientation(checkin_id: int, audio: UploadFile | None = File(None),
         if day is not None:
             if not 1 <= day <= 7:
                 raise HTTPException(422, "day must be 1 (Monday) to 7 (Sunday)")
-            today = state.clock.scenario_now().date().weekday()
+            today = person_today().weekday()
             _store(session, c, "orientation", "correct" if day - 1 == today else "wrong", "keypad",
                    transport="browser", day=day)
             session.commit()

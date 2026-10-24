@@ -42,11 +42,24 @@ def is_pilot() -> bool:
     return get_settings().run_mode == "pilot"
 
 
+def _demo_start() -> datetime:
+    """The demo scenario starts on today's real date (IST) at the configured time, so the console
+    shows today's date, the date the person on the phone is living in."""
+    t = get_settings().scenario_start
+    return datetime.combine(datetime.now(IST).date(), t.time(), tzinfo=t.tzinfo or IST)
+
+
 def _new_clock() -> DemoClock:
     s = get_settings()
     if is_pilot():
         return DemoClock(1, datetime.now(IST))  # real time: scenario time is the wall clock in IST
-    return DemoClock(s.demo_speed, s.scenario_start)
+    return DemoClock(s.demo_speed, _demo_start())
+
+
+def person_today() -> date:
+    """Today's real date in India: what "What day is it today?" is checked against. Never the demo
+    clock's date, which runs ×60 and crosses midnight within minutes; the person lives in real time."""
+    return state.clock.real_now().astimezone(IST).date()
 
 
 state = RunState(clock=_new_clock())
@@ -56,6 +69,7 @@ def reset_state() -> None:
     if is_pilot():
         state.clock = _new_clock()
     else:
+        state.clock.scenario_start = _demo_start()  # a run started after midnight shows the new date
         state.clock.reset()
     state.weather = Weather(**NORMAL_DAY)
     state.round_no = None

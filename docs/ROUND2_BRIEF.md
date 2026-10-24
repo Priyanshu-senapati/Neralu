@@ -36,7 +36,7 @@ Volunteer phone (/volunteer) · Family page (/family) · Registration (/register
 - **Public access for the demo:** ngrok tunnel (`deputy-folic-tiptop.ngrok-free.dev`).
 - **One command:** `scripts/stage.ps1` builds the site, starts server + ngrok, and runs a go/no-go
   check (server, scheduler, public link, Twilio, call audio).
-- **Tests:** 247 automated tests (`backend/tests`, pytest). Frontend: TypeScript strict build.
+- **Tests:** 252 automated tests (`backend/tests`, pytest). Frontend: TypeScript strict build.
 
 ---
 
@@ -132,7 +132,7 @@ Escalation rules (`app/calls.py`, `app/escalation.py`):
 | E1 | no answer on every attempt (2 in demo, 3 in production) → RED case |
 | E3 | follow-up call still concerning or unanswered → RED case |
 | E4 | support cases stay in the volunteer queue |
-| E5 | RED case not accepted in 15 min → next tier; after ASHA → "ward officer action needed" |
+| E5 | RED case not accepted in 15 min (45 on stage, set in `.env`, so the pitch has time) → next tier; after ASHA → "ward officer action needed" |
 | E7 | after a person checked in person, call again 60 min later |
 | E8 | a volunteer accepted but recorded no visit within 120 min → ward officer alerted (the volunteer keeps the case) |
 
@@ -277,6 +277,16 @@ recorded prompts. No AI makes any decision. Fixed rules do, and they're tested."
 
 ---
 
+## 11b. Fixed just before Round 2
+
+- **"What day is it?" is checked against the real date in India**, not the demo clock. Before, the
+  demo clock started on a fixed Friday (9 Oct) and runs ×60, so a person answering the real day was
+  marked wrong. Now the demo also starts on today's date. Tests: `backend/tests/test_today.py`.
+- **Volunteers can log off.** "Log off · stop alerts" on the volunteer page: no more alerts, and any
+  case waiting for them goes straight to the next nearest volunteer. Blocked only while they hold a
+  visit they haven't recorded. The page remembers duty from the server, so reopening it never shows
+  "Go on duty" while alerts are still coming.
+
 ## 12. Questions judges are likely to ask
 
 **Why not WhatsApp or an app?** The people at risk are least connected. A plain call works on any
@@ -322,7 +332,7 @@ login, ASHA/resident-association onboarding, and a legal review of the DPDP mapp
 
 ## 13. Live checks you can show
 
-- `cd backend && .venv\Scripts\python.exe -m pytest -q` → 247 passed.
+- `cd backend && .venv\Scripts\python.exe -m pytest -q` → 252 passed.
 - Console `/ward` → click a resident → "Why Neralu calls" (score breakdown with data source) →
   "Case record · print or save".
 - `/responsible` → the privacy and risk page.

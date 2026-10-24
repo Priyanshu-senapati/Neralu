@@ -49,6 +49,17 @@ def no_real_twilio(monkeypatch):
     return cancelled
 
 
+@pytest.fixture(autouse=True)
+def person_today_is_friday(monkeypatch):
+    """The call tests answer "Friday". The person's real date (app.state.person_today) is pinned to
+    Friday 9 Oct 2026 here; tests/test_today.py checks the real-date behaviour itself."""
+    from datetime import date
+
+    from app.routes import phone, voice
+    monkeypatch.setattr(voice, "person_today", lambda: date(2026, 10, 9))
+    monkeypatch.setattr(phone, "person_today", lambda: date(2026, 10, 9))
+
+
 @pytest.fixture
 def session():
     SQLModel.metadata.drop_all(engine)

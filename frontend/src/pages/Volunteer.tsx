@@ -37,14 +37,33 @@ function alertNewCase() {
 export default function Volunteer() {
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
-  const [onDuty, setOnDuty] = useState(false)
+  // 'checking': asking the server whether this person is on duty. 'resume': the server says on duty
+  // but this page was just opened, so one tap is needed to allow sound. 'loggedOff': just logged off.
+  const [mode, setMode] = useState<'checking' | 'off' | 'resume' | 'on' | 'loggedOff'>('checking')
+  const onDuty = mode === 'on'
   const [me, setMe] = useState<VolunteerMe | null>(null)
   const [summary, setSummary] = useState<Summary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   // Open cases this phone already knew about, and whether it was asked: a new case, or one handed
   // to this person after someone else said "Can't go", buzzes the phone.
   const seen = useRef<Map<number, boolean> | null>(null)
+
+  // On opening the page, the server says whether this person is still on duty (it remembers, even
+  // if the page was closed), so the page never shows "Go on duty" while alerts are still coming.
+  useEffect(() => {
+    if (!token) return
+    api.volunteerMe(token)
+      .then((m) => {
+        setMe(m)
+        setMode(m.volunteer.on_duty ? 'resume' : 'off')
+      })
+      .catch((e) => {
+        setError(e instanceof ApiError && e.status === 401 ? 'This volunteer link is not valid for the current run.' : 'Cannot reach Neralu. Check your connection and reload.')
+        setMode('off')
+      })
+  }, [token])
 
   const load = useCallback(async () => {
     try {
@@ -74,31 +93,88 @@ export default function Volunteer() {
 
   const now = useScenarioNow(summary?.scenario_now, summary?.demo_speed ?? 1)
 
-  const goOffDuty = async () => {
+  const goOnDuty = async () => {
+    audioCtx = audioCtx ?? new AudioContext() // sound needs a tap on the page first
+    navigator.vibrate?.(50)
+    setBusy(true)
+    try {
+      await api.duty(token, true)
+      seen.current = null
+      setNotice(null)
+      setError(null)
+      setMode('on')
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 401 ? 'This volunteer link is not valid for the current run.' : 'Could not go on duty. Check your connection and try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const logOff = async () => {
+    setBusy(true)
     try {
       await api.duty(token, false)
       seen.current = null
-      setMe(null)
       setNotice(null)
-      setOnDuty(false)
+      setError(null)
+      setMode('loggedOff')
     } catch (e) {
       setNotice(e instanceof ApiError && e.status === 409
-        ? 'Record what you found on your current visit before going off duty.'
-        : 'Could not go off duty. Check your connection and try again.')
+        ? 'Record what you found on your current visit before logging off.'
+        : 'Could not log off. Check your connection and try again.')
+    } finally {
+      setBusy(false)
     }
   }
 
   if (!token) return <Shell><p className="text-sm">Open the link from your invite. This page needs a volunteer token.</p></Shell>
 
-  if (!onDuty) {
+  if (mode === 'checking') return <Shell><div className="h-40 animate-pulse rounded-ui bg-line" /></Shell>
+
+  if (mode === 'resume') {
+    const holds = me?.cases.some((c) => c.mine)
     return (
       <Shell>
+        <h1 className="display text-[1.85rem] font-medium leading-tight">
+          You are on duty{me ? `, ${me.volunteer.name.split(' ')[0]}` : ''}.
+        </h1>
+        <p className="mt-3 text-[0.9375rem] leading-snug">
+          {holds
+            ? 'You accepted a visit and have not recorded what you found yet.'
+            : 'Neralu can send you cases near you. If you are not free, log off so the next person is asked instead.'}
+        </p>
+        <div className="flex-1" />
+        <button onClick={goOnDuty} disabled={busy} className="press mt-8 w-full rounded-[5px] bg-brand py-4 text-base font-semibold text-brand-ink disabled:opacity-60">
+          {holds ? 'Open my visit' : 'Continue on duty'}
+        </button>
+        {!holds && (
+          <button onClick={logOff} disabled={busy} className="press mt-3 w-full rounded-[5px] border border-line-strong py-3.5 text-base text-ink disabled:opacity-60">
+            Log off · stop alerts
+          </button>
+        )}
+        {notice && <p role="alert" className="mt-3 text-sm text-alert">{notice}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-alert">{error}</p>}
+      </Shell>
+    )
+  }
+
+  if (mode === 'off' || mode === 'loggedOff') {
+    return (
+      <Shell>
+        {mode === 'loggedOff' && (
+          <p role="status" className="card-enter mb-5 rounded-ui border border-line bg-surface px-3 py-2.5 text-sm">
+            You are logged off. Neralu will not alert you. Any case waiting for you was passed to the next nearest
+            volunteer.
+          </p>
+        )}
+        {error && <p className="mb-3 rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
         <h1 className="display text-[1.85rem] font-medium leading-tight">Someone near you may need a check today.</h1>
         <ol className="mt-5 space-y-3 border-t border-line pt-4 text-[0.9375rem] leading-snug">
           {[
             'When a person near you does not answer Neralu, or says something worrying, this phone buzzes.',
             'Accept the case. Only then do you see their address.',
             'Go to their door, then record what you found. Their family is told.',
+            'Not free? Log off any time and Neralu asks the next person instead.',
           ].map((t, i) => (
             <li key={t} className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2">
               <span className="num text-sm text-muted">{i + 1}</span>
@@ -108,16 +184,8 @@ export default function Volunteer() {
         </ol>
         <p className="mt-4 text-sm text-muted">Neralu never calls an ambulance. If it is an emergency, you decide to call 108.</p>
         <div className="flex-1" />
-        <button
-          onClick={() => {
-            audioCtx = new AudioContext()
-            navigator.vibrate?.(50)
-            api.duty(token, true).catch(() => undefined) // a bad link shows its own error once loaded
-            setOnDuty(true)
-          }}
-          className="press mt-8 w-full rounded-[5px] bg-brand py-4 text-base font-semibold text-brand-ink"
-        >
-          Go on duty
+        <button onClick={goOnDuty} disabled={busy} className="press mt-8 w-full rounded-[5px] bg-brand py-4 text-base font-semibold text-brand-ink disabled:opacity-60">
+          {mode === 'loggedOff' ? 'Go on duty again' : 'Go on duty'}
         </button>
       </Shell>
     )
@@ -127,7 +195,7 @@ export default function Volunteer() {
   const mine = cases.find((c) => c.mine)
 
   return (
-    <Shell name={me?.volunteer.name} onOffDuty={mine ? undefined : goOffDuty}>
+    <Shell name={me?.volunteer.name}>
       {error && <p className="mb-3 rounded-ui bg-alert-bg px-3 py-2 text-sm text-alert">{error}</p>}
       {notice && (
         <p key={notice} className="card-enter mb-3 flex items-center gap-2 rounded-ui border border-line bg-surface px-3 py-2 text-sm">
@@ -168,11 +236,26 @@ export default function Volunteer() {
           ))
         )}
       </div>
+      <div className="flex-1" />
+      <div className="mt-8 border-t border-line pt-4">
+        <button
+          onClick={logOff}
+          disabled={busy || !!mine}
+          className="press w-full rounded-[5px] border border-line-strong py-3.5 text-base text-ink disabled:opacity-50"
+        >
+          Log off · stop alerts
+        </button>
+        <p className="mt-2 text-center text-xs text-muted">
+          {mine
+            ? 'Record what you found on your visit first, then you can log off.'
+            : 'Not free? Log off and Neralu asks the next nearest volunteer instead.'}
+        </p>
+      </div>
     </Shell>
   )
 }
 
-function Shell({ children, name, onOffDuty }: { children: React.ReactNode; name?: string; onOffDuty?: () => void }) {
+function Shell({ children, name }: { children: React.ReactNode; name?: string }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-paper">
       <header className="flex items-center justify-between border-b border-line bg-surface px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-ink">
@@ -182,11 +265,6 @@ function Shell({ children, name, onOffDuty }: { children: React.ReactNode; name?
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden="true" />
               {name} · on duty
-              {onOffDuty && (
-                <button onClick={onOffDuty} className="press ml-1 rounded-ui border border-line px-2 py-0.5 text-xs text-ink">
-                  Go off duty
-                </button>
-              )}
             </span>
           ) : (
             'Volunteer · Ward 47'
