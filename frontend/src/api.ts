@@ -1,4 +1,4 @@
-import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact, FamilyStatus } from './types'
+import type { CaseDetail, CaseListItem, ElderDetail, ElderListItem, NeraluEvent, CaseRecord, RoundSummary, Summary, VolunteerMe, WhatIf, Responder, Impact, FamilyStatus } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -32,6 +32,7 @@ export const api = {
   elder: (id: number) => request<ElderDetail>(`/api/elders/${id}`),
   cases: (state = 'open,assigned') => request<CaseListItem[]>(`/api/cases?state=${state}`),
   caseDetail: (id: number) => request<CaseDetail>(`/api/cases/${id}`),
+  caseRecord: (id: number) => request<CaseRecord>(`/api/cases/${id}/record`),
   setHeat: (w: { temp_c: number; humidity_pct: number; night_min_c: number }) =>
     post<Summary>('/api/sim/heat', w),
   setLiveHeat: () => post<Summary>('/api/sim/heat/live', {}),

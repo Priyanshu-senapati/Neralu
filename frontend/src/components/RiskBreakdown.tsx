@@ -1,17 +1,31 @@
 import { reducedMotion } from '../motion'
-import type { RiskDetail } from '../types'
+import type { DataSource, RiskDetail } from '../types'
 import { AnimatedNumber } from './Motion'
 
-export function RiskBreakdown({ r, score, title = 'Why Neralu called today' }: { r: RiskDetail; score: number; title?: string }) {
+/** Short per-factor tag: where this answer came from. */
+const SOURCE_TAG: Record<DataSource, string> = { family: 'family form', demo: 'demo persona', simulated: 'simulated' }
+
+interface Props {
+  r: RiskDetail
+  score: number
+  title?: string
+  /** where the person's details came from; shown on every factor */
+  source?: DataSource
+}
+
+export function RiskBreakdown({ r, score, title = 'Why Neralu called today', source }: Props) {
   const over = r.heat_index_c >= r.threshold_c
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       <ul className="divide-y divide-line border-y border-line text-sm">
         {r.risk_breakdown.map(([label, pts]) => (
-          <li key={label} className="flex justify-between py-1.5">
-            <span>{label}</span>
-            <span className="font-mono tabular-nums text-muted">+{pts}</span>
+          <li key={label} className="flex items-baseline justify-between gap-3 py-1.5">
+            <span className="min-w-0">{label}</span>
+            <span className="flex items-baseline gap-3">
+              {source && <span className={`text-xs text-muted ${source === 'simulated' ? 'font-mono' : ''}`}>{SOURCE_TAG[source]}</span>}
+              <span className="font-mono tabular-nums text-muted">+{pts}</span>
+            </span>
           </li>
         ))}
         <li className="flex justify-between py-1.5 font-semibold">
@@ -31,6 +45,12 @@ export function RiskBreakdown({ r, score, title = 'Why Neralu called today' }: {
           <div className="text-xs text-muted">{over ? 'Above threshold · call due' : 'Below threshold'}</div>
         </div>
       </div>
+      {(r.risk_source || r.weather_source) && (
+        <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs">
+          {r.risk_source && (<><dt className="text-muted">Risk factors from</dt><dd>{r.risk_source}</dd></>)}
+          {r.weather_source && (<><dt className="text-muted">Heat index from</dt><dd>{r.weather_source}</dd></>)}
+        </dl>
+      )}
       <p className="mt-1.5 text-xs text-muted">Thresholds are starting values to be calibrated in a pilot.</p>
     </div>
   )

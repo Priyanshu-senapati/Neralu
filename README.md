@@ -216,6 +216,15 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Console: filters, data sources, case records
+
+The attention list filters by heat risk, where the call stands (calling, answered, not reached, not
+called yet) and who has the case, and shows who accepted each visit. Every risk factor says where it
+came from (family registration form, the demo persona, or a simulated resident) and where today's heat
+came from. Each case has a record the ward office can print or save as PDF (`/ward/record/<case id>`):
+what opened it, every call and its answers, the rule, the escalation, who accepted, how it closed and
+who was told what. No phone numbers; the address only once someone accepted.
+
 ### Responsible by design
 
 `/responsible` sets out what Neralu stores, who sees what, how it lines up with India's DPDP Act 2023

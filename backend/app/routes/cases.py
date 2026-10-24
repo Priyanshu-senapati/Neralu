@@ -8,6 +8,7 @@ from app.geo import km
 from app.escalation import AlreadyAccepted, NotAllowed, accept_case, decline_case, resolve_case, set_duty
 from app.models import RESOLUTIONS, Case, Elder, Volunteer
 from app.responders import load
+from app.record import case_record
 from app.views import case_brief, case_detail, elder_item_one
 
 router = APIRouter(prefix="/api")
@@ -45,7 +46,8 @@ def _case(session: Session, case_id: int) -> Case:
 
 def case_list_item(session: Session, c: Case) -> dict:
     e = session.get(Elder, c.elder_id)
-    return {**case_brief(c), "elder": elder_item_one(session, e)}
+    v = session.get(Volunteer, c.assignee_id) if c.assignee_id else None
+    return {**case_brief(c, v.name if v else None), "elder": elder_item_one(session, e)}
 
 
 @router.get("/cases")
@@ -59,6 +61,12 @@ def list_cases(state: str = "open,assigned", session: Session = Depends(get_sess
 @router.get("/cases/{case_id}")
 def get_case(case_id: int, session: Session = Depends(get_session)) -> dict:
     return case_detail(session, _case(session, case_id))
+
+
+@router.get("/cases/{case_id}/record")
+def get_case_record(case_id: int, session: Session = Depends(get_session)) -> dict:
+    """The printable case record for the ward office."""
+    return case_record(session, _case(session, case_id))
 
 
 @router.post("/cases/{case_id}/accept")

@@ -284,3 +284,16 @@ section[id] {
     scroll-behavior: auto;
   }
 }
+
+/* Printed pages (the case record): no buttons, no page background, sensible margins. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+  }
+}

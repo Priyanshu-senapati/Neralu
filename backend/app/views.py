@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.db import current_run_id
 from app.events import event_out, run_events, scenario_iso
-from app.models import Case, CheckIn, Elder
+from app.models import Case, CheckIn, Elder, Volunteer
 from app.risk import calls_due, personal_threshold_c, vulnerability_score
 from app.rules import DECIDED_BY, explain
 from app.state import state
@@ -87,17 +87,31 @@ def current_call_out(c: CheckIn | None) -> dict[str, Any] | None:
             "scheduled_scenario": _scenario(c.scheduled_for_real)}
 
 
-def case_brief(c: Case | None) -> dict[str, Any] | None:
+def volunteer_names(session: Session) -> dict[int, str]:
+    return {v.id: v.name for v in session.exec(select(Volunteer).where(Volunteer.run_id == current_run_id()))}
+
+
+def case_brief(c: Case | None, assignee_name: str | None = None) -> dict[str, Any] | None:
     if c is None:
         return None
     return {"id": c.id, "level": c.level, "tier": c.tier, "state": c.state,
             "opened_scenario": _scenario(c.opened_real), "overdue": c.overdue,
             "tier_started_scenario": _scenario(c.tier_started_real),
-            "rule_id": c.rule_id, "reason": c.reason}
+            "rule_id": c.rule_id, "reason": c.reason, "assignee_name": assignee_name}
+
+
+def data_source(e: Elder) -> dict[str, str]:
+    """Where a person's risk factors came from, so the console never passes off made-up data as real."""
+    if e.is_simulated:
+        return {"kind": "simulated", "label": "Simulated resident: generated for the demo ward"}
+    if e.family_token and e.family_token == get_settings().family_demo_token:
+        return {"kind": "demo", "label": "Demo persona: details written for the demo, real phone"}
+    return {"kind": "family", "label": "Family registration form"}
 
 
 def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
-               pending: CheckIn | None = None, resolved: Case | None = None) -> dict[str, Any]:
+               pending: CheckIn | None = None, resolved: Case | None = None,
+               names: dict[int, str] | None = None) -> dict[str, Any]:
     score, breakdown = vulnerability_score(e)
     return {
         "id": e.id, "name": e.name, "age": e.age, "language": e.language,
@@ -108,7 +122,8 @@ def elder_item(e: Elder, latest: CheckIn | None, case: Case | None,
         "has_neighbour": e.neighbour_phone is not None,
         "lat": e.lat, "lng": e.lng, "is_simulated": e.is_simulated,
         "latest": latest_out(latest), "current_call": current_call_out(pending),
-        "open_case": case_brief(case),
+        "open_case": case_brief(case, (names or {}).get(case.assignee_id) if case else None),
+        "source": data_source(e)["kind"],
         "last_resolution": resolution_out(resolved) if resolved_after_latest(resolved, latest) else None,
     }
 
@@ -119,8 +134,8 @@ def run_elders(session: Session) -> list[Elder]:
 
 def elder_items(session: Session) -> list[dict[str, Any]]:
     latest, cases, pending = latest_checkins(session), active_cases(session), pending_checkins(session)
-    resolved = last_resolutions(session)
-    return [elder_item(e, latest.get(e.id), cases.get(e.id), pending.get(e.id), resolved.get(e.id))
+    resolved, names = last_resolutions(session), volunteer_names(session)
+    return [elder_item(e, latest.get(e.id), cases.get(e.id), pending.get(e.id), resolved.get(e.id), names)
             for e in run_elders(session)]
 
 
@@ -133,7 +148,11 @@ def elder_item_one(session: Session, e: Elder) -> dict[str, Any]:
     case = next((c for c in cases if c.level == "red"), cases[0] if cases else None)
     resolved = session.exec(select(Case).where(Case.elder_id == e.id, Case.state == "resolved")
                             .order_by(Case.resolved_real.desc())).first()
-    return elder_item(e, latest, case, pending, resolved)
+    names = {}
+    if case is not None and case.assignee_id is not None:
+        v = session.get(Volunteer, case.assignee_id)
+        names = {v.id: v.name} if v else {}
+    return elder_item(e, latest, case, pending, resolved, names)
 
 
 def risk_detail(e: Elder) -> dict[str, Any]:
@@ -141,7 +160,10 @@ def risk_detail(e: Elder) -> dict[str, Any]:
     w = state.weather
     return {"risk_breakdown": [[label, pts] for label, pts in breakdown],
             "threshold_c": personal_threshold_c(score, w.night_min_c),
-            "heat_index_c": w.heat_index_c, "night_min_c": w.night_min_c}
+            "heat_index_c": w.heat_index_c, "night_min_c": w.night_min_c,
+            "risk_source": data_source(e)["label"],
+            "weather_source": ("Live forecast for Bengaluru (Open-Meteo)" if w.source == "open-meteo"
+                               else "Simulated heat preset")}
 
 
 def checkin_out(c: CheckIn) -> dict[str, Any]:

@@ -14,8 +14,8 @@ import { SimTag, StatusPill } from './StatusPill'
 import { WaitingTimer } from './WaitingTimer'
 
 const ROOF: Record<string, string> = { sheet: 'Sheet roof', tile: 'Tile roof', concrete: 'Concrete roof', top_floor: 'Top floor' }
-const LANG: Record<string, string> = { kn: 'Kannada', ta: 'Tamil', te: 'Telugu', ur: 'Urdu', hi: 'Hindi', en: 'English' }
-const CALL_STATUS: Record<string, string> = {
+export const LANG: Record<string, string> = { kn: 'Kannada', ta: 'Tamil', te: 'Telugu', ur: 'Urdu', hi: 'Hindi', en: 'English' }
+export const CALL_STATUS: Record<string, string> = {
   queued: 'Calling', ringing: 'Ringing', 'in-progress': 'On the call', completed: 'Answered',
   busy: 'Busy or declined', 'no-answer': 'No answer', failed: 'Call could not be placed', canceled: 'No answer',
 }
@@ -114,7 +114,7 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
         <section className={`-mx-5 -mt-4 px-5 py-3 ${c.level === 'red' ? 'bg-alert-bg' : 'bg-support-bg'}`}>
           <h3 className={`text-base font-semibold ${c.level === 'red' ? 'text-alert' : 'text-support'}`}>
             {c.state === 'assigned'
-              ? `${TIER_LABEL[c.tier]} accepted · on the way`
+              ? `${c.assignee_name ? `${c.assignee_name} (${TIER_LABEL[c.tier].toLowerCase()})` : TIER_LABEL[c.tier]} accepted · on the way`
               : c.overdue
                 ? 'Nobody has accepted · ward officer action needed'
                 : `Waiting for a ${TIER_LABEL[c.tier].toLowerCase()} to accept`}
@@ -133,12 +133,14 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
           <div className="mt-2 border-t border-ink/10 pt-2">
             <RuleExplanation ruleId={c.rule_id} reason={c.reason} />
           </div>
+          <RecordLink caseId={c.id} />
         </section>
       )}
       {d.checkins.length > 0 && (
         <section>
           <h3 className="mb-2.5 text-sm font-semibold">Where {first}'s check stands</h3>
           <ClosedLoop steps={closedLoop(d.events)} />
+          {!c && d.last_resolution && <RecordLink caseId={d.last_resolution.case_id} />}
         </section>
       )}
 
@@ -180,7 +182,7 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
         </section>
       )}
 
-      <RiskBreakdown r={d} score={d.risk_score} title={`Why Neralu calls ${first}`} />
+      <RiskBreakdown r={d} score={d.risk_score} source={d.source} title={`Why Neralu calls ${first}`} />
 
       <section className="text-sm">
         <h3 className="mb-1 font-semibold">How {first} knows the call is real</h3>
@@ -210,6 +212,20 @@ function Body({ d, now }: { d: ElderDetail; now: Date | null }) {
         </div>
       </details>
     </>
+  )
+}
+
+/** Opens the printable case record in a new tab, so the console stays where it was. */
+function RecordLink({ caseId }: { caseId: number }) {
+  return (
+    <a
+      href={`/ward/record/${caseId}`}
+      target="_blank"
+      rel="noopener"
+      className="mt-2 inline-block text-sm underline underline-offset-2 hover:text-ink"
+    >
+      Case record · print or save
+    </a>
   )
 }
 

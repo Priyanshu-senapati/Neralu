@@ -39,6 +39,34 @@ const EMPTY: Record<TabKey, string> = {
   calls: 'No calls in progress or unanswered',
 }
 
+// Filters on top of the tabs: heat risk, where the call stands, and who has the case.
+type RiskKey = 'any' | 'high' | 'medium' | 'low'
+type CallKey = 'any' | 'calling' | 'answered' | 'unreached' | 'not_called'
+const RISK_OPTS: [RiskKey, string][] = [['any', 'Any risk'], ['high', 'High (60+)'], ['medium', 'Medium (35–59)'], ['low', 'Low (under 35)']]
+const CALL_OPTS: [CallKey, string][] = [
+  ['any', 'Any call'], ['calling', 'Calling now'], ['answered', 'Answered'], ['unreached', 'Not reached'], ['not_called', 'Not called yet'],
+]
+const UNASSIGNED = '__unassigned'
+
+const riskKey = (score: number): RiskKey => (score >= 60 ? 'high' : score >= 35 ? 'medium' : 'low')
+function callKey(e: ElderListItem): CallKey {
+  if (e.current_call?.started) return 'calling'
+  if (e.latest.outcome === 'UNREACHED') return 'unreached'
+  if (e.latest.outcome) return 'answered'
+  return 'not_called'
+}
+
+interface Filters { risk: RiskKey; call: CallKey; assigned: string }
+const NO_FILTERS: Filters = { risk: 'any', call: 'any', assigned: 'any' }
+
+function passes(e: ElderListItem, f: Filters): boolean {
+  if (f.risk !== 'any' && riskKey(e.risk_score) !== f.risk) return false
+  if (f.call !== 'any' && callKey(e) !== f.call) return false
+  if (f.assigned === UNASSIGNED) return !!e.open_case && !e.open_case.assignee_name
+  if (f.assigned !== 'any') return e.open_case?.assignee_name === f.assigned
+  return true
+}
+
 interface Props {
   elders: ElderListItem[]
   now: Date | null
@@ -48,8 +76,14 @@ interface Props {
 }
 
 export function AttentionList({ elders, now, selectedId, onSelect, loading }: Props) {
-  const rows = attentionRows(elders)
+  const allRows = attentionRows(elders)
   const [tab, setTab] = useState<TabKey>('all')
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS)
+  const filtering = filters.risk !== 'any' || filters.call !== 'any' || filters.assigned !== 'any'
+  // Keep a chosen name in the menu even after their case closes, so the select never shows a blank.
+  const chosen = filters.assigned !== 'any' && filters.assigned !== UNASSIGNED ? [filters.assigned] : []
+  const assignees = [...new Set([...chosen, ...(allRows.map((r) => r.e.open_case?.assignee_name).filter(Boolean) as string[])])].sort()
+  const rows = filtering ? allRows.filter((r) => passes(r.e, filters)) : allRows
   const visible = rows.filter((r) => TABS.find((t) => t.key === tab)!.match(r.s.group))
   const listRef = useRef<HTMLUListElement>(null)
   const committedGroup = useRef<Map<number, number | null> | null>(null)
@@ -60,7 +94,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
   // Simulated rows update instantly: during a round they change every refresh, and a list that
   // is always moving explains nothing.
   const movers = committedGroup.current
-    ? rows.filter((r) => !r.e.is_simulated && committedGroup.current!.has(r.e.id) &&
+    ? allRows.filter((r) => !r.e.is_simulated && committedGroup.current!.has(r.e.id) &&
         committedGroup.current!.get(r.e.id) !== r.s.group).map((r) => r.e.id)
     : []
   if (movers.length && listRef.current && !before.current) {
@@ -79,7 +113,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
       Flip.killFlipsOf(targets)
       Flip.from(pending.state, { targets, duration: 0.7, simple: true, zIndex: 2 })
     }
-    committedGroup.current = new Map(rows.map((r) => [r.e.id, r.s.group]))
+    committedGroup.current = new Map(allRows.map((r) => [r.e.id, r.s.group]))
 
     // A row that has just turned RED gets one soft flash: the moment a judge should look at.
     const tones = new Map(elders.map((e) => [e.id, elderStatus(e).tone as string]))
@@ -113,12 +147,33 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
           )
         })}
       </div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2" aria-label="Narrow the list">
+        <FilterSelect label="Heat risk" value={filters.risk} options={RISK_OPTS} onChange={(risk) => setFilters({ ...filters, risk })} />
+        <FilterSelect label="Call" value={filters.call} options={CALL_OPTS} onChange={(call) => setFilters({ ...filters, call })} />
+        <FilterSelect
+          label="Assigned to"
+          value={filters.assigned}
+          options={[['any', 'Anyone'], [UNASSIGNED, 'Nobody yet'], ...assignees.map((n) => [n, n] as [string, string])]}
+          onChange={(assigned) => setFilters({ ...filters, assigned })}
+        />
+        {filtering && (
+          <button type="button" onClick={() => setFilters(NO_FILTERS)} className="text-xs text-muted underline underline-offset-2 hover:text-ink">
+            Clear
+          </button>
+        )}
+      </div>
       <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
-        {loading && rows.length === 0 && <Skeleton />}
-        {!loading && visible.length === 0 && tab !== 'all' && (
+        {loading && allRows.length === 0 && <Skeleton />}
+        {!loading && visible.length === 0 && filtering && (
+          <li className="px-4 py-10 text-center text-sm text-muted">
+            No one in this tab matches these filters.{' '}
+            <button type="button" onClick={() => setFilters(NO_FILTERS)} className="underline underline-offset-2 hover:text-ink">Clear filters</button>
+          </li>
+        )}
+        {!loading && visible.length === 0 && !filtering && tab !== 'all' && (
           <li className="px-4 py-10 text-center text-sm text-muted">{EMPTY[tab]}</li>
         )}
-        {!loading && visible.length === 0 && tab === 'all' && <Watchlist elders={elders} onSelect={onSelect} />}
+        {!loading && visible.length === 0 && !filtering && tab === 'all' && <Watchlist elders={elders} onSelect={onSelect} />}
         {visible.map(({ e, s }) => {
           const c = e.open_case
           const unaccepted = c && c.state === 'open'
@@ -148,7 +203,7 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
                           <>{TIER_LABEL[c.tier]} · not accepted <WaitingTimer since={c.tier_started_scenario} now={now} /></>
                         )
                       ) : (
-                        <>{TIER_LABEL[c.tier]} accepted</>
+                        <>{c.assignee_name ? <span className="text-ink">{c.assignee_name}</span> : TIER_LABEL[c.tier]} accepted</>
                       )
                     ) : (
                       <WaitingTimer since={since(e)} now={now} />
@@ -161,6 +216,28 @@ export function AttentionList({ elders, now, selectedId, onSelect, loading }: Pr
         })}
       </ul>
     </section>
+  )
+}
+
+function FilterSelect<K extends string>({ label, value, options, onChange }: {
+  label: string
+  value: K
+  options: [K, string][]
+  onChange: (v: K) => void
+}) {
+  const on = value !== 'any'
+  return (
+    <label className="flex items-center gap-1 text-xs text-muted">
+      <span className="sr-only">{label}</span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value as K)}
+        className={`max-w-[9.5rem] rounded-ui border bg-surface px-1.5 py-1 text-xs ${on ? 'border-ink font-semibold text-ink' : 'border-line text-muted'}`}
+      >
+        {options.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+      </select>
+    </label>
   )
 }
 

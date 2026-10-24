@@ -111,7 +111,12 @@ export interface CaseBrief {
   tier_started_scenario: string
   rule_id: string
   reason: string
+  /** who accepted the visit, once someone has */
+  assignee_name: string | null
 }
+
+/** Where a person's details came from: generated for the demo, the demo persona, or a family's registration. */
+export type DataSource = 'simulated' | 'demo' | 'family'
 
 export interface ElderListItem {
   id: number
@@ -129,6 +134,7 @@ export interface ElderListItem {
   lat: number
   lng: number
   is_simulated: boolean
+  source: DataSource
   latest: Latest
   current_call: CurrentCall | null
   open_case: CaseBrief | null
@@ -198,6 +204,46 @@ export interface RiskDetail {
   threshold_c: number
   heat_index_c: number
   night_min_c: number
+  /** where the risk factors came from, and where today's heat came from */
+  risk_source?: string
+  weather_source?: string
+}
+
+/** GET /api/cases/{id}/record: the printable case record for the ward office. */
+export interface CaseRecord {
+  case_id: number
+  run_id: string
+  generated_scenario: string
+  demo_clock: boolean
+  level: 'red' | 'support'
+  state: CaseState
+  tier: Tier
+  overdue: boolean
+  person: RiskDetail & {
+    name: string
+    age: number
+    language: string
+    lives_alone: boolean
+    family_name: string | null
+    is_simulated: boolean
+    source: DataSource
+    source_label: string
+    caregiver_route: boolean
+    address: string | null
+  }
+  trigger: {
+    opened_scenario: string
+    rule_id: string
+    reason: string
+    rule_explanation: string | null
+    decided_by: string
+    checkin_id: number | null
+  }
+  calls: CheckInOut[]
+  escalation: NeraluEvent[]
+  acceptance: { name: string; role: string; is_simulated: boolean; accepted_scenario: string | null } | null
+  closure: { resolution: string; label: string; note: string | null; resolved_scenario: string } | null
+  family_told: NeraluEvent[]
 }
 
 /** GET /api/family?t=…: one person's check today, for their family only. */

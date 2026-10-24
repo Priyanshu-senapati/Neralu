@@ -2,6 +2,7 @@ import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { reducedMotion } from './motion'
+import CaseRecord from './pages/CaseRecord'
 import Dashboard from './pages/Dashboard'
 import Family from './pages/Family'
 import Phone from './pages/Phone'
@@ -39,6 +40,7 @@ function PageTransitions() {
     <Routes location={location}>
       <Route path="/" element={<Story />} />
       <Route path="/ward" element={<Dashboard />} />
+      <Route path="/ward/record/:id" element={<CaseRecord />} />
       <Route path="/volunteer" element={<Volunteer />} />
       <Route path="/register" element={<Register />} />
       <Route path="/phone" element={<Phone />} />

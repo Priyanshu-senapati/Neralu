@@ -160,6 +160,12 @@ the line still stands on its own.
 - Each risk factor shows its **data source** (family registration vs simulated resident).
 - A **case record** the ward office can print or save: trigger, calls, answers, rule, escalation,
   acceptance, closure, family told.
+- *Built:* filters for heat risk, call status and assignee (with "Nobody yet"), and the accepting
+  volunteer's name on each row and in the case drawer. Each risk factor is tagged family form / demo
+  persona / simulated, with the heat source under it. `GET /api/cases/{id}/record` and the
+  `/ward/record/<id>` page (always light, prints cleanly, linked from the drawer for open and closed
+  cases); messages are labelled by recipient (family or neighbour) and by channel (SMS or simulated).
+  Tests: `backend/tests/test_record.py`.
 
 **Stretch, only if everything above is solid**
 - **Missed-call check-in** · originality · 1.5 h: an elder or family gives a missed call to the Neralu
