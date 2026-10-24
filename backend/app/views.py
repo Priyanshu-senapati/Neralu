@@ -82,7 +82,8 @@ def latest_out(c: CheckIn | None) -> dict[str, Any]:
 def current_call_out(c: CheckIn | None) -> dict[str, Any] | None:
     if c is None:
         return None
-    return {"checkin_id": c.id, "attempt": c.attempt, "is_recall": c.is_recall, "callee": c.callee,
+    return {"checkin_id": c.id, "attempt": c.attempt, "is_recall": c.is_recall, "requested": c.requested,
+            "callee": c.callee,
             "started": c.started, "call_status": c.call_status, "round_no": c.round_no,
             "scheduled_scenario": _scenario(c.scheduled_for_real)}
 
@@ -168,7 +169,7 @@ def risk_detail(e: Elder) -> dict[str, Any]:
 
 def checkin_out(c: CheckIn) -> dict[str, Any]:
     return {"id": c.id, "round_no": c.round_no, "attempt": c.attempt, "is_recall": c.is_recall,
-            "callee": c.callee,
+            "requested": c.requested, "callee": c.callee,
             "call_status": c.call_status, "answers": c.answers or {}, "transcript": c.transcript,
             "recording_url": f"/api/recordings/{c.id}" if c.recording_url else None,
             "outcome": c.outcome, "rule_id": c.rule_id, "reason": c.reason,

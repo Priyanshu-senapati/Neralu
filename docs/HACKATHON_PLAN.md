@@ -173,6 +173,13 @@ the line still stands on its own.
 - **Missed-call check-in** · originality · 1.5 h: an elder or family gives a missed call to the Neralu
   number and Neralu calls back at once. Familiar in India, costs nothing. Twilio trial inbound carries the
   trial notice: test early, drop if it misbehaves.
+  *Built:* `POST /voice/inbound` rejects the call (busy, so free) and matches the caller to a registered
+  person or family contact (never the demo placeholder number); the callback is a normal check-in
+  marked `requested`, placed at once, or an already-booked call is brought forward. 30-min cooldown;
+  unknown numbers are logged without the number. Browser phone: "Give Neralu a missed call". Labelled
+  in the feed, the resident's story, the live call panel, the case record and the family page.
+  Tests: `backend/tests/test_missed_call.py`. Needs the Twilio number's voice webhook set to
+  `/voice/inbound`.
 - **Public deployment** *(parallel, needs a hosting account from the team)* · feasibility · 1–2 h: one
   server on a cloud host with a fixed address, no laptop or ngrok. The laptop setup stays as the fallback.
 

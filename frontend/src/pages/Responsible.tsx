@@ -33,6 +33,7 @@ const DPDP: [string, string][] = [
 const ACCESS: string[] = [
   'Works on any phone, including basic keypad phones. No app, no smartphone, no internet needed by the person called.',
   'Answers are single key presses. No reading, no typing.',
+  'A missed call to the Neralu number asks for a check at any time. Neralu calls back; the caller pays nothing.',
   'Kannada, Hindi and English, chosen at the start of every call (1, 2 or 3), in a slowed-down voice for older listeners.',
   'A question with no answer is asked again before moving on.',
   'People with memory difficulty are checked through their caregiver rather than asked questions they cannot fairly answer.',

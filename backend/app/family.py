@@ -127,7 +127,10 @@ def _timeline(events: list[Event], first: str) -> list[dict[str, str]]:
             caregiver = "caregiver" in msg
             who = f"{first}'s caregiver" if caregiver else first
             add(ev, f"Neralu made a follow-up call to {who}" if msg.startswith("Recall")
+                else f"Neralu called {who} back" if msg.startswith("Calling back")
                 else f"Neralu called {who}" + (" again" if int(d.get("attempt", 1)) > 1 else ""))
+        elif ev.kind == "missed_call" and d.get("outcome") in ("calling", "sooner"):
+            add(ev, f"{'The family' if d.get('from') == 'family' else first} gave Neralu a missed call to ask for a check")
         elif ev.kind == "call_answered":
             add(ev, "The caregiver picked up" if caregiver else f"{first} picked up")
         elif ev.kind == "attempt_failed":

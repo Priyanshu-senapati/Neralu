@@ -94,6 +94,8 @@ export interface CurrentCall {
   checkin_id: number
   attempt: number
   is_recall: boolean
+  /** asked for with a missed call */
+  requested?: boolean
   callee?: Callee
   started: boolean
   call_status: string | null
@@ -199,6 +201,8 @@ export interface CheckInOut {
   round_no: number
   attempt: number
   is_recall: boolean
+  /** asked for with a missed call */
+  requested?: boolean
   callee?: Callee
   call_status: string | null
   answers: Record<string, string>

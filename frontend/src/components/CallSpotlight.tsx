@@ -220,7 +220,7 @@ export function CallSpotlight({ elders, mode, speed, now, refreshKey, onOpenProf
               {(phase === 'ringing' || phase === 'connected') && <span className="num text-2xl tabular-nums">{clock(elapsed)}</span>}
             </div>
             <p className="mt-1 text-sm text-muted">
-              {phase === 'ringing' && `Attempt ${cur?.attempt ?? 1}${cur?.is_recall ? ' · follow-up call' : ''} · ${who}'s phone is ringing.`}
+              {phase === 'ringing' && `${cur?.requested ? `Calling back after a missed call` : `Attempt ${cur?.attempt ?? 1}${cur?.is_recall ? ' · follow-up call' : ''}`} · ${who}'s phone is ringing.`}
               {phase === 'connected' && `${who} picked up. Neralu asks each question; ${who} answers on the keypad.`}
               {phase === 'between' && (
                 <>{cur?.is_recall && cur.attempt === 1 ? 'Follow-up call booked' : `No answer on attempt ${(cur?.attempt ?? 2) - 1}. Calling again`} at <span className="num">{fmtTime(nextAt)}</span>

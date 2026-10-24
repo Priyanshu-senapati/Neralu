@@ -7,7 +7,7 @@ const TONE: Record<string, string> = {
 }
 
 const ACTOR: Record<string, string> = {
-  system: 'System', rules: 'Rules', twilio: 'Call', volunteer: 'Volunteer', family: 'Family',
+  system: 'System', rules: 'Rules', twilio: 'Call', volunteer: 'Volunteer', family: 'Family', elder: 'Resident',
   officer: 'Officer', sim: 'Simulation',
 }
 

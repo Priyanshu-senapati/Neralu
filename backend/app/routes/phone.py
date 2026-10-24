@@ -13,6 +13,7 @@ from app.audio import fallback_speech
 from app.calls import handle_call_ended
 from app.config import get_settings
 from app.db import engine
+from app.missed_call import demo_missed_call
 from app.models import CheckIn, Elder
 from app.routes.voice import HELP_KEYPAD, KEYPAD, _await_orientation, _live_checkin, _store, \
     orientation_tasks, score_audio
@@ -73,7 +74,7 @@ def current() -> dict:
         if c is None or elder is None or c.processed:
             return {"call": None}
         return {"call": {"checkin_id": c.id, "status": call.status, "attempt": c.attempt,
-                         "is_recall": c.is_recall, "elder_name": elder.name, "callee": c.callee}}
+                         "is_recall": c.is_recall, "requested": c.requested, "elder_name": elder.name, "callee": c.callee}}
 
 
 @router.post("/calls/{checkin_id}/answer")
@@ -189,3 +190,14 @@ def decline(checkin_id: int) -> dict:
     bp.forget(checkin_id)
     _end(checkin_id, "busy")
     return {"ok": True}
+
+
+@router.post("/missed-call")
+def missed_call() -> dict:
+    """The demo phone gives Neralu a missed call (simulated): Neralu calls Kamala back at once. Browser
+    mode only, so a button on a web page can never make Neralu dial a real phone."""
+    if get_settings().telephony_mode != "browser":
+        raise HTTPException(409, "Only for the browser phone")
+    with Session(engine) as session:
+        r = demo_missed_call(session)
+    return {"outcome": r.outcome}

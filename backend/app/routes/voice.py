@@ -10,6 +10,7 @@ from app.calls import handle_call_ended
 from app.config import get_settings
 from app.db import current_run_id, engine
 from app.events import log_event
+from app.missed_call import handle as handle_missed_call
 from app.models import TERMINAL_CALL_STATUSES, CheckIn, Elder
 from app.orientation import day_word, score_orientation
 from app.state import state
@@ -212,3 +213,14 @@ async def status(request: Request, checkin_id: int) -> Response:
         handle_call_ended(session, checkin_id, call_status)
         session.commit()
     return Response(status_code=204)
+
+
+@router.post("/inbound")
+async def inbound(request: Request) -> Response:
+    """Someone rang the Neralu number: a missed call. Never answered (rejected as busy, so the caller
+    pays nothing); a registered person, or their family, gets a check call back at once."""
+    await tw.validate_signature(request)
+    number = (await request.form()).get("From", "")
+    with Session(engine) as session:
+        handle_missed_call(session, str(number))
+    return twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Reject reason="busy"/></Response>')

@@ -81,6 +81,8 @@ export function episode(events: NeraluEvent[]): NeraluEvent[] {
   events.forEach((e, i) => {
     if (e.kind === 'call_placed' && Number(e.data.attempt) === 1 && !String(e.message).startsWith('Recall')) start = i
   })
+  // A callback starts with the missed call that asked for it.
+  if (start > 0 && events[start - 1].kind === 'missed_call') start -= 1
   return start < 0 ? events : events.slice(start)
 }
 
@@ -209,6 +211,8 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
         const callee = caregiver ? `${firstName}'s caregiver` : firstName
         add(e, String(e.message).startsWith('Recall')
           ? `Neralu made a follow-up call to ${callee}.`
+          : String(e.message).startsWith('Calling back')
+            ? `Neralu called ${callee} back.`
           : String(e.message).startsWith('Call failed')
             ? `The call to ${callee} could not be placed.`
             : `Neralu called ${callee}${Number(d.attempt) > 1 ? ` again (attempt ${d.attempt})` : ''}.`)
@@ -272,6 +276,11 @@ export function story(all: NeraluEvent[], firstName: string): StoryLine[] {
         break
       case 'family_notified':
         add(e, `${e.message.split(' notified')[0]} was told.`, 'muted')
+        break
+      case 'missed_call':
+        add(e, d.from === 'family'
+          ? `${firstName}'s family gave Neralu a missed call to ask for a check.`
+          : `${firstName} gave Neralu a missed call to ask for a check.`, 'watch')
         break
       case 'elder_registered':
         add(e, `${e.message}.`, 'muted')

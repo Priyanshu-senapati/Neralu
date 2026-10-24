@@ -235,7 +235,7 @@ function AttemptRow({ x }: { x: CheckInOut }) {
     <li className="flex items-center justify-between gap-2 py-1.5">
       <span>
         <span className="num text-xs text-muted">{fmtTime(x.at_scenario)}</span>{' '}
-        R{x.round_no} · {x.is_recall ? 'recall' : 'attempt'} {x.attempt}
+        R{x.round_no} · {x.requested ? 'callback' : x.is_recall ? 'recall' : 'attempt'} {x.attempt}
         {x.is_simulated && <> <SimTag /></>}
       </span>
       <span className="text-right text-xs">

@@ -102,9 +102,9 @@ def dispatch_due_calls(session: Session) -> None:
             continue
         c.call_status = "queued"
         c.placed_real = state.clock.real_now()
-        what = "Recall" if c.is_recall else "Calling"
+        what = "Recall" if c.is_recall else "Calling back after a missed call" if c.requested else "Calling"
         if c.callee == "caregiver":
-            what += " caregiver"
+            what += " · to the caregiver" if c.requested else " caregiver"
         log_event(session, "call_placed", f"{what} · attempt {c.attempt}", actor="system",
                   elder_id=elder.id, checkin_id=c.id,
                   data={"attempt": c.attempt, "round_no": c.round_no, "call_sid": c.call_sid})

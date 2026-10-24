@@ -218,6 +218,18 @@ docs/      the plan
 | `ALERT_NEAREST=3` | How many of the nearest on-duty volunteers/ASHAs are alerted first. Everyone on duty can still accept. |
 | `FRONTEND_DIST=` | Where the built website is (default `frontend/dist`). |
 
+### Missed-call check-in
+
+A registered person, or their family, gives a missed call to the Neralu number and Neralu calls back
+at once with the usual check. Neralu never answers the incoming call (it rejects it as busy), so it
+costs the caller nothing. The callback is an ordinary check: same rules, retries and escalation.
+Unknown numbers are not called back and not stored; one callback per person per 30 minutes. Callers
+with memory difficulty are checked through their caregiver, as on any call.
+- **Real phone:** in the Twilio console, set the Neralu number's "A call comes in" webhook to
+  `https://<public address>/voice/inbound` (HTTP POST). On a trial account Twilio plays its trial
+  notice to inbound callers first, so test it before relying on it on stage.
+- **Browser phone:** the `/phone` page has "Give Neralu a missed call" (simulated, labelled so).
+
 ### Console: filters, data sources, case records
 
 The attention list filters by heat risk, where the call stands (calling, answered, not reached, not
