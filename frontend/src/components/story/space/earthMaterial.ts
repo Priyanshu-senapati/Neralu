@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { loadTexture } from './textures'
 
 /*
  * The Earth (radius 1), lit by the real direction of the sun.
@@ -192,11 +193,10 @@ export function createEarth(renderer: THREE.WebGLRenderer) {
   group.add(ground, clouds, atmosphere)
 
   // The maps arrive after first paint; until then the globe is a dark sphere with its atmosphere.
-  const loader = new THREE.TextureLoader()
   const aniso = renderer.capabilities.getMaxAnisotropy()
   // Sampled as stored (display values): the shaders work in the photographs' own colour space.
   const load = (src: string, slot: { value: THREE.Texture }) =>
-    loader.loadAsync(src).then((t) => {
+    loadTexture(src).then((t) => {
       t.colorSpace = THREE.NoColorSpace
       t.anisotropy = Math.min(8, aniso)
       t.wrapS = THREE.RepeatWrapping
@@ -216,7 +216,7 @@ export function createEarth(renderer: THREE.WebGLRenderer) {
     /** Sun direction in world space; seconds; how much cloud to show (fades as we descend). */
     update(sunDir: THREE.Vector3, t: number, cloudAmount: number) {
       shared.uSun.value.copy(sunDir)
-      shared.uCloudShift.value = (t * 0.0007) % 1
+      shared.uCloudShift.value = (t * 0.001) % 1
       shared.uCloudAmt.value = cloudAmount
       group.getWorldPosition(atmosUniforms.uCenter.value)
     },
