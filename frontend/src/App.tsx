@@ -58,8 +58,8 @@ function PageTransitions() {
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] } }}
-          exit={{ opacity: 0, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] } }}
+          animate={{ opacity: 1, transition: { duration: 0.45, ease: [0.23, 1, 0.32, 1] } }}
+          exit={{ opacity: 0, transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }}
         >
           {routes}
         </motion.div>
@@ -83,7 +83,7 @@ function RouteSweep({ path }: { path: string }) {
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[2px] origin-left bg-[linear-gradient(90deg,#ffc861,#ff8a3d_45%,#7cc4ff)] shadow-[0_0_14px_rgba(255,150,70,0.7)]"
         initial={{ scaleX: 0, opacity: 1 }}
-        animate={{ scaleX: 1, opacity: [1, 1, 0], transition: { duration: 1.1, ease: [0.23, 1, 0.32, 1], opacity: { duration: 1.4, times: [0, 0.6, 1] } } }}
+        animate={{ scaleX: 1, opacity: [1, 1, 0], transition: { duration: 0.85, ease: [0.23, 1, 0.32, 1], opacity: { duration: 1.1, times: [0, 0.6, 1] } } }}
         exit={{ opacity: 0, transition: { duration: 0.1 } }}
       />
     </AnimatePresence>

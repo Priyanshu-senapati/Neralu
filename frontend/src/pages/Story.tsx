@@ -16,6 +16,7 @@ import { countCalled, exampleHouseholds, H_START, householdsFrom, type Household
 import { heatAt } from '../components/story/space/cameraPath'
 import { heat, useHeatValue } from '../components/story/useScrollHeat'
 import { useRimLight } from '../components/story/useRimLight'
+import { smoothWheel } from '../components/story/smoothWheel'
 
 /*
  * The product, explained with the product's own logic. Every number on this page comes from
@@ -42,6 +43,8 @@ export default function Story() {
   useEffect(() => {
     document.fonts?.ready.then(() => ScrollTrigger.refresh())
   }, [])
+  // A notched mouse wheel (Windows) glides instead of stepping through the scroll-played scenes.
+  useEffect(() => smoothWheel(), [])
   return (
     // isolate: the haze canvas paints above the page colour and below everything else.
     <div id="top" ref={page} className="skin relative isolate min-h-dvh bg-paper text-ink">
@@ -92,8 +95,8 @@ function Hero({ households, example }: { households: Household[]; example: boole
           trigger: section.current,
           pin: true,
           start: 'top top',
-          end: '+=520%', // a long, unhurried flight
-          scrub: 1.6, // the scene catches up with the scroll over 1.6 s, so it glides
+          end: '+=420%', // an unhurried flight
+          scrub: 1, // the scene catches up with the scroll over a second, so it glides
           onLeave: () => heat.settle(true),
           onEnterBack: () => heat.settle(false),
         },
@@ -122,7 +125,7 @@ function Hero({ households, example }: { households: Household[]; example: boole
     }
     const tween = gsap.to(shown, {
       current: called,
-      duration: 0.7,
+      duration: 0.5,
       ease: EASE,
       onUpdate: () => (el.textContent = String(Math.round(shown.current))),
     })

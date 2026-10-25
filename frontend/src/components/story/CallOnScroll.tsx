@@ -72,9 +72,9 @@ export default function CallOnScroll() {
       const stage = q('[data-stage]')[0] as HTMLElement
       const shake = q('[data-shake]')[0] as HTMLElement
       // While it waits the phone floats a little, and it leans toward the pointer (transforms only).
-      gsap.to('[data-float]', { y: -7, duration: 4, ease: 'sine.inOut', yoyo: true, repeat: -1 })
-      const tiltY = gsap.quickTo('[data-tilt]', 'rotationY', { duration: 1.1, ease: 'power3.out' })
-      const tiltX = gsap.quickTo('[data-tilt]', 'rotationX', { duration: 1.1, ease: 'power3.out' })
+      gsap.to('[data-float]', { y: -7, duration: 3.2, ease: 'sine.inOut', yoyo: true, repeat: -1 })
+      const tiltY = gsap.quickTo('[data-tilt]', 'rotationY', { duration: 0.85, ease: 'power3.out' })
+      const tiltX = gsap.quickTo('[data-tilt]', 'rotationX', { duration: 0.85, ease: 'power3.out' })
       const lean = (e: PointerEvent) => {
         if (e.pointerType !== 'mouse') return
         const r = stage.getBoundingClientRect()
@@ -104,13 +104,13 @@ export default function CallOnScroll() {
       gsap.fromTo(
         '[data-headline-in]',
         { opacity: 0, filter: 'blur(14px)', scale: 1.04 },
-        { opacity: 1, filter: 'blur(0px)', scale: 1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 80%', end: 'top 15%', scrub: 1.5 } },
+        { opacity: 1, filter: 'blur(0px)', scale: 1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 80%', end: 'top 15%', scrub: 1 } },
       )
 
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
         onUpdate: () => render(tl.progress()),
-        scrollTrigger: { trigger: stage, pin: true, start: 'top top', end: '+=620%', scrub: 1.5, anticipatePin: 1 },
+        scrollTrigger: { trigger: stage, pin: true, start: 'top top', end: '+=500%', scrub: 1, anticipatePin: 1 },
       })
       tl.set({}, {}, 1) // the timeline runs exactly 0 → 1, so positions read as scroll progress
 

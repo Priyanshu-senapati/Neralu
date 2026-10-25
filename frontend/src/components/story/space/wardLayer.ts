@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { Household } from '../orbitPhysics'
 import { latLngToVec, MOSAICS, tileLat, tileLng } from './geo'
+import { loadTexture } from './textures'
 
 /*
  * Ward 47 on the globe: two satellite mosaics laid on the sphere (Bengaluru, then the ward itself,
@@ -104,7 +105,7 @@ function patch(m: (typeof MOSAICS)[keyof typeof MOSAICS], lift: number, sun: { v
   geo.setIndex(idx)
   const uMap = { value: new THREE.Texture() }
   const uOpacity = { value: 0 }
-  new THREE.TextureLoader().loadAsync(m.src).then((t) => {
+  const ready = loadTexture(m.src).then((t) => {
     t.colorSpace = THREE.NoColorSpace
     t.anisotropy = 8
     uMap.value = t
@@ -116,7 +117,7 @@ function patch(m: (typeof MOSAICS)[keyof typeof MOSAICS], lift: number, sun: { v
     transparent: true,
     depthWrite: false,
   }))
-  return { mesh, uOpacity, uMap }
+  return { mesh, uOpacity, uMap, ready }
 }
 
 export function createWard(households: Household[], colors: { cool: THREE.Color; hot: THREE.Color }) {
@@ -174,13 +175,21 @@ export function createWard(households: Household[], colors: { cool: THREE.Color;
   pin.visible = k >= 0
   pin.renderOrder = 9
   group.add(city.mesh, ward.mesh, points, pin)
+  // Drawn while hidden (see `prepare` below), so nothing here may be skipped as off screen.
+  for (const o of [city.mesh, ward.mesh, points, pin]) o.frustumCulled = false
 
   return {
     group,
     /** Each household's position on the unit globe (Earth's local frame), for hit-testing. */
     local,
     kamala: k,
-    update(o: { sunDir: THREE.Vector3; H: number; city: number; ward: number; households: number; t: number; pixelRatio: number }) {
+    /** Resolves when both mosaics have loaded (or failed). */
+    ready: Promise.all([city.ready, ward.ready]),
+    /**
+     * `prepare`: draw every layer this frame even at zero opacity, which shows nothing but makes the
+     * GPU compile the shaders and upload the mosaics now, not as a stutter halfway down the descent.
+     */
+    update(o: { sunDir: THREE.Vector3; H: number; city: number; ward: number; households: number; t: number; pixelRatio: number; prepare?: boolean }) {
       uSun.value.copy(o.sunDir)
       city.uOpacity.value = o.city
       ward.uOpacity.value = o.ward
@@ -191,10 +200,10 @@ export function createWard(households: Household[], colors: { cool: THREE.Color;
       pinU.uFade.value = o.households
       pinU.uTime.value = o.t
       pinU.uSize.value = 64 * o.pixelRatio
-      points.visible = o.households > 0.001
+      points.visible = o.prepare || o.households > 0.001
       pin.visible = points.visible && k >= 0
-      city.mesh.visible = o.city > 0.001
-      ward.mesh.visible = o.ward > 0.001
+      city.mesh.visible = o.prepare || o.city > 0.001
+      ward.mesh.visible = o.prepare || o.ward > 0.001
     },
     dispose() {
       for (const m of [city, ward]) {

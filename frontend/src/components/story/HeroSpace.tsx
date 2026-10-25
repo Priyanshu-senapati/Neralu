@@ -21,6 +21,9 @@ import { createWard } from './space/wardLayer'
  * the near scene (Earth and the ward) with a depth range fitted to the altitude, so depth stays
  * exact from space down to 3 km. God rays are a quarter-resolution pass while the sun is in view.
  * One frame loop, paused off screen and in hidden tabs; the pixel ratio steps down on slow machines.
+ * The ward's layers are drawn once, invisibly, as soon as they load, so their shaders and textures
+ * are ready before the descent (on Windows each shader is translated to Direct3D on first use).
+ * Each frame reads the page layout once, before it writes any style, so it never forces a reflow.
  */
 
 const UP = new THREE.Vector3(0, 1, 0)
@@ -149,6 +152,10 @@ export default function HeroSpace({ households, className = '' }: { households: 
     let raf = 0
     let onScreen = true
     let slow = 0
+    let avg = 1 / 60
+    let prepare = false
+    let alive = true
+    const labelW = { city: 0, home: 0 }
     const E = new THREE.Vector3()
     const sunDir = new THREE.Vector3()
     const wardW = new THREE.Vector3()
@@ -156,7 +163,12 @@ export default function HeroSpace({ households, className = '' }: { households: 
     const v = new THREE.Vector3()
     const pose: Pose = { pos: new THREE.Vector3(), target: new THREE.Vector3(), up: new THREE.Vector3() }
 
+    const measure = () => {
+      labelW.city = (cityLabel.current?.firstElementChild as HTMLElement | null)?.offsetWidth ?? 0
+      labelW.home = (homeLabel.current?.firstElementChild as HTMLElement | null)?.offsetWidth ?? 0
+    }
     const layout = () => {
+      measure()
       const r = host.getBoundingClientRect()
       width = r.width
       height = r.height
@@ -170,11 +182,10 @@ export default function HeroSpace({ households, className = '' }: { households: 
       }
     }
 
-    const place = (sx: number, sy: number, el: HTMLElement | null, alpha: number) => {
+    const place = (sx: number, sy: number, el: HTMLElement | null, alpha: number, w: number) => {
       if (!el) return
       el.style.opacity = String(alpha)
       // Keep the whole label on screen: a narrow phone would otherwise cut it off at the edge.
-      const w = (el.firstElementChild as HTMLElement | null)?.offsetWidth ?? 0
       const x = Math.min(sx, width - w - 28)
       if (alpha > 0.01) el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(sy)}px, 0)`
     }
@@ -188,31 +199,41 @@ export default function HeroSpace({ households, className = '' }: { households: 
       const raw = last ? (now - last) / 1000 : 1 / 60
       last = now
       const dt = Math.min(raw, 0.05)
-      // A slow machine (a projector laptop): after 30 slow frames, render fewer pixels.
-      slow = raw > 0.02 ? slow + 1 : 0
-      if (slow > 30 && dpr > 1) {
-        dpr = dpr > 1.3 ? 1.25 : 1
+      // A slow machine (a projector laptop): when frames average under ~47 fps for half a second,
+      // render fewer pixels, 1.75 → 1.25 → 1 → 0.8 of the screen's. An average, so a machine that
+      // alternates fast and slow frames (judder) steps down too.
+      avg += (Math.min(raw, 0.1) - avg) * 0.1
+      slow = avg > 0.021 ? slow + 1 : 0
+      if (slow > 30 && dpr > 0.8) {
+        dpr = dpr > 1.3 ? 1.25 : dpr > 1.05 ? 1 : 0.8
         slow = 0
+        avg = 1 / 60
         layout()
       }
       draw(dt)
     }
 
     const draw = (dt: number) => {
+      // Read the layout first, before this frame writes any style.
+      const r = host.getBoundingClientRect()
+      const sel = selectedRef.current
+      const tip = tipRef.current
+      const tw = tip && sel >= 0 ? tip.offsetWidth : 0
+      const th = tip && sel >= 0 ? tip.offsetHeight : 0
       t += dt
       // Follow the scroll with a light lag, so even a jerky wheel moves the camera smoothly.
       const goal = still ? 1 : heat.progress
-      p += (goal - p) * Math.min(1, dt * 3) // eases toward the scroll (about a third of a second behind)
+      p += (goal - p) * Math.min(1, dt * 6) // eases toward the scroll (about a sixth of a second behind)
       if (Math.abs(goal - p) < 1e-4) p = goal
       const f = flyAt(p)
-      theta += dt * ((Math.PI * 2) / 260) * orbitSpeedAt(p)
+      theta += dt * ((Math.PI * 2) / 200) * orbitSpeedAt(p)
       E.set(Math.sin(theta) * ORBIT_RADIUS, 0, -Math.cos(theta) * ORBIT_RADIUS)
       sunDir.copy(E).negate().normalize()
       // Turn Earth so Ward 47 ends up facing the camera in afternoon light (sun to the west).
       const sunH = v.set(sunDir.x, 0, sunDir.z).normalize()
       const east = new THREE.Vector3().crossVectors(UP, sunH)
       const want = sunH.clone().multiplyScalar(Math.cos(AFTERNOON)).addScaledVector(east, Math.sin(AFTERNOON))
-      const spinFree = 2.2 + t * 0.03
+      const spinFree = 2.2 + t * 0.045
       const spinTarget = Math.atan2(want.x, want.z) - Math.atan2(wardLocal.x, wardLocal.z)
       const spin = spinFree + wrapPi(spinTarget - spinFree) * f
       earthGroup.position.copy(E)
@@ -239,7 +260,8 @@ export default function HeroSpace({ households, className = '' }: { households: 
       orbitLine.material.opacity = 0.16 * (1 - f)
       earth.update(sunDir, t, cloudsAt(p))
       const hh = householdsAt(p)
-      ward.update({ sunDir, H, city: cityPatchAt(p), ward: wardPatchAt(p), households: hh, t, pixelRatio: dpr })
+      ward.update({ sunDir, H, city: cityPatchAt(p), ward: wardPatchAt(p), households: hh, t, pixelRatio: dpr, prepare })
+      prepare = false
 
       renderer.setRenderTarget(null)
       renderer.clear()
@@ -248,24 +270,19 @@ export default function HeroSpace({ households, className = '' }: { households: 
       renderer.render(near, nearCam)
       const sunOn = rays.render(renderer, farCam, sun.group.position, SUN_RADIUS, E, 0.85 * (1 - f))
       const s = toScreen(sun.group.position, farCam)
-      const r = host.getBoundingClientRect()
       heat.sun.x = r.left + s.x
       heat.sun.y = r.top + s.y
       heat.sun.on = sunOn && !s.behind
 
       // Labels: the city on the way down, then Kamala's home.
       const city = toScreen(v.copy(wardLocal).applyMatrix4(earthGroup.matrixWorld), nearCam)
-      place(city.x, city.y, cityLabel.current, city.behind ? 0 : cityPatchAt(p) * (1 - hh))
+      place(city.x, city.y, cityLabel.current, city.behind ? 0 : cityPatchAt(p) * (1 - hh), labelW.city)
       const home = toScreen(v.copy(kamalaLocal).applyMatrix4(earthGroup.matrixWorld), nearCam)
-      place(home.x, home.y, homeLabel.current, home.behind ? 0 : hh)
+      place(home.x, home.y, homeLabel.current, home.behind ? 0 : hh, labelW.home)
 
       // The open card follows its household.
-      const sel = selectedRef.current
-      const tip = tipRef.current
       if (tip && sel >= 0 && hh > 0.5) {
         const at = toScreen(v.fromArray(ward.local, sel * 3).applyMatrix4(earthGroup.matrixWorld), nearCam)
-        const tw = tip.offsetWidth
-        const th = tip.offsetHeight
         let tx = at.x + 16
         let ty = at.y - th - 12
         if (tx + tw > width - 8) tx = at.x - tw - 16
@@ -317,6 +334,14 @@ export default function HeroSpace({ households, className = '' }: { households: 
       raf = 0
     }
     layout()
+    document.fonts?.ready.then(() => alive && measure())
+    // Compile in parallel where the browser can, then draw the hidden ward once (see above).
+    Promise.all([earth.ready, ward.ready])
+      .then(() => (alive ? renderer.compileAsync(near, nearCam) : undefined))
+      .catch(() => {})
+      .then(() => {
+        prepare = alive
+      })
     if (still) {
       draw(0)
       earth.ready.then(() => draw(0))
@@ -348,6 +373,7 @@ export default function HeroSpace({ households, className = '' }: { households: 
     applyTheme.current(document.documentElement.dataset.theme !== 'light')
 
     return () => {
+      alive = false
       stop()
       ro.disconnect()
       io.disconnect()
